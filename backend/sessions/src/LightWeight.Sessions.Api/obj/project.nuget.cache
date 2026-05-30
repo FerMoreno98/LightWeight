@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "oTAGyyG4qeA=",
+  "success": true,
+  "projectFilePath": "/home/fer/Proyectos/light-weight/backend/sessions/src/LightWeight.Sessions.Api/LightWeight.Sessions.Api.csproj",
+  "expectedPackageFiles": [
+    "/home/fer/.nuget/packages/microsoft.aspnetcore.openapi/10.0.8/microsoft.aspnetcore.openapi.10.0.8.nupkg.sha512",
+    "/home/fer/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "+02f/5T0Q2A=",
+  "success": true,
+  "projectFilePath": "/home/fer/Proyectos/light-weight/backend/mesocycles/src/LightWeight.Mesocycles.Api/LightWeight.Mesocycles.Api.csproj",
+  "expectedPackageFiles": [
+    "/home/fer/.nuget/packages/microsoft.aspnetcore.openapi/10.0.8/microsoft.aspnetcore.openapi.10.0.8.nupkg.sha512",
+    "/home/fer/.nuget/packages/microsoft.openapi/2.0.0/microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}
