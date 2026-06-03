@@ -1,0 +1,82 @@
+<Solution>
+  <Folder Name="/auth/" />
+  <Folder Name="/auth/src/" />
+  <Folder Name="/auth/src/LightWeight.Auth.Api/">
+    <Project Path="auth/src/LightWeight.Auth.Api/auth.Api.csproj" />
+  </Folder>
+  <Folder Name="/auth/src/LightWeight.Auth.Application/">
+    <Project Path="auth/src/LightWeight.Auth.Application/auth.Application.csproj" />
+  </Folder>
+  <Folder Name="/auth/src/LightWeight.Auth.Domain/">
+    <Project Path="auth/src/LightWeight.Auth.Domain/auth.Domain.csproj" />
+  </Folder>
+  <Folder Name="/auth/src/LightWeight.Auth.Infrastructure/">
+    <Project Path="auth/src/LightWeight.Auth.Infrastructure/auth.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/auth/tests/">
+    <Project Path="auth/tests/LightWeight.Auth.UnitTests/LightWeight.Auth.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/exercises/" />
+  <Folder Name="/exercises/src/">
+    <Project Path="exercises/src/LightWeight.Exercises.Api/LightWeight.Exercises.Api.csproj" />
+    <Project Path="exercises/src/LightWeight.Exercises.Application/LightWeight.Exercises.Application.csproj" />
+    <Project Path="exercises/src/LightWeight.Exercises.Domain/LightWeight.Exercises.Domain.csproj" />
+    <Project Path="exercises/src/LightWeight.Exercises.Infrastructure/LightWeight.Exercises.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/exercises/tests/">
+    <Project Path="exercises/tests/LightWeight.Exercises.UnitTests/LightWeight.Exercises.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/measurments/" />
+  <Folder Name="/measurments/src/">
+    <Project Path="measurments/src/LightWeight.Measurments.Api/LightWeight.Measurments.Api.csproj" />
+    <Project Path="measurments/src/LightWeight.Measurments.Application/LightWeight.Measurments.Application.csproj" />
+    <Project Path="measurments/src/LightWeight.Measurments.Domain/LightWeight.Measurments.Domain.csproj" />
+    <Project Path="measurments/src/LightWeight.Measurments.Infrastructure/LightWeight.Measurments.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/measurments/tests/">
+    <Project Path="measurments/tests/LightWeight.Measurments.UnitTests/LightWeight.Measurments.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/mesocycles/" />
+  <Folder Name="/mesocycles/src/">
+    <Project Path="mesocycles/src/LightWeight.Mesocycles.Api/LightWeight.Mesocycles.Api.csproj" />
+    <Project Path="mesocycles/src/LightWeight.Mesocycles.Application/LightWeight.Mesocycles.Application.csproj" />
+    <Project Path="mesocycles/src/LightWeight.Mesocycles.Domain/LightWeight.Mesocycles.Domain.csproj" />
+    <Project Path="mesocycles/src/LightWeight.Mesocycles.Infrastructure/LightWeight.Mesocycles.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/mesocycles/tests/">
+    <Project Path="mesocycles/tests/LightWeight.Mesocycles.UnitTests/LightWeight.Mesocycles.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/sessions/" />
+  <Folder Name="/sessions/src/">
+    <Project Path="sessions/src/LightWeight.Sessions.Api/LightWeight.Sessions.Api.csproj" />
+    <Project Path="sessions/src/LightWeight.Sessions.Application/LightWeight.Sessions.Application.csproj" />
+    <Project Path="sessions/src/LightWeight.Sessions.Domain/LightWeight.Sessions.Domain.csproj" />
+    <Project Path="sessions/src/LightWeight.Sessions.Infrastructure/LightWeight.Sessions.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/sessions/tests/">
+    <Project Path="sessions/tests/LightWeight.Sessions.Tests/LightWeight.Sessions.Tests.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/LightWeight.Shared.csproj" />
+  </Folder>
+  <Folder Name="/stats/" />
+  <Folder Name="/stats/src/">
+    <Project Path="stats/src/LightWeight.Stats.Api/LightWeight.Stats.Api.csproj" />
+    <Project Path="stats/src/LightWeight.Stats.Application/LightWeight.Stats.Application.csproj" />
+    <Project Path="stats/src/LightWeight.Stats.Domain/LightWeight.Stats.Domain.csproj" />
+    <Project Path="stats/src/LightWeight.Stats.Infrastructure/LightWeight.Stats.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/stats/tests/">
+    <Project Path="stats/tests/LightWeight.Stats.UnitTests/LightWeight.Stats.UnitTests.csproj" />
+  </Folder>
+  <Folder Name="/user-profile/" />
+  <Folder Name="/user-profile/src/">
+    <Project Path="user-profile/src/LightWeight.UserProfile.Api/LightWeight.UserProfile.Api.csproj" />
+    <Project Path="user-profile/src/LightWeight.UserProfile.Application/LightWeight.UserProfile.Application.csproj" />
+    <Project Path="user-profile/src/LightWeight.UserProfile.Domain/LightWeight.UserProfile.Domain.csproj" />
+    <Project Path="user-profile/src/LightWeight.UserProfile.Infrastructure/LightWeight.UserProfile.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/user-profile/tests/">
+    <Project Path="user-profile/tests/LightWeight.UserProfile.UnitTests/LightWeight.UserProfile.UnitTests.csproj" />
+  </Folder>
+</Solution>

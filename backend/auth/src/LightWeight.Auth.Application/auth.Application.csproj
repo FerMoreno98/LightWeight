@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\auth.Domain\auth.Domain.csproj" />
+    <ProjectReference Include="..\..\..\shared\LightWeight.Shared.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
