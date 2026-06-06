@@ -1,6 +1,6 @@
 using LightWeight.shared.BuildingBlocks;
 
-namespace LightWeight.Auth.Domain.Aggregates;
+namespace LightWeight.Auth.Domain.Entities;
 
 public sealed class DeviceToken : Entity<Guid>
 {

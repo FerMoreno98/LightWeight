@@ -1,4 +1,5 @@
 using LightWeight.Auth.Domain.Aggregates;
+using LightWeight.Auth.Domain.Entities;
 using Xunit;
 
 namespace LightWeight.Auth.Tests.Domain;

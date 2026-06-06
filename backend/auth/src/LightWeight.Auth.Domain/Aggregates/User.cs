@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Events;
 using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks;

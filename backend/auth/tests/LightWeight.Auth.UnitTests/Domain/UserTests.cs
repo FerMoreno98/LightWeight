@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Xunit;
 using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.ValueObjects;
+using LightWeight.Auth.Domain.Entities;
 
 namespace LightWeight.Auth.UnitTests.Domain;
 

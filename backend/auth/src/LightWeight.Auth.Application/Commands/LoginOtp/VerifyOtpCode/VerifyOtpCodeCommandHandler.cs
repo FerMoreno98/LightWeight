@@ -1,4 +1,5 @@
 using LightWeight.Auth.Domain.Aggregates;
+using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
 using LightWeight.Auth.Domain.ValueObjects;
