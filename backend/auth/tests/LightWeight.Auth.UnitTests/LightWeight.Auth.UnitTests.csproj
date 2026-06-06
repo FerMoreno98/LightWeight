@@ -20,4 +20,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\LightWeight.Auth.Domain\auth.Domain.csproj" />
+    <ProjectReference Include="..\..\src\LightWeight.Auth.Application\auth.Application.csproj" />
+    <ProjectReference Include="..\..\..\shared\LightWeight.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

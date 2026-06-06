@@ -1,6 +1,6 @@
 using LightWeight.shared.BuildingBlocks;
 
-namespace auth.Domain.Aggregates;
+namespace LightWeight.Auth.Domain.Aggregates;
 
 public sealed class RefreshToken : Entity<Guid>
 {

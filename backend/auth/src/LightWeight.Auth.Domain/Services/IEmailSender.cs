@@ -1,4 +1,4 @@
-namespace auth.Domain.Services;
+namespace LightWeight.Auth.Domain.Services;
 
 public interface IEmailSender
 {

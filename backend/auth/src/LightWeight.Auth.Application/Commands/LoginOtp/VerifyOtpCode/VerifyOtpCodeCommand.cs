@@ -1,7 +1,14 @@
 using LightWeight.shared.Mediator;
 
-namespace auth.Application.Commands.LoginOtp.VerifyOtpCode;
+namespace LightWeight.Auth.Application.Commands.LoginOtp.VerifyOtpCode;
 
-public sealed record VerifyOtpCodeCommand : ICommand<LoginResult>;
+public sealed record VerifyOtpCodeCommand(
+    string Code,
+    string Ip,
+    string DeviceIdentifier,
+    string DeviceName,
+    string Platform,
+    string Email
+) : ICommand<OtpLoginResult>;
 
-public record LoginResult(string AccessToken, string RefreshToken, bool IsExistingUser);
+public record OtpLoginResult(string AccessToken, string RefreshToken, bool IsExistingUser);

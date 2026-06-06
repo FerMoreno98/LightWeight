@@ -1,11 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\auth.Domain\auth.Domain.csproj" />
     <ProjectReference Include="..\..\..\shared\LightWeight.Shared.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Domain\auth.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
+  <RootNamespace>LightWeight.Auth.Application</RootNamespace>
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

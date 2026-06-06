@@ -1,5 +1,5 @@
 using LightWeight.shared.Mediator;
 
-namespace auth.Application.Commands.LoginOtp.SendOtpCode;
+namespace LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
 
 public sealed record SendOtpCodeCommand(string Email) : ICommand;
