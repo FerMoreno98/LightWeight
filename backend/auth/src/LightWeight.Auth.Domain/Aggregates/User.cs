@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Events;
+using LightWeight.Auth.Domain.Exceptions;
 using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks;
 
@@ -78,22 +79,14 @@ public sealed class User : AggregateRoot<Guid>
                 revokedAt
             );
             _deviceTokens.Add(device);
-            // RaiseDomainEvent(
-            // new DeviceTokenAddedDomainEvent
-            // (
-            //     device.Id,
-            //     this.Id,
-            //     deviceIdentifier,
-            //     deviceName,
-            //     platform,
-            //     now,
-            //     now,
-            //     revokedAt,
-            //     now
-            // )
-            // );
             return device;
             }
         }
+    public DeviceToken GetDeviceByRefreshToken(string refreshToken)
+    {
+        DeviceToken? device = 
+        DeviceTokens.FirstOrDefault(d=> d.RefreshTokens.Any(r=>r.Token==refreshToken)) ?? throw new DeviceNotFoundException();
+        return device;
+    }
 
 }

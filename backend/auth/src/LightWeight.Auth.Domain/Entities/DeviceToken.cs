@@ -1,3 +1,4 @@
+using LightWeight.Auth.Domain.Exceptions;
 using LightWeight.shared.BuildingBlocks;
 
 namespace LightWeight.Auth.Domain.Entities;
@@ -63,14 +64,17 @@ public sealed class DeviceToken : Entity<Guid>
         /// </summary>
         public bool IsActive => RevokedAt is null;
         /// <summary>
-        /// emits a token
+        /// emits a token and revoke the older one in case it exists
         /// </summary>
         /// <param name="ip"></param>
         /// <param name="now"></param>
         /// <returns></returns>
         public RefreshToken IssueRefreshToken(string ip, DateTime now)
         {
+            RefreshToken? lastActive = _refreshTokens.FirstOrDefault(r => r.RevokedAt is null);
             var token = RefreshToken.Create(this.Id, ip,now);
+            lastActive?.Revoke(now);
+            lastActive?.ReplaceToken(token.Token);
             _refreshTokens.Add(token);
             return token;
         }
@@ -81,5 +85,40 @@ public sealed class DeviceToken : Entity<Guid>
         public void UpdateLastSeen(DateTime now)
         {
             LastSeenAt=now;
+        }
+        /// <summary>
+        /// Validates that refresh token is null, revoked or expired
+        /// </summary>
+        /// <param name="Token"></param>
+        /// <param name="now"></param>
+        /// <exception cref="StolenRefreshTokenException"></exception>
+        /// <exception cref="RevokedRefreshTokenException"></exception>
+        /// <exception cref="InvalidRefreshTokenException"></exception>
+        public void ValidateRefreshToken(string Token, DateTime now)
+        {
+            RefreshToken? refreshToken = RefreshTokens.FirstOrDefault(r=> r.Token == Token);
+            if (refreshToken?.RevokedAt is not null)
+            {
+                // Si alguien intenta usar un token revocado que YA fue reemplazado,
+                // significa que están usando un token antiguo → posible robo
+                if (refreshToken.ReplacedTokenBy is not null)
+                    // Le paso el userId para que a la hora de propagar la excepcion con el middleware
+                    // vaya al command de logout con el dato que necesita
+                    throw new StolenRefreshTokenException(UserId); // invalidar toda la sesión
+
+                // Revocado manualmente (logout) → relogin normal
+                throw new RevokedRefreshTokenException();
+            }
+            if(refreshToken is null ||  refreshToken.ExpiresAt < now)
+            {
+                throw new InvalidRefreshTokenException();
+            }
+        }
+
+        public void RevokeRefreshToken(string token, DateTime now)
+        {
+            RefreshToken? refreshToken = 
+            RefreshTokens.FirstOrDefault(r=> r.Token == token) ?? throw new RefreshTokenNotFoundException();
+            refreshToken.Revoke(now);
         }
 }

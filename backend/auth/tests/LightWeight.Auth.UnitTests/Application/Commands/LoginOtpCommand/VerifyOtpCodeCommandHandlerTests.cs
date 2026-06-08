@@ -9,7 +9,7 @@ using LightWeight.shared.Types;
 using NSubstitute;
 using Xunit;
 
-namespace LightWeight.Auth.Tests.Application.Commands;
+namespace LightWeight.Auth.UnitTests.Application.Commands.LoginOtpCommand;
 
 public class VerifyOtpCodeCommandHandlerTests
 {

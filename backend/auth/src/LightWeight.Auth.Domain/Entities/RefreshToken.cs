@@ -4,7 +4,7 @@ namespace LightWeight.Auth.Domain.Entities;
 
 public sealed class RefreshToken : Entity<Guid>
 {
- private RefreshToken
+        private RefreshToken
         (
             Guid id, 
             Guid deviceTokenId, 
@@ -67,4 +67,6 @@ public sealed class RefreshToken : Entity<Guid>
                 ip
             );
         }
+        public void Revoke(DateTime now) => RevokedAt = now;
+        public void ReplaceToken(string token) => ReplacedTokenBy = token;
 }
