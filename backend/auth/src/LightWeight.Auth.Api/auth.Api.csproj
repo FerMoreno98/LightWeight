@@ -11,8 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\auth.Application\auth.Application.csproj" />
-    <ProjectReference Include="..\auth.Infrastructure\auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Infrastructure\auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Application\auth.Application.csproj" />
   </ItemGroup>
 
 </Project>
