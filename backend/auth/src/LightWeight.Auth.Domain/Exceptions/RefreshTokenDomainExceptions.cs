@@ -1,10 +1,13 @@
+
+
 namespace LightWeight.Auth.Domain.Exceptions;
 
 public sealed class StolenRefreshTokenException : AuthDomainException
 {
+    public Guid UserId {get;}
     public StolenRefreshTokenException(Guid userId):base("Possible refresh token stole")
     {
-        
+        UserId = userId;
     }
 }
 
