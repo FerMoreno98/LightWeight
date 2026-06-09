@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\auth.Application\auth.Application.csproj" />
-    <ProjectReference Include="..\auth.Domain\auth.Domain.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Domain\auth.Domain.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Application\auth.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

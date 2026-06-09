@@ -27,3 +27,6 @@ coverage/
 
 # Logs
 *.log
+
+# appsettings
+appsettings.Development.json
