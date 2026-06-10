@@ -1,13 +1,14 @@
 using LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
+using LightWeight.Auth.Domain.Aggregates;
+using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Types;
 using NSubstitute;
 using Xunit;
 
-namespace LightWeight.Auth.UnitTestsTests.Application.Commands.LoginOtpCommand;
+namespace LightWeight.Auth.Tests.Application.Commands;
 
 public class SendOtpCodeCommandHandlerTests
 {
@@ -25,10 +26,12 @@ public class SendOtpCodeCommandHandlerTests
     private SendOtpCodeCommandHandler BuildHandler() =>
         new(_uow, _userRepository, _emailSender, _clock, _hasher);
 
+    private static SendOtpCodeCommand BuildCommand(string email = "user@example.com") =>
+        new(email);
+
     public SendOtpCodeCommandHandlerTests()
     {
         _clock.UtcNow.Returns(FixedNow);
-        // El hasher devuelve un hash predecible para poder verificar qué se persiste
         _hasher.HashCode(Arg.Any<string>()).Returns(info => $"hashed:{info.Arg<string>()}");
     }
 
@@ -37,95 +40,144 @@ public class SendOtpCodeCommandHandlerTests
     [Fact]
     public void GenerateCode_ReturnsExactlySixCharacters()
     {
-        var handler = BuildHandler();
-
-        var code = handler.GenerateCode();
-
+        var code = BuildHandler().GenerateCode();
         Assert.Equal(6, code.Length);
     }
 
     [Fact]
     public void GenerateCode_ReturnsOnlyDigits()
     {
-        var handler = BuildHandler();
-
-        var code = handler.GenerateCode();
-
+        var code = BuildHandler().GenerateCode();
         Assert.All(code, c => Assert.True(char.IsDigit(c)));
     }
 
     [Fact]
     public void GenerateCode_ValueIsInValidRange()
     {
-        var handler = BuildHandler();
-
-        var code   = handler.GenerateCode();
-        var number = int.Parse(code);
-
-        Assert.InRange(number, 0, 999_999);
+        var code = BuildHandler().GenerateCode();
+        Assert.InRange(int.Parse(code), 0, 999_999);
     }
 
     [Fact]
-    public void GenerateCode_ZeroPadsToSixDigits()
+    public void GenerateCode_AlwaysZeroPadsToSixDigits()
     {
-        // Independientemente del valor, siempre debe tener 6 caracteres (D6)
         var handler = BuildHandler();
-
         for (int i = 0; i < 20; i++)
-        {
-            var code = handler.GenerateCode();
-            Assert.Equal(6, code.Length);
-        }
+            Assert.Equal(6, handler.GenerateCode().Length);
     }
 
-    // ─── HandleAsync: interacciones con dependencias ─────────────────────────────
+    // ─── Usuario nuevo ───────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task HandleAsync_HashesTheGeneratedCode()
+    public async Task HandleAsync_WhenUserDoesNotExist_CallsAddAsync()
     {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
 
-        await handler.HandleAsync(command);
-
-        _hasher.Received(1).HashCode(Arg.Is<string>(c => c.Length == 6));
-    }
-
-    [Fact]
-    public async Task HandleAsync_PersistsOtpHashViaRepository()
-    {
-        var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
-
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
 
         await _userRepository.Received(1)
-            .KeepOtpCode(Arg.Any<string>(), Arg.Any<CancellationToken>());
+            .AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task HandleAsync_PersistsTheHashReturnedByHasher()
+    public async Task HandleAsync_WhenUserDoesNotExist_AddsUserWithCorrectEmail()
     {
-        var handler      = BuildHandler();
-        var command      = new SendOtpCodeCommand("user@example.com");
-        string? captured = null;
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        User? captured = null;
+        await _userRepository.AddAsync(
+            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
+        var handler = BuildHandler();
 
-        await _userRepository
-            .KeepOtpCode(Arg.Do<string>(h => captured = h), Arg.Any<CancellationToken>());
-
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
 
         Assert.NotNull(captured);
-        Assert.StartsWith("hashed:", captured);
+        Assert.Equal("user@example.com", captured!.Email);
+    }
+
+
+
+    // ─── Usuario existente ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_WhenUserExists_DoesNotCallAddAsync()
+    {
+        var user = User.Create("user@example.com", FixedNow);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
+
+        await _userRepository.DidNotReceive()
+            .AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+    }
+
+
+    [Fact]
+    public async Task HandleAsync_WhenUserExists_AddsOtpCodeToUser()
+    {
+        var user = User.Create("user@example.com", FixedNow);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
+
+        Assert.Single(user.OtpCodes);
+    }
+
+    // ─── OtpCode ─────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_OtpCode_HashIsHashedPlainCode()
+    {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        User? captured = null;
+        await _userRepository.AddAsync(
+            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
+
+        Assert.StartsWith("hashed:", captured!.OtpCodes.Single().Hash);
     }
 
     [Fact]
-    public async Task HandleAsync_SendsEmailToCommandEmail()
+    public async Task HandleAsync_OtpCode_HasCorrectUserId()
     {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        User? captured = null;
+        await _userRepository.AddAsync(
+            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
 
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
+
+        Assert.Equal(captured!.Id, captured.OtpCodes.Single().UserId);
+    }
+
+    [Fact]
+    public async Task HandleAsync_OtpCode_ExpiresAtTenMinutesFromNow()
+    {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        User? captured = null;
+        await _userRepository.AddAsync(
+            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
+
+        Assert.Equal(FixedNow.AddMinutes(10), captured!.OtpCodes.Single().ExpiresAt);
+    }
+
+    // ─── Email ───────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_SendsEmailToCorrectAddress()
+    {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
 
         await _emailSender.Received(1)
             .Send("user@example.com", Arg.Any<string>(), Arg.Any<string>());
@@ -134,10 +186,10 @@ public class SendOtpCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsync_SendsEmailWithCorrectSubject()
     {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
 
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
 
         await _emailSender.Received(1)
             .Send(Arg.Any<string>(), "Verification code", Arg.Any<string>());
@@ -146,94 +198,54 @@ public class SendOtpCodeCommandHandlerTests
     [Fact]
     public async Task HandleAsync_SendsPlainCodeNotHashInEmail()
     {
-        var handler      = BuildHandler();
-        var command      = new SendOtpCodeCommand("user@example.com");
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         string? sentCode = null;
+        await _emailSender.Send(
+            Arg.Any<string>(), Arg.Any<string>(),
+            Arg.Do<string>(c => sentCode = c));
+        var handler = BuildHandler();
 
-        await _emailSender
-            .Send(Arg.Any<string>(), Arg.Any<string>(), Arg.Do<string>(c => sentCode = c));
-
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
 
         Assert.NotNull(sentCode);
-        Assert.DoesNotContain("hashed:", sentCode);   // el email lleva el código en plano
+        Assert.DoesNotContain("hashed:", sentCode);
         Assert.Equal(6, sentCode!.Length);
     }
+
+    // ─── SaveChanges y CancellationToken ─────────────────────────────────────────
 
     [Fact]
     public async Task HandleAsync_CallsSaveChanges()
     {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
 
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand());
 
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ─── HandleAsync: orden de operaciones ───────────────────────────────────────
-
     [Fact]
-    public async Task HandleAsync_SaveChanges_IsCalledAfterRepositoryAndEmail()
+    public async Task HandleAsync_PropagatesCancellationTokenToSaveChanges()
     {
-        var handler  = BuildHandler();
-        var command  = new SendOtpCodeCommand("user@example.com");
-        var callLog  = new List<string>();
-
-        _userRepository
-            .KeepOtpCode(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(_ => { callLog.Add("repository"); return Task.CompletedTask; });
-
-        _emailSender
-            .Send(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
-            .Returns(_ => { callLog.Add("email"); return Task.CompletedTask; });
-
-        _uow.SaveChangesAsync(Arg.Any<CancellationToken>())
-            .Returns(_ => { callLog.Add("saveChanges"); return Task.CompletedTask; });
-
-        await handler.HandleAsync(command);
-
-        Assert.Equal(new[] { "repository", "email", "saveChanges" }, callLog);
-    }
-
-    // ─── HandleAsync: propagación del CancellationToken ─────────────────────────
-
-    [Fact]
-    public async Task HandleAsync_PropagatesCancellationTokenToRepository()
-    {
-        var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         var cts     = new CancellationTokenSource();
-
-        await handler.HandleAsync(command, cts.Token);
-
-        await _userRepository.Received(1)
-            .KeepOtpCode(Arg.Any<string>(), cts.Token);
-    }
-
-    [Fact]
-    public async Task HandleAsync_PropagatesCancellationTokenToUow()
-    {
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
-        var cts     = new CancellationTokenSource();
 
-        await handler.HandleAsync(command, cts.Token);
+        await handler.HandleAsync(BuildCommand(), cts.Token);
 
         await _uow.Received(1).SaveChangesAsync(cts.Token);
     }
 
-    // ─── HandleAsync: usa el reloj inyectado ─────────────────────────────────────
-
     [Fact]
-    public async Task HandleAsync_UsesClockUtcNow_ToCreateOtpCode()
+    public async Task HandleAsync_WhenUserDoesNotExist_PropagatesCancellationTokenToAddAsync()
     {
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        var cts     = new CancellationTokenSource();
         var handler = BuildHandler();
-        var command = new SendOtpCodeCommand("user@example.com");
 
-        await handler.HandleAsync(command);
+        await handler.HandleAsync(BuildCommand(), cts.Token);
 
-        // Si el clock no se consultara, el OtpCode no podría crearse con la fecha correcta
-        _ = _clock.Received().UtcNow;
+        await _userRepository.Received(1).AddAsync(Arg.Any<User>(), cts.Token);
     }
 }

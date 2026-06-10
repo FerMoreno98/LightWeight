@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using Xunit;
 using LightWeight.Auth.Domain.Aggregates;
-using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.Auth.Domain.Entities;
 
 namespace LightWeight.Auth.UnitTests.Domain;
@@ -45,8 +44,6 @@ public class UserTests
     public void Create_NewUser_HasEmptyCollections()
     {
         var user = User.Create("test@example.com",BaseTime);
-
-        Assert.Empty(user.RefreshTokens);
         Assert.Empty(user.DeviceTokens);
         Assert.Empty(user.OtpCodes);
     }
@@ -209,13 +206,6 @@ public class UserTests
         Assert.IsAssignableFrom<IReadOnlyCollection<DeviceToken>>(user.DeviceTokens);
     }
 
-    [Fact]
-    public void RefreshTokens_IsReadOnlyCollection()
-    {
-        var user = User.Create("test@example.com",BaseTime);
-
-        Assert.IsAssignableFrom<IReadOnlyCollection<RefreshToken>>(user.RefreshTokens);
-    }
 
     [Fact]
     public void OtpCodes_IsReadOnlyCollection()

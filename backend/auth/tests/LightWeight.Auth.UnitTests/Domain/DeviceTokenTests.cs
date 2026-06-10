@@ -202,16 +202,6 @@ public class DeviceTokenTests
         Assert.Equal("10.0.0.5", token.CreatedByIp);
     }
 
-    // [Fact]
-    // public void IssueRefreshToken_ReturnedToken_HasCorrectCreatedAt()
-    // {
-    //     var device = CreateDevice();
-
-    //     var token = device.IssueRefreshToken("192.168.1.1", BaseTime);
-
-    //     Assert.Equal(BaseTime, token.CreatedAt);
-    // }
-
     [Fact]
     public void IssueRefreshToken_CalledTwice_AddsBothTokens()
     {

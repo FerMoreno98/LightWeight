@@ -1,15 +1,16 @@
+using LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
 using LightWeight.Auth.Application.Commands.LoginOtp.VerifyOtpCode;
+using LightWeight.Auth.Application.Exceptions;
 using LightWeight.Auth.Domain.Aggregates;
-using LightWeight.Auth.Domain.Exceptions;
+using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Types;
 using NSubstitute;
 using Xunit;
 
-namespace LightWeight.Auth.UnitTests.Application.Commands.LoginOtpCommand;
+namespace LightWeight.Auth.Tests.Application.Commands;
 
 public class VerifyOtpCodeCommandHandlerTests
 {
@@ -27,9 +28,11 @@ public class VerifyOtpCodeCommandHandlerTests
     private VerifyOtpCodeCommandHandler BuildHandler() =>
         new(_userRepository, _hashService, _clock, _jwtTokenGenerator, _uow);
 
-    private static VerifyOtpCodeCommand BuildCommand(string email = "user@example.com") =>
+    private static VerifyOtpCodeCommand BuildCommand(
+        string code  = "123456",
+        string email = "user@example.com") =>
         new(
-            Code:             "123456",
+            Code:             code,
             Ip:               "192.168.1.1",
             DeviceIdentifier: "device-001",
             DeviceName:       "Mi Phone",
@@ -38,20 +41,16 @@ public class VerifyOtpCodeCommandHandlerTests
         );
 
     /// <summary>
-    /// Construye un OtpCode válido y configura el hasher.
-    /// Siempre asignar a variable local ANTES de pasarlo a cualquier .Returns().
+    /// Crea un User con un OtpCode válido (no usado, no expirado) cuyo hash
+    /// verifica correctamente el código "123456".
     /// </summary>
-    private OtpCode BuildValidOtpCode()
+    private User BuildUserWithValidOtp()
     {
-        _hashService.HashCode("123456").Returns("hashed:123456");
         _hashService.Verify("123456", "hashed:123456").Returns(true);
-        return OtpCode.Create("123456", _hashService, FixedNow);
-    }
-
-    private void SetupValidOtp()
-    {
-        var otp = BuildValidOtpCode();
-        _userRepository.GetHashedCodeAsync("user@example.com").Returns(otp);
+        var user    = User.Create("user@example.com", FixedNow);
+        var otpCode = OtpCode.Create("hashed:123456", user.Id, FixedNow);
+        user.AddOtpCode(otpCode);
+        return user;
     }
 
     public VerifyOtpCodeCommandHandlerTests()
@@ -60,25 +59,26 @@ public class VerifyOtpCodeCommandHandlerTests
         _jwtTokenGenerator.GenerateToken(Arg.Any<User>()).Returns("jwt-token");
     }
 
-    // ─── Validación del OTP ──────────────────────────────────────────────────────
+    // ─── Usuario no encontrado ───────────────────────────────────────────────────
 
     [Fact]
-    public async Task HandleAsync_WhenOtpIsExpired_ThrowsOtpCodeExpiredException()
+    public async Task HandleAsync_WhenUserNotFound_ThrowsUserNotFoundException()
     {
-        var expired = OtpCode.Create("123456", _hashService, FixedNow.AddMinutes(-20));
-        _userRepository.GetHashedCodeAsync("user@example.com").Returns(expired);
+        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
         var handler = BuildHandler();
 
-        await Assert.ThrowsAsync<OtpCodeExpiredException>(
+        await Assert.ThrowsAsync<UserNotFoundException>(
             () => handler.HandleAsync(BuildCommand()));
     }
 
+    // ─── OtpCode no válido ───────────────────────────────────────────────────────
+
     [Fact]
-    public async Task HandleAsync_WhenOtpCodeIsWrong_ThrowsInvalidOtpCodeException()
+    public async Task HandleAsync_WhenNoValidOtpCode_ThrowsInvalidOtpCodeException()
     {
-        _hashService.Verify(Arg.Any<string>(), Arg.Any<string>()).Returns(false);
-        var otp = OtpCode.Create("123456", _hashService, FixedNow);
-        _userRepository.GetHashedCodeAsync("user@example.com").Returns(otp);
+        // Usuario sin OtpCodes
+        var user = User.Create("user@example.com", FixedNow);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
         await Assert.ThrowsAsync<InvalidOtpCodeException>(
@@ -86,51 +86,67 @@ public class VerifyOtpCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenOtpAlreadyUsed_ThrowsOtpCodeAlreadyUsedException()
+    public async Task HandleAsync_WhenOtpCodeIsExpired_ThrowsInvalidOtpCodeException()
     {
-        var otp = BuildValidOtpCode();
-        otp.MarkAsUsed();
-        _userRepository.GetHashedCodeAsync("user@example.com").Returns(otp);
+        var user    = User.Create("user@example.com", FixedNow);
+        // OtpCode creado hace 20 minutos → expirado (TTL 10 min)
+        var expired = OtpCode.Create("hashed:123456", user.Id, FixedNow.AddMinutes(-20));
+        user.AddOtpCode(expired);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
-        await Assert.ThrowsAsync<OtpCodeAlreadyUsedException>(
+        await Assert.ThrowsAsync<InvalidOtpCodeException>(
             () => handler.HandleAsync(BuildCommand()));
     }
 
     [Fact]
-    public async Task HandleAsync_ValidOtp_MarksCodeAsUsed()
+    public async Task HandleAsync_WhenOtpCodeIsAlreadyUsed_ThrowsInvalidOtpCodeException()
     {
-        var otp = BuildValidOtpCode();
-        _userRepository.GetHashedCodeAsync("user@example.com").Returns(otp);
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        await _userRepository.AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        var user    = User.Create("user@example.com", FixedNow);
+        var otpCode = OtpCode.Create("hashed:123456", user.Id, FixedNow);
+        otpCode.MarkAsUsed(FixedNow);
+        user.AddOtpCode(otpCode);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<InvalidOtpCodeException>(
+            () => handler.HandleAsync(BuildCommand()));
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenHashVerificationFails_ThrowsInvalidOtpCodeException()
+    {
+        _hashService.Verify("wrong", Arg.Any<string>()).Returns(false);
+        var user    = User.Create("user@example.com", FixedNow);
+        var otpCode = OtpCode.Create("hashed:123456", user.Id, FixedNow);
+        user.AddOtpCode(otpCode);
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<InvalidOtpCodeException>(
+            () => handler.HandleAsync(BuildCommand(code: "wrong")));
+    }
+
+    // ─── Marcado como usado ──────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_ValidCode_MarksOtpCodeAsUsed()
+    {
+        var user = BuildUserWithValidOtp();
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
         await handler.HandleAsync(BuildCommand());
 
-        Assert.True(otp.IsAlreadyUsed());
+        Assert.True(user.OtpCodes.Single().IsAlreadyUsed());
     }
 
-    // ─── Usuario existente ───────────────────────────────────────────────────────
+    // ─── Happy path ──────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task HandleAsync_WhenUserExists_ReturnsIsExistingUserTrue()
+    public async Task HandleAsync_ValidCode_ReturnsJwtToken()
     {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
-        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
-        var handler = BuildHandler();
-
-        var result = await handler.HandleAsync(BuildCommand());
-
-        Assert.True(result.IsExistingUser);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserExists_ReturnsJwtToken()
-    {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
+        var user = BuildUserWithValidOtp();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
@@ -140,10 +156,9 @@ public class VerifyOtpCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenUserExists_ReturnsNonEmptyRefreshToken()
+    public async Task HandleAsync_ValidCode_ReturnsNonEmptyRefreshToken()
     {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
+        var user = BuildUserWithValidOtp();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
@@ -153,23 +168,9 @@ public class VerifyOtpCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenUserExists_DoesNotCallAddAsync()
+    public async Task HandleAsync_ValidCode_RegistersDeviceWithCommandData()
     {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
-        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand());
-
-        await _userRepository.DidNotReceive().AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserExists_RegistersDeviceWithCommandData()
-    {
-        SetupValidOtp();
-        var user    = User.Create("user@example.com", FixedNow);
+        var user    = BuildUserWithValidOtp();
         var command = BuildCommand();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
@@ -183,10 +184,9 @@ public class VerifyOtpCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenUserExists_IssuedRefreshTokenHasCorrectIp()
+    public async Task HandleAsync_ValidCode_IssuedRefreshTokenHasCorrectIp()
     {
-        SetupValidOtp();
-        var user    = User.Create("user@example.com", FixedNow);
+        var user    = BuildUserWithValidOtp();
         var command = BuildCommand();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
@@ -198,10 +198,21 @@ public class VerifyOtpCodeCommandHandlerTests
     }
 
     [Fact]
-    public async Task HandleAsync_WhenUserExists_CallsSaveChanges()
+    public async Task HandleAsync_ValidCode_CallsJwtGeneratorWithCorrectUser()
     {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
+        var user = BuildUserWithValidOtp();
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await handler.HandleAsync(BuildCommand());
+
+        _jwtTokenGenerator.Received(1).GenerateToken(user);
+    }
+
+    [Fact]
+    public async Task HandleAsync_ValidCode_CallsSaveChanges()
+    {
+        var user = BuildUserWithValidOtp();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
@@ -210,113 +221,12 @@ public class VerifyOtpCodeCommandHandlerTests
         await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
-    // ─── Usuario nuevo ───────────────────────────────────────────────────────────
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_ReturnsIsExistingUserFalse()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var handler = BuildHandler();
-
-        var result = await handler.HandleAsync(BuildCommand());
-
-        Assert.False(result.IsExistingUser);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_ReturnsJwtToken()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var handler = BuildHandler();
-
-        var result = await handler.HandleAsync(BuildCommand());
-
-        Assert.Equal("jwt-token", result.AccessToken);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_ReturnsNonEmptyRefreshToken()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var handler = BuildHandler();
-
-        var result = await handler.HandleAsync(BuildCommand());
-
-        Assert.False(string.IsNullOrWhiteSpace(result.RefreshToken));
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_CallsAddAsync()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand());
-
-        await _userRepository.Received(1)
-            .AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_AddsUserWithCorrectEmail()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        User? captured = null;
-        await _userRepository.AddAsync(
-            Arg.Do<User>(u => captured = u),
-            Arg.Any<CancellationToken>());
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand());
-
-        Assert.NotNull(captured);
-        Assert.Equal("user@example.com", captured!.Email);
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_CallsSaveChanges()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand());
-
-        await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_RegistersDeviceWithCommandData()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        User? captured = null;
-        await _userRepository.AddAsync(
-            Arg.Do<User>(u => captured = u),
-            Arg.Any<CancellationToken>());
-        var command = BuildCommand();
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(command);
-
-        var device = captured!.DeviceTokens.Single();
-        Assert.Equal(command.DeviceIdentifier, device.DeviceIdentifier);
-        Assert.Equal(command.DeviceName,       device.DeviceName);
-        Assert.Equal(command.Platform,         device.Platform);
-    }
-
-    // ─── Propagación del CancellationToken ──────────────────────────────────────
+    // ─── CancellationToken ───────────────────────────────────────────────────────
 
     [Fact]
     public async Task HandleAsync_PropagatesCancellationTokenToSaveChanges()
     {
-        SetupValidOtp();
-        var user = User.Create("user@example.com", FixedNow);
+        var user = BuildUserWithValidOtp();
         _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var cts     = new CancellationTokenSource();
         var handler = BuildHandler();
@@ -326,26 +236,13 @@ public class VerifyOtpCodeCommandHandlerTests
         await _uow.Received(1).SaveChangesAsync(cts.Token);
     }
 
-    [Fact]
-    public async Task HandleAsync_WhenUserDoesNotExist_PropagatesCancellationTokenToAddAsync()
-    {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        var cts     = new CancellationTokenSource();
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand(), cts.Token);
-
-        await _userRepository.Received(1).AddAsync(Arg.Any<User>(), cts.Token);
-    }
-
-    // ─── Uso del reloj inyectado ─────────────────────────────────────────────────
+    // ─── Uso del reloj ───────────────────────────────────────────────────────────
 
     [Fact]
     public async Task HandleAsync_UsesClockUtcNow()
     {
-        SetupValidOtp();
-        _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        var user = BuildUserWithValidOtp();
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
         var handler = BuildHandler();
 
         await handler.HandleAsync(BuildCommand());
