@@ -2,7 +2,6 @@ using System.Collections.ObjectModel;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Events;
 using LightWeight.Auth.Domain.Exceptions;
-using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks;
 
 namespace LightWeight.Auth.Domain.Aggregates;
@@ -12,23 +11,19 @@ public sealed class User : AggregateRoot<Guid>
 {
     private User
     (
-    Guid Uid,
+    Guid id,
     string email
-    ) : base(Uid)
+    ) : base(id)
     {
         Email = email;
     }
 
     public string Email {get; private set;}
+    private List<DeviceToken> _deviceTokens  = new();
+    public IReadOnlyCollection<DeviceToken> DeviceTokens => _deviceTokens.AsReadOnly();
 
-    public List<RefreshToken> _refreshTokens  = new();
-    public ReadOnlyCollection<RefreshToken> RefreshTokens => _refreshTokens.AsReadOnly();
-
-    public List<DeviceToken> _deviceTokens  = new();
-    public ReadOnlyCollection<DeviceToken> DeviceTokens => _deviceTokens.AsReadOnly();
-
-    public List<OtpCode> _otpCodes = new();
-    public ReadOnlyCollection<OtpCode> OtpCodes => _otpCodes.AsReadOnly();
+    private List<OtpCode> _otpCodes = new();
+    public IReadOnlyCollection<OtpCode> OtpCodes => _otpCodes.AsReadOnly();
 
     public static User Create
     (
@@ -88,5 +83,16 @@ public sealed class User : AggregateRoot<Guid>
         DeviceTokens.FirstOrDefault(d=> d.RefreshTokens.Any(r=>r.Token==refreshToken)) ?? throw new DeviceNotFoundException();
         return device;
     }
+    public void AddOtpCode(OtpCode code)
+    {
+        _otpCodes.Add(code);
+    }
+    public void InvalidatePendingOtpCodes(DateTime utcNow)
+{
+    foreach (var otp in _otpCodes.Where(o => o.UsedAt is null))
+    {
+        otp.MarkAsUsed(utcNow);
+    }
+}
 
 }
