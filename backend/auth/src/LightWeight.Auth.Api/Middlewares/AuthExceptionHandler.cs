@@ -23,8 +23,8 @@ internal sealed class AuthExceptionHandler() : IExceptionHandler
             UserNotFoundException          => (404, "User not found"),
 
             // Excepciones de dominio — OTP
-            OtpCodeExpiredException        => (400, "OTP code expired"),
-            OtpCodeAlreadyUsedException    => (400, "OTP code already used"),
+            // OtpCodeExpiredException        => (400, "OTP code expired"),
+            // OtpCodeAlreadyUsedException    => (400, "OTP code already used"),
             InvalidOtpCodeException        => (400, "Invalid OTP code"),
 
             // Excepciones de dominio — tokens
