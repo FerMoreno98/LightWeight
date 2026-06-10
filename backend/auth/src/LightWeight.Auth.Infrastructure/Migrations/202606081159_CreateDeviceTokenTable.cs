@@ -7,9 +7,9 @@ public class CreateDeviceTokenTable : Migration
 {
     public override void Up()
     {
-        Create.Table("auth_DeviceToken")
+        Create.Table("auth_DeviceTokens").InSchema("auth")
             .WithColumn("Id").AsGuid().PrimaryKey()
-            .WithColumn("UserId").AsGuid().NotNullable().ForeignKey("auth_users", "Id").OnDelete(System.Data.Rule.Cascade)
+            .WithColumn("UserId").AsGuid().NotNullable().ForeignKey("Fk_DeviceToken_Users","auth","auth_Users", "Id").OnDelete(System.Data.Rule.Cascade)
             .WithColumn("DeviceIdentifier").AsString().NotNullable()
             .WithColumn("DeviceName").AsString(200).NotNullable()
             .WithColumn("Platform").AsString(50).NotNullable()
@@ -20,7 +20,7 @@ public class CreateDeviceTokenTable : Migration
         // Índice único compuesto UserId + DeviceIdentifier
         // (dos usuarios pueden registrarse desde el mismo dispositivo)
         Create.Index("IX_DeviceToken_UserId_DeviceIdentifier")
-            .OnTable("auth_DeviceToken")
+            .OnTable("auth_DeviceTokens").InSchema("auth")
             .OnColumn("UserId").Ascending()
             .OnColumn("DeviceIdentifier").Ascending()
             .WithOptions().Unique();
