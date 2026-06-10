@@ -2,8 +2,9 @@ using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Mediator;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.Auth.Domain.ValueObjects;
 using LightWeight.shared.Types;
+using LightWeight.Auth.Domain.Entities;
+using LightWeight.Auth.Domain.Aggregates;
 namespace LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
 
 
@@ -33,13 +34,25 @@ public sealed class SendOtpCodeCommandHandler : ICommandHandler<SendOtpCodeComma
 
     public async Task HandleAsync(SendOtpCodeCommand command, CancellationToken ct = default)
     {
+        // Creo el codigo y lo hasheo
         string code = GenerateCode();
-        OtpCode otpCode = OtpCode.Create(code,_hasher,_clock.UtcNow);
-        await _userRepository.KeepOtpCode(otpCode.Hash,ct);
-        await _emailSender.Send(command.Email,"Verification code",code);
-        await _uow.SaveChangesAsync(ct);
+        string hash = _hasher.HashCode(code);
+        // Veo si el usuario existe, si no existe lo creo
+        User? existingUser = await _userRepository.FindByEmailAsync(command.Email);
+        User user = existingUser ?? User.Create(command.Email, _clock.UtcNow);
+        // Invalida los OTPs pendientes antes de crear uno nuevo
+        user.InvalidatePendingOtpCodes(_clock.UtcNow);
+        // Creo el objeto Otpcode y lo añado a la lista de codigos del usuario 
+        OtpCode? otpCode  = OtpCode.Create(hash,user.Id,_clock.UtcNow);
+        user.AddOtpCode(otpCode);
+        if(existingUser is null)
+        {
+            // Guardo el usuario, supuestamente con el codigo que le he metido
+            await _userRepository.AddAsync(user,ct); 
+        } 
         
-
+        await _uow.SaveChangesAsync(ct);
+        await _emailSender.Send(command.Email,"Verification code",code);
     }
 
     public string GenerateCode()

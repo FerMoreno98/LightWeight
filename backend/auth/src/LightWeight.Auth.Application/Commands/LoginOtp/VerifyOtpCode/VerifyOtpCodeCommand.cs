@@ -11,4 +11,4 @@ public sealed record VerifyOtpCodeCommand(
     string Email
 ) : ICommand<OtpLoginResult>;
 
-public record OtpLoginResult(string AccessToken, string RefreshToken, bool IsExistingUser);
+public record OtpLoginResult(string AccessToken, string RefreshToken);

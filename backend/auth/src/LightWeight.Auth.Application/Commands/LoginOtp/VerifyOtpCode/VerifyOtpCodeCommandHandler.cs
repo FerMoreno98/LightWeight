@@ -1,8 +1,9 @@
+using LightWeight.Auth.Application.Exceptions;
 using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.Auth.Domain.ValueObjects;
+
 using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Types;
@@ -17,7 +18,14 @@ public sealed record VerifyOtpCodeCommandHandler : ICommandHandler<VerifyOtpCode
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
     private readonly IUnitOfWork _uow;
 
-    public VerifyOtpCodeCommandHandler(IUserRepository userRepository, ICodeHasher hashService, IClock clock, IJwtTokenGenerator jwtTokenGenerator, IUnitOfWork uow)
+    public VerifyOtpCodeCommandHandler
+    (
+        IUserRepository userRepository,
+        ICodeHasher hashService,
+        IClock clock,
+        IJwtTokenGenerator jwtTokenGenerator,
+        IUnitOfWork uow
+    )
     {
         _userRepository = userRepository;
         _hashService = hashService;
@@ -28,36 +36,34 @@ public sealed record VerifyOtpCodeCommandHandler : ICommandHandler<VerifyOtpCode
 
     public async Task<OtpLoginResult> HandleAsync(VerifyOtpCodeCommand command, CancellationToken ct = default)
     {
-        OtpCode code = await _userRepository.GetHashedCodeAsync(command.Email);
-        // Si el codigo es incorrecto lanzo una excepcion de dominio
-        code.Validate(command.Code,_hashService,_clock.UtcNow);
+        // pillo el user, que tiene que existir si o si por que debe venir del paso previo (SendOtpCode)
+        User? user = await _userRepository.FindByEmailAsync(command.Email) ?? throw new UserNotFoundException();
+        // pillo el code que no este usado y que no haya expirado si no hay code, lanzo excepcion de application
+        OtpCode? code = user.OtpCodes.
+        SingleOrDefault(c => c.UsedAt == null && c.ExpiresAt > _clock.UtcNow) ?? throw new InvalidOtpCodeException();
+
+        // Valido que el code que me pasan es correcto
+        if (!_hashService.Verify(command.Code, code.Hash))
+            throw new InvalidOtpCodeException();
         // Si es valido lo marco como usado
-        code.MarkAsUsed();
-        User? existingUser = await _userRepository.FindByEmailAsync(command.Email);
-        bool isExistingUser = existingUser is not null;
-
-        User user = existingUser ?? User.Create(command.Email, _clock.UtcNow);
-
-        if (!isExistingUser)
-            await _userRepository.AddAsync(user, ct);
-        // Registro el device
+        code.MarkAsUsed(_clock.UtcNow);
         DeviceToken device = user.RegisterDevice
         (
             command.DeviceIdentifier,
-            command.DeviceName, 
-            command.Platform, 
+            command.DeviceName,
+            command.Platform,
             _clock.UtcNow
         );
         // Emito el token
         RefreshToken refreshToken = device.IssueRefreshToken
         (
-            command.Ip, 
+            command.Ip,
             _clock.UtcNow
         );
         string jwt = _jwtTokenGenerator.GenerateToken(user);
         await _uow.SaveChangesAsync(ct);
 
-        return new OtpLoginResult(jwt, refreshToken.Token, isExistingUser);
-      
-    }
+        return new OtpLoginResult(jwt, refreshToken.Token);
+        }
+
 }
