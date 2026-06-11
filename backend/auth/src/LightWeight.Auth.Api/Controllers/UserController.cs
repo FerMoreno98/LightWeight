@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
         CancellationToken ct)
     {
         var result = await _mediator.SendAsync<LoginWithRefreshTokenCommand, LoginRefreshTokenResult>(
-            new LoginWithRefreshTokenCommand(request.RefreshToken, request.Ip), ct);
+            new LoginWithRefreshTokenCommand(request.RefreshToken, HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown"), ct);
 
         return Ok(result);
     }

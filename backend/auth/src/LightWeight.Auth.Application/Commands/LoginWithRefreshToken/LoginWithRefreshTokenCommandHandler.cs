@@ -3,6 +3,7 @@ using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
+using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Types;
 
@@ -13,12 +14,20 @@ public sealed class LoginWithRefreshTokenCommandHandler : ICommandHandler<LoginW
     private readonly IUserRepository _userRepository;
     private readonly IClock _clock;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
+    private readonly IUnitOfWork _uow;
 
-    public LoginWithRefreshTokenCommandHandler(IUserRepository userRepository, IClock clock, IJwtTokenGenerator jwtTokenGenerator)
+    public LoginWithRefreshTokenCommandHandler
+    (
+        IUserRepository userRepository, 
+        IClock clock, 
+        IJwtTokenGenerator jwtTokenGenerator,
+        IUnitOfWork uow
+    )
     {
         _userRepository = userRepository;
         _clock = clock;
         _jwtTokenGenerator = jwtTokenGenerator;
+        _uow = uow;
     }
 
     public async Task<LoginRefreshTokenResult> HandleAsync(LoginWithRefreshTokenCommand command, CancellationToken ct = default)
@@ -33,6 +42,7 @@ public sealed class LoginWithRefreshTokenCommandHandler : ICommandHandler<LoginW
             command.Ip,
             _clock.UtcNow
         );
+        await _uow.SaveChangesAsync(ct);
         string jwt = _jwtTokenGenerator.GenerateToken(user);
         return new LoginRefreshTokenResult(jwt,refreshToken.Token);
 
