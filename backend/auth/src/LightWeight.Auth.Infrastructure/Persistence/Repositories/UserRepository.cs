@@ -31,7 +31,11 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> FindbyIdAsync(Guid userId)
     {
-        return await _dbContext.Users.SingleOrDefaultAsync(u => u.Id == userId);
+        return await _dbContext.Users
+        .Include(u => u.OtpCodes)
+        .Include(u => u.DeviceTokens)
+            .ThenInclude(d => d.RefreshTokens)
+        .SingleOrDefaultAsync(u => u.Id == userId);
     }
 
     public async Task<User?> GetByRefreshTokenAsync(string refreshToken)
