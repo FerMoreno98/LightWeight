@@ -28,10 +28,8 @@ public sealed class CompleteProfileCommandHandler : ICommandHandler<CompleteProf
 
     public async Task HandleAsync(CompleteProfileCommand command, CancellationToken ct = default)
     {
-        if (!Enum.TryParse<TrainingStage>(command.CurrentStage, ignoreCase: true, out var stage))
-                throw new InvalidTrainingStageException();
-        if (!Enum.TryParse<Sex>(command.Sex, ignoreCase: true, out var sex))
-                throw new InvalidSexException();
+        var stage = Enum.Parse<TrainingStage>(command.CurrentStage, ignoreCase: true);
+        var sex   = Enum.Parse<Sex>(command.Sex, ignoreCase: true);
         User user = User.Create
         (
             command.UserId,

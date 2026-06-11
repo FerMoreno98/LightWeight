@@ -53,4 +53,19 @@ public sealed class User : AggregateRoot<Guid>
         return user;
     }
 
+    public void Modify
+    (
+        string name, 
+        Sex sex,
+        DateTime dateOfBirth 
+    )
+    {
+        this.Name = name;
+        this.Sex = sex;
+        this.DateOfBirth = dateOfBirth;
+
+    }
+
+    public void ChangeStage(TrainingStage stage) => CurrentStage = stage;
+
 }
