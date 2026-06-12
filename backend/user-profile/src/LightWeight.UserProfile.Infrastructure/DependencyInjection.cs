@@ -1,5 +1,6 @@
 using FluentMigrator.Runner;
 using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.shared.Messaging;
 using LightWeight.shared.Types;
 using LightWeight.UserProfile.Domain.Repository;
 using LightWeight.UserProfile.Infrastructure.Persistence;
@@ -26,7 +27,7 @@ public static class DependencyInjection
             .AddLogging(lb => lb.AddFluentMigratorConsole());
             services.AddScoped<IUserRepository,UserRepository>();
             services.AddScoped<IUnitOfWork,UnitOfWork>();
-
+            services.AddScoped<IEventDispatcher, EventDispatcher>();
             services.AddSingleton<IClock, SystemClock>();
 
         return services;

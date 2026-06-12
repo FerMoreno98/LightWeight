@@ -32,7 +32,7 @@ public sealed class User : AggregateRoot<Guid>
     )
     {
         User user=new User(Guid.CreateVersion7(),email);
-        user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id,now));
+        user.RaiseDomainEvent(new UserCreatedDomainEvent(user.Id,email,now));
          return user;
     }
 

@@ -66,6 +66,6 @@ public sealed class User : AggregateRoot<Guid>
 
     }
 
-    public void ChangeStage(TrainingStage stage) => CurrentStage = stage;
+    public void ChangeStage(TrainingStage stage) => CurrentStage = stage; //en un futuro esto podria lanzar un evento para comunicarse con measurments
 
 }

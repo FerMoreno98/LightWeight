@@ -6,6 +6,7 @@ using LightWeight.Auth.Infrastructure.Persistence;
 using LightWeight.Auth.Infrastructure.Persistence.Repositories;
 using LightWeight.Auth.Infrastructure.Services;
 using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.shared.Messaging;
 using LightWeight.shared.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -34,6 +35,7 @@ public static class DependencyInjection
             services.AddHttpClient<IEmailSender, EmailSender>();
             services.AddScoped<IJwtTokenGenerator,TokenProvider>();
             services.AddSingleton<IClock, SystemClock>();
+            services.AddScoped<IEventDispatcher, EventDispatcher>();
 
         return services;
     }
