@@ -1,0 +1,16 @@
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/bin/Debug/net10.0/LightWeight.Auth.Domain.deps.json
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/bin/Debug/net10.0/LightWeight.Auth.Domain.dll
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/bin/Debug/net10.0/LightWeight.Auth.Domain.pdb
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/bin/Debug/net10.0/LightWeight.Shared.dll
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/bin/Debug/net10.0/LightWeight.Shared.pdb
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.csproj.AssemblyReference.cache
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.AssemblyInfoInputs.cache
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.AssemblyInfo.cs
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.csproj.CoreCompileInputs.cache
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.sourcelink.json
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWei.68DACC99.Up2Date
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.dll
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/refint/LightWeight.Auth.Domain.dll
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/LightWeight.Auth.Domain.pdb
+/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/auth/LightWeight.Auth.Domain/obj/Debug/net10.0/ref/LightWeight.Auth.Domain.dll

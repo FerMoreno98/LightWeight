@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "oOfKAhLbk4Y=",
+  "success": true,
+  "projectFilePath": "/home/fer/Proyectos/light-weight/backend/LighWeight/src/Modules/user-profile/LightWeight.UserProfile.Infrastructure/LightWeight.UserProfile.Infrastructure.csproj",
+  "expectedPackageFiles": [
+    "/home/fer/.nuget/packages/fluentvalidation/12.1.1/fluentvalidation.12.1.1.nupkg.sha512",
+    "/home/fer/.nuget/packages/microsoft.extensions.dependencyinjection.abstractions/10.0.8/microsoft.extensions.dependencyinjection.abstractions.10.0.8.nupkg.sha512"
+  ],
+  "logs": []
+}

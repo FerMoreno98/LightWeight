@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\LightWeight.Auth.Application\LightWeight.Auth.Application.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Infrastructure\LightWeight.Auth.Infrastructure.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Domain\LightWeight.Auth.Domain.csproj" />
+  </ItemGroup>
+    <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
