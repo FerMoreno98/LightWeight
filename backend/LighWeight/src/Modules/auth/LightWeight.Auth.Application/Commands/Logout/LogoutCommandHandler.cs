@@ -2,7 +2,7 @@ using LightWeight.Auth.Application.Exceptions;
 using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
-using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.Auth.Domain.Uow;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Types;
 
@@ -12,9 +12,14 @@ public sealed class LogoutCommandHandler : ICommandHandler<LogoutCommand>
 { 
     private readonly IUserRepository _userRepository;
     private readonly IClock _clock;
-    private readonly IUnitOfWork _uow;
+    private readonly IAuthUnitOfWork _uow;
 
-    public LogoutCommandHandler(IUserRepository userRepository, IClock clock,IUnitOfWork uow)
+    public LogoutCommandHandler
+    (
+        IUserRepository userRepository, 
+        IClock clock,
+        IAuthUnitOfWork uow
+    )
     {
         _userRepository = userRepository;
         _clock = clock;

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LightWeight.Auth.Domain\LightWeight.Auth.Domain.csproj" />
+    <ProjectReference Include="..\LightWeight.Auth.Application\LightWeight.Auth.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FluentMigrator" Version="8.0.1" />

@@ -4,7 +4,7 @@ using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Exceptions;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.Auth.Domain.Uow;
 using LightWeight.shared.Types;
 using NSubstitute;
 using Xunit;
@@ -18,7 +18,7 @@ public class LoginWithRefreshTokenCommandHandlerTests
     private readonly IUserRepository    _userRepository    = Substitute.For<IUserRepository>();
     private readonly IClock             _clock             = Substitute.For<IClock>();
     private readonly IJwtTokenGenerator _jwtTokenGenerator = Substitute.For<IJwtTokenGenerator>();
-    private readonly IUnitOfWork        _uow               = Substitute.For<IUnitOfWork>();
+    private readonly IAuthUnitOfWork        _uow               = Substitute.For<IAuthUnitOfWork>();
 
     private static readonly DateTime FixedNow =
         new(2024, 6, 1, 10, 0, 0, DateTimeKind.Utc);

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using LightWeight.Auth.Domain.Aggregates;
-using LightWeight.Auth.Domain.Entities;
+
 
 namespace LightWeight.Auth.Infrastructure.Persistence;
 

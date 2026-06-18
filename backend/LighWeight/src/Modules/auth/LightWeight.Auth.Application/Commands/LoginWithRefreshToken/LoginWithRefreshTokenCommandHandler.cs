@@ -3,7 +3,7 @@ using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.Auth.Domain.Uow;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Types;
 
@@ -14,14 +14,14 @@ public sealed class LoginWithRefreshTokenCommandHandler : ICommandHandler<LoginW
     private readonly IUserRepository _userRepository;
     private readonly IClock _clock;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
-    private readonly IUnitOfWork _uow;
+    private readonly IAuthUnitOfWork _uow;
 
     public LoginWithRefreshTokenCommandHandler
     (
         IUserRepository userRepository, 
         IClock clock, 
         IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork uow
+        IAuthUnitOfWork uow
     )
     {
         _userRepository = userRepository;

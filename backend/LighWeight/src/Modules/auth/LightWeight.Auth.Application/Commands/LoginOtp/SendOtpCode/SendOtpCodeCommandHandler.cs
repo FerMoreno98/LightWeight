@@ -1,16 +1,17 @@
-using LightWeight.shared.BuildingBlocks.Persistance;
+
 using LightWeight.shared.Mediator;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
 using LightWeight.shared.Types;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Aggregates;
+using LightWeight.Auth.Domain.Uow;
 namespace LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
 
 
 public sealed class SendOtpCodeCommandHandler : ICommandHandler<SendOtpCodeCommand>
 {
-    private readonly IUnitOfWork _uow;
+    private readonly IAuthUnitOfWork _uow;
     private readonly IUserRepository _userRepository;
     private readonly IEmailSender _emailSender;
     private readonly IClock _clock;
@@ -18,7 +19,7 @@ public sealed class SendOtpCodeCommandHandler : ICommandHandler<SendOtpCodeComma
 
     public SendOtpCodeCommandHandler
     (
-        IUnitOfWork uow,
+        IAuthUnitOfWork uow,
         IUserRepository userRepository,
         IEmailSender emailSender,
         IClock clock,

@@ -12,7 +12,7 @@ public class TokenProvider(IConfiguration configuration) : IJwtTokenGenerator
 {
     public string GenerateToken(User user)
     {
-        string secretKey = configuration["Jwt:Secrets"] ?? throw new InvalidOperationException("Jwt:Secrets is not configured");
+        string secretKey = configuration["Jwt:Secret"] ?? throw new InvalidOperationException("Jwt:Secrets is not configured");
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
 
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);

@@ -1,16 +1,16 @@
+using LightWeight.Auth.Domain.Uow;
 using LightWeight.shared.BuildingBlocks;
-using LightWeight.shared.BuildingBlocks.Persistance;
 using LightWeight.shared.Messaging;
 
 namespace LightWeight.Auth.Infrastructure.Persistence;
 
-internal sealed class UnitOfWork : IUnitOfWork
+internal sealed class AuthUnitOfWork : IAuthUnitOfWork
 {
 
     private readonly AuthDbContext _dbContext;
     private readonly IEventDispatcher   _eventDispatcher;
 
-    public UnitOfWork(AuthDbContext dbContext, IEventDispatcher eventDispatcher)
+    public AuthUnitOfWork(AuthDbContext dbContext, IEventDispatcher eventDispatcher)
     {
         _dbContext = dbContext;
         _eventDispatcher = eventDispatcher;

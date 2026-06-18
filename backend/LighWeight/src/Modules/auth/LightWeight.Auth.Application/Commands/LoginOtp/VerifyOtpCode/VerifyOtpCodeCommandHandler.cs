@@ -3,8 +3,7 @@ using LightWeight.Auth.Domain.Aggregates;
 using LightWeight.Auth.Domain.Entities;
 using LightWeight.Auth.Domain.Repository;
 using LightWeight.Auth.Domain.Services;
-
-using LightWeight.shared.BuildingBlocks.Persistance;
+using LightWeight.Auth.Domain.Uow;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Types;
 
@@ -16,7 +15,7 @@ public sealed record VerifyOtpCodeCommandHandler : ICommandHandler<VerifyOtpCode
     private readonly ICodeHasher _hashService;
     private readonly IClock _clock;
     private readonly IJwtTokenGenerator _jwtTokenGenerator;
-    private readonly IUnitOfWork _uow;
+    private readonly IAuthUnitOfWork _uow;
 
     public VerifyOtpCodeCommandHandler
     (
@@ -24,7 +23,7 @@ public sealed record VerifyOtpCodeCommandHandler : ICommandHandler<VerifyOtpCode
         ICodeHasher hashService,
         IClock clock,
         IJwtTokenGenerator jwtTokenGenerator,
-        IUnitOfWork uow
+        IAuthUnitOfWork uow
     )
     {
         _userRepository = userRepository;
