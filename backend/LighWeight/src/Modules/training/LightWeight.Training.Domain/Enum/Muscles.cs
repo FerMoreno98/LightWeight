@@ -9,7 +9,8 @@ public enum MuscleGroups
     Triceps,
     Glutes,
     Quads,
-    Hamstring
+    Hamstring,
+    calves
 
 
 }
