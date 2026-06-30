@@ -1,33 +1,71 @@
-# UserProfile module
+# UserProfile Module
 
-Manages the user's static physical and personal data. It is populated during onboarding, right after the first authentication. Its data is the foundation for calculations in other modules such as basal metabolic rate, body fat percentage, or calorie targets.
+Manages the user's static physical and personal data (name, sex, date of birth, training stage). Populated during onboarding, right after first authentication. Serves as foundation for calculations in BodyMetrics, Nutrition, and Training modules.
 
-It does not handle authentication, device data, or any metric that changes over time — those belong to other modules.
+Does **not** handle authentication, device data, or time-varying metrics (weight, body fat, measurements).
 
 ## Aggregate root
 
-`UserProfileUser` — the user's profile. Contains static or rarely-changing attributes: name, surname, date of birth, biological sex, and height.
+`User` — the user's profile. Contains name, sex, date of birth, current training stage, and when the stage started. Created explicitly when the user completes onboarding (not automatically on auth registration).
 
-## Entities and value objects
+## Value objects / enums
 
-- `Height` — height in centimetres. Value object.
-- `Sex` — enum used by other modules for formula-based calculations. Value object.
+| Type | Values | Storage |
+|------|--------|---------|
+| `Sex` | `Male`, `Female` | varchar(20) |
+| `TrainingStage` | `Bulk`, `Cut`, `Maintenance` | varchar(20) |
 
-## Emitted events
+## Domain events
 
-| Event | When | Relevant payload |
-|---|---|---|
-| `UserProfileCompleted` | User finishes the onboarding form | `UserId`, `HeightCm`, `DateOfBirth`, `Sex` |
-| `UserProfileUpdated` | User modifies any profile field | `UserId`, changed fields |
+| Event | When | Payload | Status |
+|-------|------|---------|--------|
+| `UserCompletedDomainEvent` | `User.Create()` | `UserId`, `OccurredAtUtc` | Implemented |
+| `UserProfileUpdated` | `User.Modify()` | — | **Not implemented** |
 
-## Listened events
+## Integration events
 
-| Event | From | Why |
-|---|---|---|
-| `UserRegistered` | Auth | Creates an empty profile record tied to the new `UserId` |
+| Event | Type | Handler |
+|-------|------|---------|
+| `UserCreatedIntegrationEvent` (from Auth) | Listened | **No-op** — profile is not auto-created |
+| `UserCompletedDomainEvent` | Published | Consumed by BodyMetrics, Nutrition, Training |
 
-## Notes
+## Endpoints
 
-- `UserProfileCompleted` is one of the most consumed events in the system. BodyMetrics, Nutrition, and Training all listen to it to enrich their local user projections with the physical data they need for their own calculations.
-- Height is stored here as a static value. If the user updates it, `UserProfileUpdated` is emitted and consuming modules can react accordingly.
-- This module does not store any metric that varies over time (weight, body fat, measurements). Those belong to BodyMetrics.
+All endpoints require JWT authorization. `UserId` is extracted from `ClaimTypes.NameIdentifier`.
+
+| Method | Route | Command | Description |
+|--------|-------|---------|-------------|
+| POST | `/api/user-profile/complete` | `CompleteProfileCommand` | Creates profile on onboarding |
+| PUT | `/api/user-profile/` | `UpdateProfileCommand` | Updates name/sex/date of birth |
+| PATCH | `/api/user-profile/training-stage` | `ChangeTrainingStageCommand` | Changes training stage (Bulk/Cut/Maintenance) |
+
+All return `204 No Content`.
+
+## Key business rules
+
+- **Profile ≠ Auth registration**: the profile is created only when the user submits the onboarding form. The `UserCreatedIntegrationEvent` handler is a no-op.
+- **Enums as strings**: `Sex` and `TrainingStage` are stored as varchar, not integers. Parsing is case-insensitive.
+- **`StageStartedAt` is static**: set once at profile creation, never updated on stage changes.
+- **No `UserProfileUpdated` event yet**: `User.Modify()` does not raise a domain event. If cross-module notifications are needed, implement it.
+
+## Database
+
+- **Schema**: `userprofile` (PostgreSQL)
+- **Tables**: `userprofile_Users` (Id, Name, Sex, DateOfBirth, CurrentStage, StageStartedAt)
+- **Migrations**: FluentMigrator in `Infrastructure/Persistence/Migrations/`
+
+## Dependencies
+
+- **Depends on**: `LightWeight.Shared` (building blocks). Listens to `UserCreatedIntegrationEvent` from Auth.
+- **Depended by**: BodyMetrics, Nutrition, Training (consume `UserCompletedDomainEvent`)
+
+## Layer structure
+
+```
+user-profile/
+├── Domain/              # Aggregate (User), Enums, Events, Repository interface, Unit of Work interface
+├── Application/         # Commands (CompleteProfile, UpdateProfile, ChangeTrainingStage) + Validators, Event handler
+├── Infrastructure/      # EF Core + FluentMigrator persistence, Repository, UnitOfWork
+├── Api/                 # Minimal API endpoints + DTOs
+└── testing/             # Unit tests for domain entity and all command handlers
+```
