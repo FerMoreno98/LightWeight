@@ -1,0 +1,33 @@
+<div class="flex min-h-screen items-center justify-center bg-gray-50">
+  <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
+    <h1 class="mb-2 text-center text-2xl font-bold text-gray-900">Verificar código</h1>
+    <p class="mb-6 text-center text-sm text-gray-500">Te enviamos un código a <span class="font-medium text-gray-700">{{ email }}</span></p>
+
+    @if (error()) {
+      <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error() }}</div>
+    }
+
+    <form (ngSubmit)="onSubmit()" class="space-y-4">
+      <div>
+        <label for="code" class="block text-sm font-medium text-gray-700">Código</label>
+        <input
+          id="code"
+          type="text"
+          [(ngModel)]="code"
+          name="code"
+          required
+          placeholder="123456"
+          class="mt-1 w-full rounded-lg border border-gray-300 px-4 py-2 text-sm outline-none transition focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+        />
+      </div>
+
+      <button
+        type="submit"
+        [disabled]="isLoading()"
+        class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {{ isLoading() ? 'Verificando...' : 'Verificar código' }}
+      </button>
+    </form>
+  </div>
+</div>
