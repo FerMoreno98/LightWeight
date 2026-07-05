@@ -36,8 +36,7 @@ public class CompleteProfileCommandHandlerTests
             UserId:       userId      ?? FixedUserId,
             Name:         name,
             DateOfBirth:  dateOfBirth ?? new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            Sex:          sex,
-            CurrentStage: stage);
+            Sex:          sex);
 
     public CompleteProfileCommandHandlerTests()
     {
@@ -110,18 +109,6 @@ public class CompleteProfileCommandHandlerTests
         Assert.Equal(dob, captured!.DateOfBirth);
     }
 
-    [Fact]
-    public async Task HandleAsync_AddsUserWithCorrectTrainingStage()
-    {
-        User? captured = null;
-        await _userRepository.AddAsync(
-            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand(stage: "Cut"));
-
-        Assert.Equal(TrainingStage.Cut, captured!.CurrentStage);
-    }
 
     [Fact]
     public async Task HandleAsync_AddsUserWithStageStartedAtFromClock()
@@ -179,24 +166,6 @@ public class CompleteProfileCommandHandlerTests
         await handler.HandleAsync(BuildCommand(sex: input));
 
         Assert.Equal(expected, captured!.Sex);
-    }
-
-    [Theory]
-    [InlineData("Bulk",        TrainingStage.Bulk)]
-    [InlineData("Cut",         TrainingStage.Cut)]
-    [InlineData("Maintenance", TrainingStage.Maintenance)]
-    [InlineData("bulk",        TrainingStage.Bulk)]
-    [InlineData("CUT",         TrainingStage.Cut)]
-    public async Task HandleAsync_ParsesTrainingStageCaseInsensitive(string input, TrainingStage expected)
-    {
-        User? captured = null;
-        await _userRepository.AddAsync(
-            Arg.Do<User>(u => captured = u), Arg.Any<CancellationToken>());
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand(stage: input));
-
-        Assert.Equal(expected, captured!.CurrentStage);
     }
 
     // ─── CancellationToken ───────────────────────────────────────────────────────

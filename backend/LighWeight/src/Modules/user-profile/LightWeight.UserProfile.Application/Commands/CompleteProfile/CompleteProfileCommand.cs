@@ -7,6 +7,5 @@ public sealed record CompleteProfileCommand
     Guid UserId,
     string Name,
     DateTime DateOfBirth,
-    string Sex,
-    string CurrentStage
+    string Sex
 ) : ICommand;

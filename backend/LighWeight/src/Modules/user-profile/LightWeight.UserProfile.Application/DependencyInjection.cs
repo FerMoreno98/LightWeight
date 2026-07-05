@@ -3,7 +3,7 @@ using LightWeight.shared.Behavior;
 using LightWeight.shared.Contracts.Auth;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Messaging;
-using LightWeight.UserProfile.Application.Commands.ChangeTrainingStage;
+
 using LightWeight.UserProfile.Application.Commands.CompleteProfile;
 using LightWeight.UserProfile.Application.Commands.UpdateProfile;
 using LightWeight.UserProfile.Application.Events;
@@ -21,7 +21,6 @@ public static class DependencyInjection
 
         services.AddScoped<ICommandHandler<CompleteProfileCommand>, CompleteProfileCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateProfileCommand>,UpdateProfileCommandHandler>();
-        services.AddScoped<ICommandHandler<ChangeTrainingStageCommand>,ChangeTrainingStageCommandHandler>();
         services.AddScoped<IIntegrationEventHandler<UserCreatedIntegrationEvent>, UserCreatedIntegrationEventHandler>();
 
         return services;
