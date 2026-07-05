@@ -29,7 +29,6 @@ public sealed class CompleteProfileCommandHandler : ICommandHandler<CompleteProf
 
     public async Task HandleAsync(CompleteProfileCommand command, CancellationToken ct = default)
     {
-        var stage = Enum.Parse<TrainingStage>(command.CurrentStage, ignoreCase: true);
         var sex   = Enum.Parse<Sex>(command.Sex, ignoreCase: true);
         User user = User.Create
         (
@@ -37,7 +36,6 @@ public sealed class CompleteProfileCommandHandler : ICommandHandler<CompleteProf
             command.Name,
             sex,
             command.DateOfBirth,
-            stage,
             _clock.UtcNow
         );
         await _userRepository.AddAsync(user,ct);

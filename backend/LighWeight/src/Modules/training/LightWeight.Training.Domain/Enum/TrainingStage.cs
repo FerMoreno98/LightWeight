@@ -1,4 +1,4 @@
-namespace LightWeight.UserProfile.Domain.Enum;
+namespace LightWeight.Training.Domain.Enum;
 
 public enum TrainingStage
 {

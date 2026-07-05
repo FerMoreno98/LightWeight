@@ -26,9 +26,6 @@ public sealed class CompleteProfileCommandValidator : AbstractValidator<Complete
             .Must(s => Enum.TryParse<Sex>(s, ignoreCase: true, out _))
                 .WithMessage("Invalid sex value. Allowed values: Male, Female");
 
-        RuleFor(x => x.CurrentStage)
-            .NotEmpty()
-            .Must(s => Enum.TryParse<TrainingStage>(s, ignoreCase: true, out _))
-                .WithMessage("Invalid training stage. Allowed values: Bulk, Cut, Maintenance");
+ 
     }
 }

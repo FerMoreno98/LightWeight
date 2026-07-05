@@ -29,7 +29,6 @@ public class UpdateProfileCommandHandlerTests
             "Fernando",
             Sex.Male,
             new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            TrainingStage.Bulk,
             FixedNow);
 
     private static UpdateProfileCommand BuildCommand(
@@ -106,17 +105,6 @@ public class UpdateProfileCommandHandlerTests
         Assert.Equal(newDob, user.DateOfBirth);
     }
 
-    [Fact]
-    public async Task HandleAsync_DoesNotChangeCurrentStage()
-    {
-        var user = BuildUser();
-        _userRepository.FindByIdAsync(user.Id).Returns(user);
-        var handler = BuildHandler();
-
-        await handler.HandleAsync(BuildCommand(userId: user.Id));
-
-        Assert.Equal(TrainingStage.Bulk, user.CurrentStage);
-    }
 
     [Fact]
     public async Task HandleAsync_CallsSaveChanges()

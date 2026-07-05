@@ -18,14 +18,12 @@ public class UserTests
         string         name         = "Fernando",
         Sex            sex          = Sex.Male,
         DateTime?      dateOfBirth  = null,
-        TrainingStage  stage        = TrainingStage.Bulk,
         DateTime?      now          = null) =>
         User.Create(
             userId      ?? FixedUserId,
             name,
             sex,
             dateOfBirth ?? new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            stage,
             now         ?? FixedNow);
 
     // ─── User.Create ─────────────────────────────────────────────────────────────
@@ -63,13 +61,7 @@ public class UserTests
         Assert.Equal(dob, user.DateOfBirth);
     }
 
-    [Fact]
-    public void Create_SetsCurrentStage()
-    {
-        var user = BuildUser(stage: TrainingStage.Cut);
 
-        Assert.Equal(TrainingStage.Cut, user.CurrentStage);
-    }
 
     [Fact]
     public void Create_SetsStageStartedAtToNow()
@@ -139,15 +131,7 @@ public class UserTests
         Assert.Equal(newDob, user.DateOfBirth);
     }
 
-    [Fact]
-    public void Modify_DoesNotChangeCurrentStage()
-    {
-        var user = BuildUser(stage: TrainingStage.Bulk);
 
-        user.Modify("Fernando", Sex.Male, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-
-        Assert.Equal(TrainingStage.Bulk, user.CurrentStage);
-    }
 
     [Fact]
     public void Modify_DoesNotChangeStageStartedAt()
@@ -159,46 +143,7 @@ public class UserTests
         Assert.Equal(FixedNow, user.StageStartedAt);
     }
 
-    // ─── User.ChangeStage ────────────────────────────────────────────────────────
 
-    [Fact]
-    public void ChangeStage_UpdatesCurrentStage()
-    {
-        var user = BuildUser(stage: TrainingStage.Bulk);
 
-        user.ChangeStage(TrainingStage.Cut);
 
-        Assert.Equal(TrainingStage.Cut, user.CurrentStage);
-    }
-
-    [Fact]
-    public void ChangeStage_ToSameStage_DoesNotThrow()
-    {
-        var user = BuildUser(stage: TrainingStage.Bulk);
-
-        var exception = Record.Exception(() => user.ChangeStage(TrainingStage.Bulk));
-
-        Assert.Null(exception);
-    }
-
-    [Fact]
-    public void ChangeStage_DoesNotChangeName()
-    {
-        var user = BuildUser(name: "Fernando");
-
-        user.ChangeStage(TrainingStage.Maintenance);
-
-        Assert.Equal("Fernando", user.Name);
-    }
-
-    [Fact]
-    public void ChangeStage_DoesNotChangeDateOfBirth()
-    {
-        var dob  = new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        var user = BuildUser(dateOfBirth: dob);
-
-        user.ChangeStage(TrainingStage.Cut);
-
-        Assert.Equal(dob, user.DateOfBirth);
-    }
 }
