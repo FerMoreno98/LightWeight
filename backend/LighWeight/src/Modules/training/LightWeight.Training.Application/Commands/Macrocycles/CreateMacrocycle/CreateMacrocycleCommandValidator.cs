@@ -10,10 +10,6 @@ public sealed class CreateMacrocycleCommandValidator : AbstractValidator<CreateM
         RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.AimMuscleGroups)
-            .NotEmpty()
-            .WithMessage("At least one muscle group is required");
-
         RuleFor(x => x.StartAt)
             .NotEmpty();
 

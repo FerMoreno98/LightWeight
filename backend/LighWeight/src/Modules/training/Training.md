@@ -2,37 +2,94 @@
 
 ## Responsibility
 
-This is the core module for planning and logging strength/bodybuilding training sessions. It models the complete sports planning hierarchy: `Mesociclo` (long block, weeks/months) → `Microciclo` (training week within the mesocycle) → `TrainingDay` (training session for a specific day) → `Serie` (each set performed within an exercise during that session), supported by an `Exercise` catalog.
+This is the core module for planning and logging strength/bodybuilding training sessions. It models the complete sports planning hierarchy: `Macrocycle` (long block, months) → `Mesocycle` (weeks) → `Microcycle` (training week) → `TrainingSession` (a single session) → `Set` (each performed set), supported by an `Exercise` catalog and `TrainingTemplate` for reusable session blueprints.
 
 Given the focus on bodybuilding (load progression, volume, periodization), this module will likely hold the most business logic in the entire application.
 
-## Main Entities / Aggregates
+## Domain Model
 
-- **Training** (root aggregate, likely representing the user's active training plan).
-  - `Mesociclo` — a planning block spanning several weeks with a specific goal (strength, hypertrophy, cutting...).
-  - `Microciclo` — a training week within a mesocycle.
-  - `TrainingDay` — a specific training session within a microciclo (a day in the plan).
-  - `Serie` — the log of a performed set (reps, weight, RPE/RIR) within an exercise of a `TrainingDay`.
-  - `Exercise` (referenced as a catalog, potentially a shared entity/global catalog) — defines the exercise (name, muscle group, equipment).
+### Aggregates (all extend `AggregateRoot<Guid>`)
 
-## Events Emitted
+| Aggregate | Properties | Child entities | DB Table |
+|-----------|-----------|----------------|----------|
+| `Macrocycle` | `UserId`, `StartAt`, `EndAt?`, `Stage` (enum), `Periodization` (enum), `Comments?` | None | `training_Macrocycles` |
+| `Mesocycle` | `MacrocycleId`, `AimMuscleGroups` (jsonb), `MotivationLevel`, `Injuries?`, `Comments?`, `StartAt`, `EndAt` | None | `training_Mesocycles` |
+| `Microcycle` | `MesocycleId`, `DurationInDays`, `TrainingDistribution` (enum) | None | `training_Microcycles` |
+| `TrainingSession` | `MicrocycleId`, `Name`, `StartAt`, `Duration` (interval), `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` | `Set` | `training_TrainingSessions` |
+| `TrainingTemplate` | `UserId`, `Name`, `TrainingDistribution` (enum) | `TemplateSession` | `training_TrainingTemplates` |
+| `Exercise` | `Name`, `IsBilateral`, `AimMuscleGroups` (jsonb) | None | `training_Exercises` |
 
-| Event | Tentative Payload | When It Fires |
-|---|---|---|
-| `Training.MesocicloStarted` | `UserId`, `MesocicloId`, `Objective`, `StartDate`, `EndDate` | Upon starting a new mesocycle. |
-| `Training.MesocicloCompleted` | `UserId`, `MesocicloId`, `CompletedAt` | Upon finishing a mesocycle. |
-| `Training.TrainingDayCompleted` | `UserId`, `TrainingDayId`, `MesocicloId`, `MicrocicloId`, `CompletedAt`, `TotalVolume` | Upon marking a training session as completed. |
-| `Training.SerieRecorded` | `UserId`, `SerieId`, `TrainingDayId`, `ExerciseId`, `Weight`, `Reps`, `RPE?`, `RecordedAt` | Upon logging each performed set (could be very frequent; evaluate whether aggregating it at the `TrainingDayCompleted` level is preferred over emitting per set). |
+### Entities (child of aggregates)
 
-Mainly consumed by `Dashboard` (load progression, volume per muscle group, plan adherence), and potentially by `Nutrition` (to adjust calories according to the current mesocycle phase).
+| Entity | Parent | Properties | DB Table |
+|--------|--------|-----------|----------|
+| `Set` | `TrainingSession` | `ExerciseId`, `Repetitions`, `IsBodyWeight`, `AdvanceTrainingTechniques` (owned), `Weight`, `RPE`, `SuperSetGroupId?` | `training_Sets` |
+| `TemplateSession` | `TrainingTemplate` | `Name` | `training_TemplateSessions` |
+| `TemplateSet` | `TemplateSession` | `ExerciseId`, `RepetitionRange` (owned), `ExpectedRIR`, `AdvanceTrainingTechniques` (owned), `SuperSetGroupId?` | `training_TemplateSets` |
 
-## Events Subscribed To
+### Value Objects
 
-According to the diagram, **Training does not consume events from other modules** — it is driven directly by user interaction (training planning and logging).
+| Value Object | Properties | Used by |
+|-------------|-----------|---------|
+| `AdvanceTrainingTechniques` | `IsDropSet`, `IsCluster`, `IsMyoRep` (at most one true) | `Set`, `TemplateSet` |
+| `RepetitionRange` | `Min`, `Max` (swapped if max < min) | `TemplateSet` |
 
-## Open Notes
+### Enums
 
-- Decide whether `SerieRecorded` is emitted for each individual set (fine granularity, useful for detailed graphs) or if a summary is only emitted upon completing the `TrainingDay` (less event noise).
-- `Exercise`: define whether it is a global catalog shared among all users (managed as seed/admin data) or if each user can create their own custom exercises.
-- Define the progression/autoregulation model: does the system suggest loads for the next session based on historical data, or is it purely manual user logging?
-- Clarify the relationship between `Mesociclo` and `Nutrition` goals (is an integration planned, or do they remain decoupled for now?).
+| Enum | Values |
+|------|--------|
+| `TrainingStage` | `Bulk`, `Cut`, `Maintenance` |
+| `Periodization` | `Linear`, `Ondulating`, `block` |
+| `TrainingDistribution` | `PushPullLegs`, `UpperLower`, `Weider`, `Phat`, `FullBody`, `Other` |
+| `MuscleGroups` | `Shoulder`, `Back`, `Chest`, `Biceps`, `Triceps`, `Glutes`, `Quads`, `Hamstring`, `calves` |
+
+## Hierarchy
+
+```
+Macrocycle  (months-long block, e.g. "2026 Bulk")
+└── Mesocycle  (weeks-long phase, specific goal)
+    └── Microcycle  (training week with split distribution)
+        └── TrainingSession  (a single workout session)
+            └── Set  (each performed set with weight/reps/RPE)
+
+TrainingTemplate  (reusable blueprint)
+└── TemplateSession  (planned session within a template)
+    └── TemplateSet  (planned set with rep range and RIR target)
+```
+
+## Application Layer
+
+| Command | Handler | Validator |
+|---------|---------|-----------|
+| `CreateMacrocycleCommand` | ✅ | ✅ |
+| `CreateMesocycleCommand` | ✅ | ✅ |
+| `CreateMicrocycleCommand` | ✅ | ✅ |
+| `CreateTrainingSessionCommand` | ✅ | ✅ |
+| `CreateTrainingTemplateCommand` | ✅ | ✅ |
+
+| Query | Handler |
+|-------|---------|
+| `GetCurrentMacrocycleQuery` | ❌ (throws `NotImplementedException`) |
+
+## Infrastructure Layer
+
+- **DbContext**: `TrainingDbContext` with `modelBuilder.HasDefaultSchema("training")` and `ApplyConfigurationsFromAssembly`
+- **Unit of Work**: `ITrainingUnitOfWork` / `UnitOfWork` (dispatches domain events after save)
+- **EF Core Configurations**: All 7 `IEntityTypeConfiguration<T>` files in `Configurations/`
+- **Migrations**: 7 FluentMigrator files in `Migrations/` (all tables in `training` schema)
+- **Pending**: Concrete repository implementations, `GetCurrentMacrocycleQueryHandler`
+
+## Events
+
+No domain events or integration events have been implemented yet. The `AggregateRoot<Guid>` base class provides `RaiseDomainEvent()` / `ClearDomainEvents()` support, ready for future use.
+
+## Key Design Decisions
+
+- Exercises are user-managed (each user creates their own catalog)
+- Supersets use `SuperSetGroupId` (nullable GUID), not a boolean flag
+- `AdvanceTrainingTechniques` enforces at most one technique per set via domain validation
+- `EndTraining()` calculates duration using `TimeOnly` subtraction (known bug: incorrect across midnight)
+- `RepetitionRange.Create` silently swaps min/max if max < min (doesn't throw)
+- Enums stored as strings in the database
+- Value objects persisted as embedded columns (via `OwnsOne`)
+- `List<MuscleGroups>` collections stored as `jsonb` columns

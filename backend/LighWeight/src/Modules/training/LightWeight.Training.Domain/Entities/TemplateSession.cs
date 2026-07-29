@@ -6,7 +6,7 @@ public sealed class TemplateSession : Entity<Guid>
 {
     /// <summary>Name of the template session (e.g. "Push A", "Upper")</summary>
     public string Name{get; private set;}
-    private List<TemplateSet> _templateExercise = new();
+    private List<TemplateSet> _templateExercises = new();
 
     private TemplateSession
     (
@@ -18,7 +18,7 @@ public sealed class TemplateSession : Entity<Guid>
     }
 
     /// <summary>Planned sets for this session</summary>
-    public IReadOnlyCollection<TemplateSet> TemplateExercises => _templateExercise.AsReadOnly();
+    public IReadOnlyCollection<TemplateSet> TemplateExercises => _templateExercises.AsReadOnly();
 
     /// <summary>Creates a new template session</summary>
     /// <param name="name">Session name</param>

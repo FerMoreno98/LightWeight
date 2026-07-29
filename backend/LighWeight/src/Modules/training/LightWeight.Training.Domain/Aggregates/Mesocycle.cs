@@ -1,4 +1,5 @@
 using LightWeight.shared.BuildingBlocks;
+using LightWeight.Training.Domain.Enum;
 
 namespace LightWeight.Training.Domain.Aggregates;
 
@@ -6,6 +7,9 @@ public sealed class Mesocycle : AggregateRoot<Guid>
 {
     /// <summary>Parent macrocycle ID</summary>
     public Guid MacrocycleId {get; private set;}
+    private List<MuscleGroups> _aimMuscleGroups = new();
+    /// <summary>Muscle groups the user aims to develop during this macrocycle</summary>
+    public IReadOnlyCollection<MuscleGroups> AimMuscleGroups => _aimMuscleGroups.AsReadOnly();
     /// <summary>User's motivation level at the start (1-10)</summary>
     public int MotivationLevel{get;private set;}
     /// <summary>Injuries the user wants to track during this block</summary>
@@ -21,6 +25,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     (
         Guid Id,
         Guid macrocycleId,
+        List<MuscleGroups> aimMuscleGroups,
         int motivationLevel, 
         string? injuries, 
         string? comments, 
@@ -29,6 +34,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     ) : base(Id)
     {
         MacrocycleId = macrocycleId;
+        _aimMuscleGroups = aimMuscleGroups;
         MotivationLevel = motivationLevel;
         Injuries = injuries;
         Comments = comments;
@@ -45,6 +51,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     public static Mesocycle Create
     (
         Guid macrocycleId,
+        List<MuscleGroups> aimMuscleGroups,
         int motivationLevel,
         string? injuries,
         string? comments,
@@ -56,6 +63,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
         (
             Guid.CreateVersion7(),
             macrocycleId,
+            aimMuscleGroups,
             motivationLevel,
             injuries,
             comments,

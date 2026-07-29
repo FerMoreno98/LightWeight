@@ -5,6 +5,7 @@ using LightWeight.App.Extensions;
 using LightWeight.Auth.Infrastructure;
 using LightWeight.shared.Migrations;
 using LightWeight.UserProfile.Infrastructure;
+using LightWeight.Training.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +25,8 @@ builder.Services.AddCors(options =>
 
 builder.Services
     .AddAuthModule(builder.Configuration)
-    .AddUserProfileModule(builder.Configuration);
+    .AddUserProfileModule(builder.Configuration)
+    .AddTrainingModule(builder.Configuration);
 
 // Registrar el orquestador
 builder.Services.AddScoped<IMigrationOrchestrator, MigrationOrchestrator>();
@@ -63,6 +65,7 @@ await app.RunModuleMigrationsAsync();
 // 2. Mapear los endpoints de cada módulo
 app.MapAuthEndpoints();
 app.MapUserProfileEndpoints();
+app.MapTrainingEndpoints();
 
 
 

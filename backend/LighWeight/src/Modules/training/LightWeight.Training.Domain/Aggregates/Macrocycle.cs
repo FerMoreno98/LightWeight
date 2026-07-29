@@ -10,7 +10,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     (
         Guid Id,
         Guid userId,
-        List<MuscleGroups> aimMuscleGroups, 
+         
         DateTime startAt, 
         DateTime? endAt,
         TrainingStage stage,
@@ -19,7 +19,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     ) : base(Id)
     {
         UserId = userId;
-        _aimMuscleGroups = aimMuscleGroups;
+        
         StartAt = startAt;
         EndAt = endAt;
         Stage = stage;
@@ -28,9 +28,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     }
     /// <summary>Owner of the macrocycle</summary>
     public Guid UserId {get; private set;}
-    private List<MuscleGroups> _aimMuscleGroups = new();
-    /// <summary>Muscle groups the user aims to develop during this macrocycle</summary>
-    public IReadOnlyCollection<MuscleGroups> AimMuscleGroups => _aimMuscleGroups.AsReadOnly();
+
     /// <summary>Date the macrocycle starts</summary>
     public DateTime StartAt{get; private set;}
     /// <summary>Date the macrocycle ends (null while active)</summary>
@@ -53,7 +51,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     public static Macrocycle Create
     (
         Guid UserId,
-        List<MuscleGroups> AimMuscles, 
         DateTime StartedAt, 
         DateTime? EndAt,
         TrainingStage stage,
@@ -61,7 +58,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         string? comments
     )
     {
-        return new Macrocycle(Guid.CreateVersion7(),UserId,AimMuscles,StartedAt,EndAt,stage,periodization,comments);
+        return new Macrocycle(Guid.CreateVersion7(),UserId,StartedAt,EndAt,stage,periodization,comments);
     }
 
     /// <summary>Marks the macrocycle as finished at the given time</summary>

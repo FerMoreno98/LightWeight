@@ -4,8 +4,10 @@ using LightWeight.shared.Messaging;
 using LightWeight.shared.Migrations;
 using LightWeight.shared.Types;
 using LightWeight.Training.Application;
+using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 using LightWeight.Training.Infrastructure.Persistence;
+using LightWeight.Training.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -38,6 +40,7 @@ public static class DependencyInjection
             ));
 
         services.AddScoped<ITrainingUnitOfWork, TrainingUnitOfWork>();
+        services.AddScoped<IMacrocycleRepository,MacrocycleRepository>();
         services.AddScoped<IEventDispatcher, EventDispatcher>();
         services.AddSingleton<IClock, SystemClock>();
 
