@@ -1,4 +1,4 @@
-using LightWeight.shared.BuildingBlocks;
+    using LightWeight.shared.BuildingBlocks;
 using LightWeight.shared.Messaging;
 using LightWeight.Training.Domain.Uow;
 

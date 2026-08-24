@@ -33,14 +33,6 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasColumnName("DateOfBirth")
             .IsRequired();
 
-        builder.Property(u => u.CurrentStage)
-            .HasColumnName("CurrentStage")
-            .HasMaxLength(20)
-            .IsRequired()
-            .HasConversion(
-                s => s.ToString(),
-                s => Enum.Parse<TrainingStage>(s));
-
         builder.Property(u => u.StageStartedAt)
             .HasColumnName("StageStartedAt")
             .IsRequired();

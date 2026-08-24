@@ -49,4 +49,18 @@ export class AuthStore {
     await firstValueFrom(this.api.logout());
     this.tokenStorage.clear();
   }
+
+  // Se llama al arrancar la app: si hay cookie de refresh, recupera el access token
+  // sin obligar al usuario a volver a hacer login
+  async restoreSession(): Promise<void> {
+    if (this.tokenStorage.getAccessToken()) {
+      return;
+    }
+    try {
+      const token = await firstValueFrom(this.api.refreshToken());
+      this.tokenStorage.setAccessToken(token);
+    } catch {
+      // Sin sesion previa: se queda sin token y la app redirige a login
+    }
+  }
 }

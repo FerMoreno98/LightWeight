@@ -4,5 +4,6 @@ public enum Periodization
 {
     Linear,
     Ondulating,
-    block    
+    block,
+    MikeIsraetel    
 }

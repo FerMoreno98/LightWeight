@@ -2,7 +2,6 @@
 using LightWeight.UserProfile.Api.DTOs;
 using LightWeight.UserProfile.Application.Commands.CompleteProfile;
 using LightWeight.UserProfile.Application.Commands.UpdateProfile;
-using LightWeight.UserProfile.Application.Commands.ChangeTrainingStage;
 using LightWeight.shared.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +18,6 @@ public static class UserProfileModule
 
         group.MapPost("/complete",        CompleteProfile);
         group.MapPut("/",                 UpdateProfile);
-        group.MapPatch("/training-stage", ChangeTrainingStage);
 
         return app;
     }
@@ -39,8 +37,7 @@ public static class UserProfileModule
                 UserId,
                 request.FullName,
                 birthDateUtc,
-                request.Sex,
-                request.Stage), ct);
+                request.Sex), ct);
 
         return TypedResults.NoContent();
     }
@@ -61,21 +58,6 @@ public static class UserProfileModule
                 request.FullName,
                 request.Sex,
                 birthDateUtc), ct);
-
-        return TypedResults.NoContent();
-    }
-
-    private static async Task<IResult> ChangeTrainingStage(
-        ChangeTrainingStageRequest request,
-        IMediator mediator,
-        HttpContext httpContext,
-        CancellationToken ct)
-    {
-        Guid UserId = GetUserId(httpContext); 
-        await mediator.SendAsync(
-            new ChangeTrainingStageCommand(
-                UserId,
-                request.NewStage), ct);
 
         return TypedResults.NoContent();
     }

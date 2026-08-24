@@ -38,7 +38,7 @@ export class VerifyOtpPage {
     );
     if (success) {
       console.log('Has iniciado sesion con exito');
-      // this.router.navigate(['']);
+      this.router.navigate(['/home']);
     }
   }
 }

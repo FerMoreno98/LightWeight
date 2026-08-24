@@ -1,0 +1,70 @@
+<body class="min-h-screen bg-slate-900 text-white flex items-center justify-center px-4 py-10">
+
+  <form #form="ngForm" (ngSubmit)="onSubmit(form.value)"
+        class="w-full max-w-lg bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl flex flex-col gap-6">
+
+    <div>
+      <h1 class="text-3xl font-bold">Crear Macrociclo</h1>
+      <p class="mt-1 text-sm text-slate-400">Define el periodo principal de entrenamiento</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="startAt" class="text-sm font-medium text-slate-300">Fecha de inicio</label>
+        <input id="startAt" name="startAt" type="date" required ngModel
+               class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="endAt" class="text-sm font-medium text-slate-300">Fecha de fin <span class="text-slate-500">(opcional)</span></label>
+        <input id="endAt" name="endAt" type="date" ngModel
+               class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="flex flex-col gap-2">
+        <label for="stage" class="text-sm font-medium text-slate-300">Fase de entrenamiento</label>
+        <select id="stage" name="stage" required ngModel
+                class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
+          <option value="" disabled selected>Selecciona una fase</option>
+          <option value="Bulk">Volumen (Bulk)</option>
+          <option value="Cut">Definicion (Cut)</option>
+          <option value="Maintenance">Mantenimiento (Maintenance)</option>
+        </select>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="periodization" class="text-sm font-medium text-slate-300">Periodizacion</label>
+        <select id="periodization" name="periodization" required ngModel
+                class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
+          <option value="" disabled selected>Selecciona una periodizacion</option>
+          <option value="Linear">Lineal (Linear)</option>
+          <option value="Ondulating">Ondulante (Ondulating)</option>
+          <option value="block">Bloques (Block)</option>
+          <option value="MikeIsraetel">Mike Israetel</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-2">
+      <label for="comments" class="text-sm font-medium text-slate-300">Comentarios <span class="text-slate-500">(opcional)</span></label>
+      <textarea id="comments" name="comments" rows="4" ngModel
+                placeholder="Observaciones, prioridades, restricciones..."
+                class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition resize-none"></textarea>
+    </div>
+
+    @if (error()) {
+      <p class="text-sm text-red-400">{{ error() }}</p>
+    }
+
+    <div class="flex flex-col sm:flex-row gap-3 pt-2">
+      <button type="button" (click)="cancel()"
+              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-700 transition">
+        Cancelar
+      </button>
+      <button type="submit" [disabled]="!form.valid || isLoading()"
+              class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ isLoading() ? 'Creando...' : 'Crear macrociclo' }}
+      </button>
+    </div>
+  </form>
+</body>

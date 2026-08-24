@@ -26,4 +26,9 @@ export class AuthApiService {
     {
         return this.http.post<void>(`${this.baseUrl}/logout`,{});
     }
+    refreshToken(): Observable<string>
+    {
+        // con withCredentials se envía la cookie HttpOnly "refresh_token" (Path=/api/auth)
+        return this.http.post<string>(`${this.baseUrl}/refresh`, {}, { withCredentials: true });
+    }
 }
