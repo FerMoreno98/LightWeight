@@ -8,7 +8,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     /// <summary>Parent macrocycle ID</summary>
     public Guid MacrocycleId {get; private set;}
     private List<MuscleGroups> _aimMuscleGroups = new();
-    /// <summary>Muscle groups the user aims to develop during this macrocycle</summary>
+    /// <summary>Muscle groups the user aims to develop during this mesocycle</summary>
     public IReadOnlyCollection<MuscleGroups> AimMuscleGroups => _aimMuscleGroups.AsReadOnly();
     /// <summary>User's motivation level at the start (1-10)</summary>
     public int MotivationLevel{get;private set;}

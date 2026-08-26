@@ -9,7 +9,7 @@ public class CreateRefreshTokensTable : Migration
     {
         Create.Table("auth_RefreshTokens").InSchema("auth")
             .WithColumn("Id").AsGuid().PrimaryKey()
-            .WithColumn("DeviceTokenId").AsGuid().NotNullable().ForeignKey("Fk_RefreshToken_DeviceToken","auth","auth_DeviceToken", "Id").OnDelete(System.Data.Rule.Cascade)
+            .WithColumn("DeviceTokenId").AsGuid().NotNullable().ForeignKey("Fk_RefreshToken_DeviceToken","auth","auth_DeviceTokens", "Id").OnDelete(System.Data.Rule.Cascade)
             .WithColumn("Token").AsString(88).NotNullable()
             .WithColumn("ExpiresAt").AsDateTime().NotNullable()
             .WithColumn("RevokedAt").AsDateTime().Nullable()
