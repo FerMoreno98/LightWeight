@@ -15,6 +15,8 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTraining
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
+using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
+using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 
 public static class TrainingModule
 {
@@ -32,6 +34,8 @@ public static class TrainingModule
         group.MapGet("/exercises", GetAllExercises).RequireAuthorization();
         group.MapGet("/training-template/{templateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
         group.MapGet("/training-template/{trainingTemplateId:guid}/{sessionTemplateId:guid}/sets",GetSetsOfASessionTemplate).RequireAuthorization();
+        group.MapGet("/training-session/{trainingTemplateId:guid}/seriespermusclegrouppersession",GetNumberOfSeriesPerMuscleGroupPerSession).RequireAuthorization();
+        group.MapGet("/training-template/trainingTemplates", GetUserTrainingTemplates).RequireAuthorization();
 
         return app;
     }
@@ -212,5 +216,30 @@ public static class TrainingModule
         );
         return TypedResults.Ok(sets);
     }
-    
+    private static async Task<IResult> GetNumberOfSeriesPerMuscleGroupPerSession
+    (
+        Guid trainingTemplateId,
+        IMediator mediator,
+        CancellationToken ct
+    )
+    {
+        var ret = await mediator.QueryAsync<GetNumberOfSeriesPerGroupPerSessionQuery,List<GetNumberOfSeriesPerGroupPerSessionResponse>>(
+            new GetNumberOfSeriesPerGroupPerSessionQuery(trainingTemplateId),ct
+        );
+        return TypedResults.Ok(ret);
+    }
+    private static async Task<IResult> GetUserTrainingTemplates
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+            var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var templates = await mediator.QueryAsync<GetUserTrainingTemplatesQuery,List<GetUserTrainingTemplatesResponse>>(
+            new GetUserTrainingTemplatesQuery(Guid.Parse(userId)),ct
+        );
+        return TypedResults.Ok(templates);
+    }
 }

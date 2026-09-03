@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate } from "../data/training-api.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
@@ -11,12 +11,16 @@ export class TrainingStore{
     private _exercises = signal<Exercise[]>([]);
     private _sessions = signal<Session[]>([]);
     private _sets = signal<Set[]>([]);
+    private _seriesPerGroupPerSession = signal<SeriesPerGroupPerSession[]>([]);
+    private _trainingTemplates = signal<TrainingTemplate[]>([]);
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
     exercises = this._exercises.asReadonly();
     sessions = this._sessions.asReadonly();
     sets = this._sets.asReadonly();
+    seriesPerGroupPerSession = this._seriesPerGroupPerSession.asReadonly();
+    trainingTemplates = this._trainingTemplates.asReadonly();
 
     async CreateMacrocycle
     (
@@ -225,6 +229,34 @@ export class TrainingStore{
             return true;
         }catch{
             this._error.set('No se han podido cargar las sesiones');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+    async GetSeriesPerMuscleGroupPerSession(TrainingTemplateId : string) : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const series = await firstValueFrom(this.api.GetSeriesPerMuscleGroupPerSession(TrainingTemplateId));
+            this._seriesPerGroupPerSession.set(series);
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar las sesiones');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+    async GetUserTrainingTemplates() : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const templates = await firstValueFrom(this.api.GetUserTrainingTemplates());
+            this._trainingTemplates.set(templates);
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar las plantillas de entrenamiento');
             return false;
         }finally{
             this._isLoading.set(false);

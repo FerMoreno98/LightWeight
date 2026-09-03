@@ -7,4 +7,5 @@ public interface ITrainingTemplateRepository
     Task AddAsync(TrainingTemplate trainingTemplate, CancellationToken cancellationToken);
     Task<TrainingTemplate?> GetByIdAsync(Guid TrainingTemplateId);
     Task<TrainingTemplate?> GetBySessionIdAsync(Guid SessionId);
+    Task<List<TrainingTemplate>?> GetAllTrainingTemplatesOfAUserAsync(Guid UserId);
 }

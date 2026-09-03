@@ -55,4 +55,25 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     {
         _templateSessions.Add(session);
     }
+
+    public Dictionary<MuscleGroups,int> GetNumberOfSeriesPerGroup()
+    {
+        var ret = new Dictionary<MuscleGroups,int>();
+        foreach(var session in _templateSessions)
+        {
+            var SeriesPerMusclePerSession = session.GetNumberOfSeriesPerGroupPerSession();
+            foreach(var muscle in SeriesPerMusclePerSession.Keys)
+            {
+                if (!ret.ContainsKey(muscle))
+                {
+                    ret[muscle] = SeriesPerMusclePerSession[muscle];
+                }else
+                {
+                    ret[muscle] += SeriesPerMusclePerSession[muscle];
+                }
+
+            }
+        }
+        return ret;
+    }
 }

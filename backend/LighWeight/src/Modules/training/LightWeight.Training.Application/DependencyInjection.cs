@@ -11,8 +11,11 @@ using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingS
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetCurrentMacrocycle;
+using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
+using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
+using LightWeight.Training.Domain.Enum;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LightWeight.Training.Application;
@@ -39,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetAllExercisesQuery,List<GetAllExercisesResponse>>,GetAllExercisesQueryHandler>();
         services.AddScoped<IQueryHandler<GetSessionsFromTrainingTemplateQuery, List<GetSessionsFromTrainingTemplateResponse>>,GetSessionsFromTrainingTemplateQueryHandler>();
         services.AddScoped<IQueryHandler<GetSetsFromSessionTemplateQuery, List<GetSetsFromSessionTemplateResponse>>,GetSetsFromSessionTemplateQueryHandler>();
+        services.AddScoped<IQueryHandler<GetNumberOfSeriesPerGroupPerSessionQuery,List<GetNumberOfSeriesPerGroupPerSessionResponse>>,GetNumberOfSeriesPerGroupPerSessionQueryHandler>();
+        services.AddScoped<IQueryHandler<GetUserTrainingTemplatesQuery,List<GetUserTrainingTemplatesResponse>>,GetUserTrainingTemplatesQueryHandler>();
         return services;
     }
 }

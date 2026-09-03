@@ -24,13 +24,22 @@
           <p class="text-sm text-slate-400">No hay sesiones todavía.</p>
         } @else {
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            @for (session of Sessions; track session.id) {
+            @for (session of Sessions; track session.sessionId) {
               <button
                 type="button"
                 (click)="goToSession(session)"
                 class="rounded-2xl border border-slate-700 bg-slate-800 p-5 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
               >
-                <h2 class="text-lg font-semibold text-white">{{ session.name }}</h2>
+                <h2 class="text-lg font-semibold text-white">{{ session.sessionName }}</h2>
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                  @for (entry of seriesEntries(session); track entry[0]) {
+                    <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
+                      {{ entry[0] }}: {{ entry[1] }}
+                    </span>
+                  } @empty {
+                    <span class="text-xs text-slate-500">Sin series</span>
+                  }
+                </div>
               </button>
             }
           </div>

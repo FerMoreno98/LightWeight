@@ -11,6 +11,10 @@ export const TrainingRoutes: Routes = [
         loadComponent: () => import('./UI/Templates/create-training-template/create-training-template').then(t=>t.CreateTrainingTemplate)
     },
     {
+        path:'createtrainingtemplates',
+        loadComponent: () => import('./UI/Templates/create-training-template/create-training-template').then(t=>t.CreateTrainingTemplate)
+    },
+    {
         path:'sessiontemplate/:id',
         loadComponent: () => import('./UI/Templates/create-session-template/create-session-template').then(s => s.CreateSessionTemplate)
     },
@@ -21,5 +25,10 @@ export const TrainingRoutes: Routes = [
     {
         path:'sessionsets/:templateid/:sessionid',
         loadComponent: () => import('./UI/Templates/session-sets/session-sets').then(s=>s.SessionSets)
-    }
+    },
+    {
+        path:'trainingtemplates',
+        loadComponent: ()=> import('./UI/Templates/training-templates/training-templates').then(t => t.TrainingTemplates)
+    },
+    
 ]

@@ -18,6 +18,14 @@ public class TrainingTemplateRepository : ITrainingTemplateRepository
         await _dbContext.AddAsync(trainingTemplate);
     }
 
+    public async Task<List<TrainingTemplate>?> GetAllTrainingTemplatesOfAUserAsync(Guid UserId)
+    {
+            return await _dbContext.TrainingTemplates
+            .Include(t => t.TemplateSessions)
+                .ThenInclude(ts => ts.TemplateExercises)
+            .Where(t => t.UserId == UserId).ToListAsync();
+    }
+
     public async Task<TrainingTemplate?> GetByIdAsync(Guid TrainingTemplateId)
     {
         return await _dbContext.TrainingTemplates

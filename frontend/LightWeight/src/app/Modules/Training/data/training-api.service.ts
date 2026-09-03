@@ -13,6 +13,24 @@ export interface Session{
     id : string,
     name : string
 }
+export type MuscleGroup =
+    | 'Shoulder' | 'Back' | 'Chest' | 'Biceps' | 'Triceps'
+    | 'Glutes' | 'Quads' | 'Hamstring' | 'Calves';
+export interface SeriesPerGroupPerSession{
+    sessionId : string,
+    sessionName : string,
+    series : Partial<Record<MuscleGroup, number>>
+}
+export type VolumeLandmark = 'MV' | 'MEV' | 'MAV' | 'MRV';
+export type TrainingDistribution =
+    | 'PushPullLegs' | 'UpperLower' | 'Weider' | 'Phat' | 'FullBody' | 'Other';
+export interface TrainingTemplate{
+    id : string,
+    name : string,
+    volumeLandmark : VolumeLandmark,
+    trainingDistribution : TrainingDistribution,
+    totalVolume : Partial<Record<MuscleGroup, number>>
+}
 export interface Set{
     exerciseId : string,
     repetitionRangeMin : number,
@@ -130,6 +148,12 @@ export class TrainingApiService {
     }
     GetSetsOfASessionTemplate (TrainingTemplateId : string, SessionTemplateId : string) : Observable<Set[]>{
         return this.http.get<Set[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/${SessionTemplateId}/sets`);
+    }
+    GetSeriesPerMuscleGroupPerSession (TrainingTemplateId : string) : Observable<SeriesPerGroupPerSession[]>{
+        return this.http.get<SeriesPerGroupPerSession[]>(`${this.baseUrl}/training-session/${TrainingTemplateId}/seriespermusclegrouppersession`);
+    }
+    GetUserTrainingTemplates () : Observable<TrainingTemplate[]>{
+        return this.http.get<TrainingTemplate[]>(`${this.baseUrl}/training-template/trainingTemplates`);
     }
 
 }

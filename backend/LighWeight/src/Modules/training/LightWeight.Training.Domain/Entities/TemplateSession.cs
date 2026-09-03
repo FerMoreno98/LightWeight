@@ -1,4 +1,5 @@
 using LightWeight.shared.BuildingBlocks;
+using LightWeight.Training.Domain.Enum;
 
 namespace LightWeight.Training.Domain.Entities;
 
@@ -37,5 +38,19 @@ public sealed class TemplateSession : Entity<Guid>
     public void AddSet(TemplateSet set)
     {
         _templateExercises.Add(set);
+    }
+
+    public Dictionary<MuscleGroups,int> GetNumberOfSeriesPerGroupPerSession()
+    {
+        var NumberOfSeries = new Dictionary<MuscleGroups,int>();
+        foreach(var sets in _templateExercises)
+        {
+            foreach(var musclegroup in sets.AimMuscleGroups)
+            {
+                NumberOfSeries[musclegroup] = NumberOfSeries.GetValueOrDefault(musclegroup) + 1;
+            }
+        }
+        return NumberOfSeries;
+
     }
 }

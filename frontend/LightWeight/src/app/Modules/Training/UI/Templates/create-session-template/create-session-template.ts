@@ -2,7 +2,19 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Session } from '../../../data/training-api.service';
+import { MuscleGroup, SeriesPerGroupPerSession } from '../../../data/training-api.service';
+
+const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
+  Shoulder: 'Hombro',
+  Back: 'Espalda',
+  Chest: 'Pecho',
+  Biceps: 'Bíceps',
+  Triceps: 'Tríceps',
+  Glutes: 'Glúteos',
+  Quads: 'Cuádriceps',
+  Hamstring: 'Isquios',
+  Calves: 'Gemelos',
+};
 
 @Component({
   selector: 'app-create-session-template',
@@ -19,7 +31,7 @@ export class CreateSessionTemplate {
   isLoading = this.store.isLoading;
   error = this.store.error;
 
-  Sessions: Session[] = [];
+  Sessions: SeriesPerGroupPerSession[] = [];
   isAdding = false;
 
   name = '';
@@ -33,8 +45,8 @@ export class CreateSessionTemplate {
 
   async loadSessions(){
     if (!this.idTrainingTemplate) return;
-    await this.store.GetSessionsFromATrainingTemplate(this.idTrainingTemplate);
-    this.Sessions = this.store.sessions();
+    await this.store.GetSeriesPerMuscleGroupPerSession(this.idTrainingTemplate);
+    this.Sessions = this.store.seriesPerGroupPerSession();
   }
 
   showAddForm(){
@@ -46,8 +58,12 @@ export class CreateSessionTemplate {
     this.name = '';
   }
 
-  goToSession(session: Session){
-    this.router.navigate(['/training/sessionsets', this.idTrainingTemplate, session.id]);
+  goToSession(session: SeriesPerGroupPerSession){
+    this.router.navigate(['/training/sessionsets', this.idTrainingTemplate, session.sessionId]);
+  }
+
+  seriesEntries(session: SeriesPerGroupPerSession): [string, number][] {
+    return Object.entries(session.series).map(([group, count]) => [MUSCLE_GROUP_LABELS[group as MuscleGroup] ?? group, count]);
   }
 
   async onSubmit(values:{
