@@ -14,4 +14,4 @@ RUN bun run build
 FROM nginx:stable-alpine AS runtime
 WORKDIR /usr/share/nginx/html
 COPY --from=build /app/dist/LightWeight/browser .
-COPY ./nginx.conf /etc/nginx/conf.d/
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf

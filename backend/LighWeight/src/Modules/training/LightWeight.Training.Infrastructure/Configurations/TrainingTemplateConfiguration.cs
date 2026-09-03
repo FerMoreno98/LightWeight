@@ -15,6 +15,10 @@ public class TrainingTemplateConfiguration : IEntityTypeConfiguration<TrainingTe
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(t => t.UserId).HasColumnName("UserId").IsRequired();
         builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(200).IsRequired();
+        builder.Property(v => v.VolumeLandmark)
+            .HasColumnName("VolumeLandmark")
+            .HasMaxLength(50)
+            .HasConversion(s => s.ToString(), s => Enum.Parse<VolumeLandmarks>(s));
         builder.Property(t => t.TrainingDistribution)
             .HasColumnName("TrainingDistribution")
             .HasMaxLength(20)

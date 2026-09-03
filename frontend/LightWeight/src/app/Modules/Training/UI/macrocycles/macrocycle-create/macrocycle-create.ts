@@ -7,8 +7,8 @@ import { TrainingStore } from '../../../state/training.store';
   selector: 'app-macrociclo-create',
   standalone: true,
   imports: [FormsModule],
-  templateUrl: './macrociclo-create.html',
-  styleUrl: './macrociclo-create.css',
+  templateUrl: './macrocycle-create.html',
+  styleUrl: './macrocycle-create.css',
 })
 export class MacrocicloCreatePage {
   private store = inject(TrainingStore);

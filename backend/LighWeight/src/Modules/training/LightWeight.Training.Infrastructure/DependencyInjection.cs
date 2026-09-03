@@ -41,6 +41,10 @@ public static class DependencyInjection
 
         services.AddScoped<ITrainingUnitOfWork, TrainingUnitOfWork>();
         services.AddScoped<IMacrocycleRepository,MacrocycleRepository>();
+        services.AddScoped<IMesocycleRepository,MesocycleRepository>();
+        services.AddScoped<IMicrocycleRepository,MicrocycleRepository>();
+        services.AddScoped<ITrainingTemplateRepository,TrainingTemplateRepository>();
+        services.AddScoped<IExerciseRepository,ExerciseRepository>();
         services.AddScoped<IEventDispatcher, EventDispatcher>();
         services.AddSingleton<IClock, SystemClock>();
 

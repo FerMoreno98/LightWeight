@@ -13,6 +13,8 @@ public class TrainingSessionConfiguration : IEntityTypeConfiguration<TrainingSes
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(t => t.MicrocycleId).HasColumnName("MicrocycleId").IsRequired();
+        builder.Property(t => t.UserId).HasColumnName("UserId").IsRequired();
+        builder.HasIndex(t => t.UserId).HasDatabaseName("Ix_TrainingSession_UserId");
         builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(200).IsRequired();
         builder.Property(t => t.StartAt).HasColumnName("StartAt").IsRequired();
         builder.Property(t => t.Duration).HasColumnName("Duration").HasColumnType("interval");

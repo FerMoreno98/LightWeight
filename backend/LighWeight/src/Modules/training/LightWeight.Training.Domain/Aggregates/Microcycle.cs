@@ -9,17 +9,20 @@ public sealed class Microcycle : AggregateRoot<Guid>
     (
         Guid Id,
         Guid mesocycleId, 
+        Guid userId,
         int durationInDays, 
         TrainingDistribution trainingDistribution
     ) : base(Id)
     {
         MesocycleId = mesocycleId;
+        UserId = userId;
         DurationInDays = durationInDays;
         TrainingDistribution = trainingDistribution;
     }
 
     /// <summary>Parent mesocycle ID</summary>
     public Guid MesocycleId{get;private set;}
+    public Guid UserId{get; private set;}
     /// <summary>Number of days this microcycle spans (typically 7)</summary>
     public int DurationInDays{get;private set;}
     /// <summary>Distribution type (Push/Pull/Legs, Upper/Lower, etc.)</summary>
@@ -31,12 +34,13 @@ public sealed class Microcycle : AggregateRoot<Guid>
     /// <param name="trainingDistribution">Weekly distribution pattern</param>
     public static Microcycle Create
     (
-        Guid mesocycleId, 
+        Guid mesocycleId,
+        Guid userId, 
         int durationInDays, 
         TrainingDistribution trainingDistribution
     )
     {
-        return new Microcycle(Guid.CreateVersion7(),mesocycleId,durationInDays,trainingDistribution);
+        return new Microcycle(Guid.CreateVersion7(),mesocycleId,userId,durationInDays,trainingDistribution);
     }
     
 }

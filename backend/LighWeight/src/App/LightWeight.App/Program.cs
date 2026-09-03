@@ -8,6 +8,7 @@ using LightWeight.UserProfile.Infrastructure;
 using LightWeight.Training.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using LightWeight.Training.Api;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
@@ -61,6 +62,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 // Ejecutar migraciones de forma ordenada
 await app.RunModuleMigrationsAsync();
+await app.SeedTrainingDataAsync();
 
 // 2. Mapear los endpoints de cada módulo
 app.MapAuthEndpoints();

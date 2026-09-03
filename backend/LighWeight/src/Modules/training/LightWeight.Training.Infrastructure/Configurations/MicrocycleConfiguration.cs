@@ -13,6 +13,8 @@ public class MicrocycleConfiguration : IEntityTypeConfiguration<Microcycle>
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(m => m.MesocycleId).HasColumnName("MesocycleId").IsRequired();
+        builder.Property(m => m.UserId).HasColumnName("UserId").IsRequired();
+        builder.HasIndex(m => m.UserId).HasDatabaseName("Ix_Microcycle_UserId");
         builder.Property(m => m.DurationInDays).HasColumnName("DurationInDays").IsRequired();
         builder.Property(m => m.TrainingDistribution)
             .HasColumnName("TrainingDistribution")

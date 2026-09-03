@@ -12,18 +12,24 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     public string Name{get; private set;}
     /// <summary>Weekly distribution pattern this template follows</summary>
     public TrainingDistribution TrainingDistribution{get;private set;} 
+    /// <summary>
+    /// Volume landmarks defined by Mike Israetel
+    /// </summary>
+    public VolumeLandmarks VolumeLandmark{get;private set;} // recordar añadirlo a las migraciones y configuraciones
     private List<TemplateSession> _templateSessions = new();
 
     private TrainingTemplate
     (
         Guid Id,
-        Guid userId, 
-        string name, 
+        Guid userId,
+        string name,
+        VolumeLandmarks volumeLandmark,
         TrainingDistribution trainingDistribution
     ) : base(Id)
     {
         UserId = userId;
         Name = name;
+        VolumeLandmark = volumeLandmark;
         TrainingDistribution = trainingDistribution;
     }
 
@@ -38,10 +44,15 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     (
         Guid userId,
         string name,
+        VolumeLandmarks volumeLandmark,
         TrainingDistribution trainingDistribution
     )
     {
-        return new TrainingTemplate(Guid.CreateVersion7(),userId,name,trainingDistribution);
+        return new TrainingTemplate(Guid.CreateVersion7(),userId,name,volumeLandmark,trainingDistribution);
     }
     
+    public void AddSessionTemplate(TemplateSession session)
+    {
+        _templateSessions.Add(session);
+    }
 }

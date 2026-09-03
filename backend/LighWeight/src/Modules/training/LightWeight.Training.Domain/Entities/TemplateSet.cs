@@ -16,21 +16,25 @@ public sealed class TemplateSet : Entity<Guid>
     public AdvanceTrainingTechniques AdvanceTrainingTechniques { get; private set; }
     /// <summary>Shared ID with other template sets that form a planned superset</summary>
     public Guid? SuperSetGroupId { get; private set; }
+    /// <summary>
+    /// Represents the muscle groups that the set is going to emphazise 
+    /// </summary>
+    public List<MuscleGroups> AimMuscleGroups {get; private set;}
 
     private TemplateSet
     (
         Guid Id,
         Guid exerciseId,
-        RepetitionRange repetitionRange,
         int expectedRIR,
-        AdvanceTrainingTechniques advanceTrainingTechniques,
+        List<MuscleGroups> aimMuscleGroups,
         Guid? superSetGroupId
     ) : base(Id)
     {
         ExerciseId = exerciseId;
-        RepetitionRange = repetitionRange;
+        RepetitionRange = null!;
         ExpectedRIR = expectedRIR;
-        AdvanceTrainingTechniques = advanceTrainingTechniques;
+        AdvanceTrainingTechniques = null!;
+        AimMuscleGroups = aimMuscleGroups;
         SuperSetGroupId = superSetGroupId;
     }
 
@@ -45,6 +49,7 @@ public sealed class TemplateSet : Entity<Guid>
         Guid exerciseId,
         RepetitionRange repetitionRange,
         int expectedRIR,
+        List<MuscleGroups> aimMuscleGroups,
         AdvanceTrainingTechniques? advanceTrainingTechniques = null,
         Guid? superSetGroupId = null
     )
@@ -53,10 +58,13 @@ public sealed class TemplateSet : Entity<Guid>
         (
             Guid.CreateVersion7(),
             exerciseId,
-            repetitionRange,
             expectedRIR,
-            advanceTrainingTechniques ?? AdvanceTrainingTechniques.None,
+            aimMuscleGroups,
             superSetGroupId
-        );
+        )
+        {
+            RepetitionRange = repetitionRange,
+            AdvanceTrainingTechniques = advanceTrainingTechniques ?? AdvanceTrainingTechniques.None
+        };
     }
 }

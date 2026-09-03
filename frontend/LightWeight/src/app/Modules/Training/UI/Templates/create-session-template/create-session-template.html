@@ -1,0 +1,90 @@
+<div class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-3xl">
+
+    @if (!isAdding) {
+      <div class="fade-slide-in">
+        <div class="mb-6 flex items-center justify-between">
+          <h1 class="text-2xl font-bold text-white">Sesiones de la plantilla</h1>
+          <button
+            type="button"
+            (click)="showAddForm()"
+            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+          >
+            Añadir sesión
+          </button>
+        </div>
+
+        @if (error()) {
+          <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+        }
+
+        @if (isLoading()) {
+          <p class="text-sm text-slate-400">Cargando sesiones...</p>
+        } @else if (Sessions.length === 0) {
+          <p class="text-sm text-slate-400">No hay sesiones todavía.</p>
+        } @else {
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            @for (session of Sessions; track session.id) {
+              <button
+                type="button"
+                (click)="goToSession(session)"
+                class="rounded-2xl border border-slate-700 bg-slate-800 p-5 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+              >
+                <h2 class="text-lg font-semibold text-white">{{ session.name }}</h2>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    } @else {
+      <div class="fade-slide-in flex justify-center">
+        <div class="w-full max-w-sm rounded-2xl bg-slate-800 border border-slate-700 p-8 shadow-xl">
+          <button
+            type="button"
+            (click)="backToSessions()"
+            class="mb-6 flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+          >
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Volver a sesiones
+          </button>
+
+          <h1 class="mb-6 text-center text-2xl font-bold text-white">Nueva sesión de la plantilla</h1>
+
+          @if (error()) {
+            <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+          }
+
+          <form
+            #sessionForm="ngForm"
+            (ngSubmit)="onSubmit({ name: name })"
+            class="space-y-4"
+          >
+            <div>
+              <label for="name" class="block text-sm font-medium text-slate-300">Nombre</label>
+              <input
+                id="name"
+                type="text"
+                [(ngModel)]="name"
+                name="name"
+                required
+                placeholder="Nombre de la sesión"
+                class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+              />
+            </div>
+
+            <button
+              type="submit"
+              [disabled]="isLoading() || sessionForm.invalid"
+              class="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ isLoading() ? 'Creando...' : 'Crear sesión' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    }
+
+  </div>
+</div>

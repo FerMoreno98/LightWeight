@@ -33,4 +33,9 @@ public sealed class TemplateSession : Entity<Guid>
             name
         );
     }
+
+    public void AddSet(TemplateSet set)
+    {
+        _templateExercises.Add(set);
+    }
 }

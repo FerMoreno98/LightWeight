@@ -30,7 +30,7 @@ public static class AuthModule
         httpContext.Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
         {
             HttpOnly = true,
-            Secure = true,              // solo HTTPS (en dev con http, pon false o usa https local)
+            Secure = false,              // solo HTTPS (en dev con http, pon false o usa https local)
             SameSite = SameSiteMode.Strict,
             Path = "/api/auth",         // la cookie solo se envía a rutas de auth, no a toda la app
             Expires = DateTimeOffset.UtcNow.AddDays(30) // según tu política de rotation

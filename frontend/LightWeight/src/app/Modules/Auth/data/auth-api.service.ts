@@ -20,7 +20,8 @@ export class AuthApiService {
             deviceIdentifier,
             deviceName,
             platform,
-        });
+        },
+    {withCredentials:true});
     }
     logout() : Observable<void>
     {

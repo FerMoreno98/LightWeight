@@ -8,6 +8,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
 {
     /// <summary>Parent microcycle ID</summary>
     public Guid MicrocycleId{get;private set;}
+    public Guid UserId{get;private set;}
     /// <summary>Name of the session (e.g. "Push A", "Upper")</summary>
     public string Name{get; private set;}
     /// <summary>Date and time the session started</summary>
@@ -29,6 +30,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
     (
         Guid Id,
         Guid microcycleId,
+        Guid userId,
         string name, 
         DateTime startAt, 
         TimeSpan duration, 
@@ -39,6 +41,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
     ) : base(Id)
     {
         MicrocycleId = microcycleId;
+        UserId = userId;
         Name = name;
         StartAt = startAt;
         Duration = duration;
@@ -61,6 +64,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
     public static TrainingSession Create
     (
         Guid microcycleId,
+        Guid userId,
         string name, 
         DateTime now,
         string? comments, 
@@ -73,6 +77,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
         (
             Guid.CreateVersion7(),
             microcycleId,
+            userId,
             name,
             now,
             TimeSpan.FromTicks(0),

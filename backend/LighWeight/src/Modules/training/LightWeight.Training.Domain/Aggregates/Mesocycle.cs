@@ -7,6 +7,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
 {
     /// <summary>Parent macrocycle ID</summary>
     public Guid MacrocycleId {get; private set;}
+    public Guid UserId{get;private set;}
     private List<MuscleGroups> _aimMuscleGroups = new();
     /// <summary>Muscle groups the user aims to develop during this mesocycle</summary>
     public IReadOnlyCollection<MuscleGroups> AimMuscleGroups => _aimMuscleGroups.AsReadOnly();
@@ -25,6 +26,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     (
         Guid Id,
         Guid macrocycleId,
+        Guid userId,
         List<MuscleGroups> aimMuscleGroups,
         int motivationLevel, 
         string? injuries, 
@@ -34,6 +36,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     ) : base(Id)
     {
         MacrocycleId = macrocycleId;
+        UserId = userId;
         _aimMuscleGroups = aimMuscleGroups;
         MotivationLevel = motivationLevel;
         Injuries = injuries;
@@ -51,6 +54,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     public static Mesocycle Create
     (
         Guid macrocycleId,
+        Guid userId,
         List<MuscleGroups> aimMuscleGroups,
         int motivationLevel,
         string? injuries,
@@ -63,6 +67,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
         (
             Guid.CreateVersion7(),
             macrocycleId,
+            userId,
             aimMuscleGroups,
             motivationLevel,
             injuries,

@@ -20,6 +20,8 @@ public class MesocycleConfiguration : IEntityTypeConfiguration<Mesocycle>
         builder.HasKey(m => m.Id);
         builder.Property(m => m.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(m => m.MacrocycleId).HasColumnName("MacrocycleId").IsRequired();
+        builder.Property(m => m.UserId).HasColumnName("UserId").IsRequired();
+        builder.HasIndex(m => m.UserId).HasDatabaseName("Ix_Mesocycle_UserId");
         builder.Property(typeof(List<MuscleGroups>), "_aimMuscleGroups")
             .HasColumnName("AimMuscleGroups")
             .HasColumnType("jsonb")
