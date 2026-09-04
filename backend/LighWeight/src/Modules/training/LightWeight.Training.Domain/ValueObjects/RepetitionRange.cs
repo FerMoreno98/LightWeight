@@ -1,4 +1,5 @@
 using LightWeight.shared.BuildingBlocks;
+using LightWeight.Training.Domain.Exceptions;
 
 namespace LightWeight.Training.Domain.ValueObjects;
 
@@ -27,6 +28,8 @@ public sealed record RepetitionRange : ValueObject
         int min
     )
     {
+        if(max <= 0 || min <= 0 )
+            throw new ReptitionRangeLessThanZeroDomainException();
         if (max < min)
         {
             int temp = max;

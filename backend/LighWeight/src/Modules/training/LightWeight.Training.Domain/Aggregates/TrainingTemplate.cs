@@ -1,6 +1,7 @@
 using LightWeight.shared.BuildingBlocks;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Domain.Exceptions;
 
 namespace LightWeight.Training.Domain.Aggregates;
 
@@ -15,7 +16,7 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     /// <summary>
     /// Volume landmarks defined by Mike Israetel
     /// </summary>
-    public VolumeLandmarks VolumeLandmark{get;private set;} // recordar añadirlo a las migraciones y configuraciones
+    public VolumeLandmarks VolumeLandmark{get;private set;}
     private List<TemplateSession> _templateSessions = new();
 
     private TrainingTemplate
@@ -48,6 +49,23 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
         TrainingDistribution trainingDistribution
     )
     {
+        if(userId == Guid.Empty)
+        {
+            throw new UserIdEmptyDomainException();
+        }
+        if(name.Trim() == "")
+        {
+            throw new NameEmptyDomainException();
+        }
+        if(!System.Enum.IsDefined(volumeLandmark))
+        {
+            throw new InvalidVolumeLandmarkDomainException();
+        }
+        if(!System.Enum.IsDefined(trainingDistribution))
+        {
+            throw new InvalidTrainingDistributionDomainException();
+        }
+
         return new TrainingTemplate(Guid.CreateVersion7(),userId,name,volumeLandmark,trainingDistribution);
     }
     

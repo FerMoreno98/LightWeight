@@ -1,5 +1,6 @@
 using LightWeight.shared.BuildingBlocks;
 using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Domain.Exceptions;
 
 namespace LightWeight.Training.Domain.Entities;
 
@@ -28,6 +29,8 @@ public sealed class TemplateSession : Entity<Guid>
         string name
     )
     {
+        if(name.Trim() == "")
+            throw new SessionNameEmptyDomainException();
         return new TemplateSession
         (
             Guid.CreateVersion7(),
