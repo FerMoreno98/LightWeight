@@ -1,6 +1,8 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Utils;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
+using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.ValueObjects;
 
@@ -32,9 +34,9 @@ public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSe
                 set.RepetitionRange.Min,
                 set.RepetitionRange.Max,
                 set.ExpectedRIR,
-                MapTechnique(set.AdvanceTrainingTechniques),
+                Converters.MapTechnique(set.AdvanceTrainingTechniques),
                 set.SuperSetGroupId,
-                set.AimMuscleGroups
+                set.AimMuscleGroups.Select(Converters.MapMuscleGroup).ToList()
             );
             ret.Add(tempset);
         }
@@ -42,11 +44,5 @@ public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSe
 
     }
 
-    private static string? MapTechnique(AdvanceTrainingTechniques technique)
-    {
-        if (technique.IsDropSet) return "DropSet";
-        if (technique.IsCluster) return "Cluster";
-        if (technique.IsMyoRep) return "MyoRep";
-        return null;
-    }
+
 }

@@ -3,13 +3,29 @@
 
     @if (!isAdding) {
       <div class="fade-slide-in">
-        <div class="mb-6 flex items-center justify-between">
-          <h1 class="text-2xl font-bold text-white">Sesiones de la plantilla</h1>
+        <a
+          routerLink="/training/trainingtemplates"
+          class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Volver a plantillas
+        </a>
+
+        <div class="mb-8 flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-bold text-white">Sesiones de la plantilla</h1>
+            <p class="mt-1 text-sm text-slate-400">Organiza las sesiones que componen esta plantilla.</p>
+          </div>
           <button
             type="button"
             (click)="showAddForm()"
-            class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
           >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+            </svg>
             Añadir sesión
           </button>
         </div>
@@ -19,26 +35,54 @@
         }
 
         @if (isLoading()) {
-          <p class="text-sm text-slate-400">Cargando sesiones...</p>
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (skeleton of [1, 2, 3]; track skeleton) {
+              <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-5">
+                <div class="h-5 w-2/3 rounded bg-slate-700"></div>
+                <div class="mt-4 h-px w-full bg-slate-700/60"></div>
+                <div class="mt-4 flex gap-2">
+                  <div class="h-6 w-16 rounded-full bg-slate-700"></div>
+                  <div class="h-6 w-16 rounded-full bg-slate-700"></div>
+                </div>
+              </div>
+            }
+          </div>
         } @else if (Sessions.length === 0) {
-          <p class="text-sm text-slate-400">No hay sesiones todavía.</p>
+          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-16 text-center">
+            <div class="rounded-full bg-slate-800 p-3">
+              <svg class="h-6 w-6 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4 4a2 2 0 0 1 2-2h6.5a1 1 0 0 1 .707.293l3.5 3.5A1 1 0 0 1 17 6.5V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9 0v3a1 1 0 0 0 1 1h3l-4-4Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <p class="text-sm font-medium text-slate-300">No hay sesiones todavía</p>
+            <p class="max-w-xs text-xs text-slate-500">Añade una sesión para empezar a distribuir el volumen de esta plantilla.</p>
+          </div>
         } @else {
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             @for (session of Sessions; track session.sessionId) {
               <button
                 type="button"
                 (click)="goToSession(session)"
-                class="rounded-2xl border border-slate-700 bg-slate-800 p-5 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
+                class="group flex flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-xl hover:shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-400/40"
               >
-                <h2 class="text-lg font-semibold text-white">{{ session.sessionName }}</h2>
-                <div class="mt-2 flex flex-wrap gap-1.5">
-                  @for (entry of seriesEntries(session); track entry[0]) {
-                    <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
-                      {{ entry[0] }}: {{ entry[1] }}
-                    </span>
-                  } @empty {
-                    <span class="text-xs text-slate-500">Sin series</span>
-                  }
+                <div class="flex items-start justify-between gap-2">
+                  <h2 class="text-lg font-semibold leading-tight text-white">{{ session.sessionName }}</h2>
+                  <svg class="mt-0.5 h-4 w-4 shrink-0 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                  </svg>
+                </div>
+
+                <div class="mt-4 border-t border-slate-700/60 pt-3">
+                  <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Series por grupo muscular</p>
+                  <div class="flex flex-wrap gap-1.5">
+                    @for (entry of seriesEntries(session); track entry[0]) {
+                      <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
+                        {{ entry[0] }}: <span class="font-semibold text-white">{{ entry[1] }}</span>
+                      </span>
+                    } @empty {
+                      <span class="text-xs text-slate-500">Sin series</span>
+                    }
+                  </div>
                 </div>
               </button>
             }

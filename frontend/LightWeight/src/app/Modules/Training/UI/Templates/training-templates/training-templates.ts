@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { MuscleGroup, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
 
@@ -34,7 +34,7 @@ const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
 @Component({
   selector: 'app-training-templates',
   standalone: true,
-  imports: [],
+  imports: [RouterLink],
   templateUrl: './training-templates.html',
   styleUrl: './training-templates.css',
 })

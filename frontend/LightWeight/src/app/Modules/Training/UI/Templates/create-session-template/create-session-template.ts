@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MuscleGroup, SeriesPerGroupPerSession } from '../../../data/training-api.service';
 
 const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
@@ -19,7 +19,7 @@ const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
 @Component({
   selector: 'app-create-session-template',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './create-session-template.html',
   styleUrl: './create-session-template.css',
 })

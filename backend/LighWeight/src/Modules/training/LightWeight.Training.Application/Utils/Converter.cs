@@ -1,4 +1,5 @@
 using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Domain.ValueObjects;
 
 namespace LightWeight.Training.Application.Utils;
 
@@ -37,4 +38,12 @@ internal static class Converters
         TrainingDistribution.Other => "Other",
         _ => throw new ArgumentOutOfRangeException(nameof(trainingDistribution), trainingDistribution, null)
     };
+
+    public static string? MapTechnique(AdvanceTrainingTechniques technique)
+    {
+        if (technique.IsDropSet) return "DropSet";
+        if (technique.IsCluster) return "Cluster";
+        if (technique.IsMyoRep) return "MyoRep";
+        return null;
+    }
 }

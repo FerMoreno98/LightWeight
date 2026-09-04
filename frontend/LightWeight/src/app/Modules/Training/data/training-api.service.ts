@@ -38,7 +38,7 @@ export interface Set{
     expectedRIR : number,
     advanceTrainingTechniques : string,
     superSetGroupId : string | null,
-    aimMuscleGroups : string | null
+    aimMuscleGroups : MuscleGroup[]
 }
 
 @Service()

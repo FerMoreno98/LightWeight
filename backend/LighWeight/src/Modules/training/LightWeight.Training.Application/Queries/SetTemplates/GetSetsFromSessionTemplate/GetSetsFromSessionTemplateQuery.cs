@@ -12,5 +12,5 @@ public sealed record GetSetsFromSessionTemplateResponse(
     int ExpectedRIR,
     string? Technique,
     Guid? SuperSetGroupId,
-    IReadOnlyCollection<MuscleGroups> AimMuscleGroups
+    IReadOnlyCollection<string> AimMuscleGroups
 );
