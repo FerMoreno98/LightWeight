@@ -1,4 +1,5 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Repositories;
@@ -20,7 +21,7 @@ public sealed class CreateTemplateSessionCommandHandler : ICommandHandler<Create
     public async Task<Guid> HandleAsync(CreateTemplateSessionCommand command, CancellationToken ct = default)
     {
         TrainingTemplate? trainingTemplate = await _TrainingTemplateRepository.GetByIdAsync(command.TrainingTemplateId)
-        ?? throw new Exception();// Cambiar Cambiar Cambiar Cambiar
+        ?? throw new TrainingTemplateNotFoundApplicationException();// Cambiar Cambiar Cambiar Cambiar
         if(trainingTemplate.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();

@@ -13,7 +13,7 @@ using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
-using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
+// using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
@@ -32,7 +32,7 @@ public static class TrainingModule
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
         group.MapPost("/training-session", CreateTrainingSession).RequireAuthorization();
         group.MapGet("/exercises", GetAllExercises).RequireAuthorization();
-        group.MapGet("/training-template/{templateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
+        // group.MapGet("/training-template/{templateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
         group.MapGet("/training-template/{trainingTemplateId:guid}/{sessionTemplateId:guid}/sets",GetSetsOfASessionTemplate).RequireAuthorization();
         group.MapGet("/training-session/{trainingTemplateId:guid}/seriespermusclegrouppersession",GetNumberOfSeriesPerMuscleGroupPerSession).RequireAuthorization();
         group.MapGet("/training-template/trainingTemplates", GetUserTrainingTemplates).RequireAuthorization();
@@ -191,17 +191,17 @@ public static class TrainingModule
             new GetAllExercisesQuery(), ct);
         return TypedResults.Ok(exercises);
     }
-    private static async Task<IResult> GetSessionsOfATrainingTemplate(
-        Guid templateId,
-        IMediator mediator,
-        CancellationToken ct)
-    {
-        var sessions = await mediator.QueryAsync<GetSessionsFromTrainingTemplateQuery, List<GetSessionsFromTrainingTemplateResponse>>
-        (
-            new GetSessionsFromTrainingTemplateQuery(templateId), ct
-        );
-        return TypedResults.Ok(sessions);
-    }
+    // private static async Task<IResult> GetSessionsOfATrainingTemplate(
+    //     Guid templateId,
+    //     IMediator mediator,
+    //     CancellationToken ct)
+    // {
+    //     var sessions = await mediator.QueryAsync<GetSessionsFromTrainingTemplateQuery, List<GetSessionsFromTrainingTemplateResponse>>
+    //     (
+    //         new GetSessionsFromTrainingTemplateQuery(templateId), ct
+    //     );
+    //     return TypedResults.Ok(sessions);
+    // }
     private static async Task<IResult> GetSetsOfASessionTemplate
     (
         Guid sessionTemplateId,

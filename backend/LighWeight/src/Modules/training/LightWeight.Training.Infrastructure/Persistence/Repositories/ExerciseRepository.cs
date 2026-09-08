@@ -17,4 +17,10 @@ public class ExerciseRepository : IExerciseRepository
     {
         return await _dbContext.Exercises.ToListAsync();
     }
+
+    public async Task<Exercise?> GetByIdAsync(Guid ExerciseId)
+    {
+        return await _dbContext.Exercises
+                        .SingleOrDefaultAsync(e => e.Id == ExerciseId);
+    }
 }

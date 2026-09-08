@@ -1,4 +1,5 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Utils;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Enum;
@@ -18,7 +19,7 @@ public sealed class GetNumberOfSeriesPerGroupPerSessionQueryHandler : IQueryHand
     public async Task<List<GetNumberOfSeriesPerGroupPerSessionResponse>> HandleAsync(GetNumberOfSeriesPerGroupPerSessionQuery query, CancellationToken ct = default)
     {
         TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetByIdAsync(query.TrainingTemplateId)
-        ?? throw new Exception();
+        ?? throw new TrainingTemplateNotFoundApplicationException();
         List<GetNumberOfSeriesPerGroupPerSessionResponse> ret = new List<GetNumberOfSeriesPerGroupPerSessionResponse>();
         foreach(var session in trainingTemplate.TemplateSessions)
         {

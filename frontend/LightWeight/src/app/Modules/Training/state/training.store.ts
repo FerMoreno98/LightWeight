@@ -206,20 +206,20 @@ export class TrainingStore{
             this._isLoading.set(false);
         }
     }
-    async GetSessionsFromATrainingTemplate(TrainingTemplateId : string) : Promise<boolean>{
-        this._isLoading.set(true);
-        this._error.set(null);
-        try{
-            const sessions = await firstValueFrom(this.api.GetSessionsOfATrainingTemplate(TrainingTemplateId));
-            this._sessions.set(sessions);
-            return true;
-        }catch{
-            this._error.set('No se han podido cargar las sesiones');
-            return false;
-        }finally{
-            this._isLoading.set(false);
-        }
-    }
+    // async GetSessionsFromATrainingTemplate(TrainingTemplateId : string) : Promise<boolean>{
+    //     this._isLoading.set(true);
+    //     this._error.set(null);
+    //     try{
+    //         const sessions = await firstValueFrom(this.api.GetSessionsOfATrainingTemplate(TrainingTemplateId));
+    //         this._sessions.set(sessions);
+    //         return true;
+    //     }catch{
+    //         this._error.set('No se han podido cargar las sesiones');
+    //         return false;
+    //     }finally{
+    //         this._isLoading.set(false);
+    //     }
+    // }
     async GetSetsFromASessionTemplate(TrainingTemplateId : string, SessionTemplateId : string ) : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);

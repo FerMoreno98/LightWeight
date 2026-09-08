@@ -1,4 +1,5 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Utils;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Repositories;
@@ -17,7 +18,7 @@ public sealed class GetUserTrainingTemplatesQueryHandler : IQueryHandler<GetUser
     public async Task<List<GetUserTrainingTemplatesResponse>> HandleAsync(GetUserTrainingTemplatesQuery query, CancellationToken ct = default)
     {
         List<TrainingTemplate>? trainingTemplates = await _trainingTemplateRepository.GetAllTrainingTemplatesOfAUserAsync(query.UserId)
-        ?? throw new Exception();
+        ?? throw new TrainingTemplateNotFoundApplicationException();
         
         List<GetUserTrainingTemplatesResponse> ret = new List<GetUserTrainingTemplatesResponse>();
         foreach(var template in trainingTemplates)

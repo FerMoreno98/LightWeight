@@ -143,9 +143,9 @@ export class TrainingApiService {
     GetAllExercises() : Observable<Exercise[]>{
         return this.http.get<Exercise[]>(`${this.baseUrl}/exercises`);
     }
-    GetSessionsOfATrainingTemplate (TrainingTemplateId : string) : Observable<Session[]>{
-        return this.http.get<Session[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/sessions`)
-    }
+    // GetSessionsOfATrainingTemplate (TrainingTemplateId : string) : Observable<Session[]>{
+    //     return this.http.get<Session[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/sessions`)
+    // }
     GetSetsOfASessionTemplate (TrainingTemplateId : string, SessionTemplateId : string) : Observable<Set[]>{
         return this.http.get<Set[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/${SessionTemplateId}/sets`);
     }

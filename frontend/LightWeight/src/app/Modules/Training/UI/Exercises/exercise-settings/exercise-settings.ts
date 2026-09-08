@@ -74,7 +74,10 @@ export class ExerciseSettings {
   async onSubmit(){
     if (!this.selectedExercise) return;
 
-    const aimMuscleGroups = this.emphasizedMuscleGroups.map(group => MUSCLE_GROUP_NAMES[group]);
+    const emphasizedGroups = this.emphasizedMuscleGroups.length
+      ? this.emphasizedMuscleGroups
+      : this.selectedExercise.aimMuscleGroups;
+    const aimMuscleGroups = emphasizedGroups.map(group => MUSCLE_GROUP_NAMES[group]);
 
     const success = await this.store.CreateTemplateSet(
       this.selectedExercise.id,

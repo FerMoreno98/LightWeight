@@ -1,4 +1,5 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Utils;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
@@ -20,9 +21,9 @@ public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSe
     public async Task<List<GetSetsFromSessionTemplateResponse>> HandleAsync(GetSetsFromSessionTemplateQuery query, CancellationToken ct = default)
     {
         TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetByIdAsync(query.TrainingTemplateId)
-        ?? throw new Exception();
+        ?? throw new TrainingTemplateNotFoundApplicationException();
         TemplateSession? session = trainingTemplate.TemplateSessions.SingleOrDefault(ts => ts.Id == query.TemplateSessionId)
-        ?? throw new Exception();
+        ?? throw new TemplateSessionNotFoundApplicationException();
         IReadOnlyCollection<TemplateSet> templateSets = session.TemplateExercises;
 
         List<GetSetsFromSessionTemplateResponse> ret = new List<GetSetsFromSessionTemplateResponse>();

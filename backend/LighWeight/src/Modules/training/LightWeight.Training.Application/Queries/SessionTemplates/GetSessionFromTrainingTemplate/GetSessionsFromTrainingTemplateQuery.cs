@@ -1,11 +1,11 @@
-using LightWeight.shared.Mediator;
+// using LightWeight.shared.Mediator;
 
-namespace LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
+// namespace LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 
-public sealed record GetSessionsFromTrainingTemplateQuery(Guid TrainingTemplateId) : IQuery<List<GetSessionsFromTrainingTemplateResponse>>;
+// public sealed record GetSessionsFromTrainingTemplateQuery(Guid TrainingTemplateId) : IQuery<List<GetSessionsFromTrainingTemplateResponse>>;
 
-public record GetSessionsFromTrainingTemplateResponse
-(
-    Guid Id,
-    string Name
-);
+// public record GetSessionsFromTrainingTemplateResponse
+// (
+//     Guid Id,
+//     string Name
+// // );

@@ -1,4 +1,5 @@
 using LightWeight.shared.Mediator;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
@@ -11,24 +12,28 @@ namespace LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateS
 public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemplateSetCommand>
 {
     private readonly ITrainingTemplateRepository _TrainingTemplateRepository;
+    private readonly IExerciseRepository _ExerciseRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateTemplateSetCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW)
+    public CreateTemplateSetCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW,IExerciseRepository exerciseRepository)
     {
         _TrainingTemplateRepository = trainingTemplateRepository;
+        _ExerciseRepository = exerciseRepository;
         _UOW = uOW;
     }
 
     public async Task HandleAsync(CreateTemplateSetCommand command, CancellationToken ct = default)
     {
+        Exercise? exercise = await _ExerciseRepository.GetByIdAsync(command.ExerciseId)
+        ?? throw new ExerciseNotFounApplicationException();
         TrainingTemplate? trainingTemplate = await _TrainingTemplateRepository.GetBySessionIdAsync(command.TemplateSessionId)
-        ?? throw new Exception();
+        ?? throw new TrainingTemplateNotFoundApplicationException();
         if(trainingTemplate.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();
         }
         TemplateSession? templateSession = trainingTemplate.TemplateSessions.SingleOrDefault(s => s.Id == command.TemplateSessionId)
-        ?? throw new Exception();
+        ?? throw new TemplateSessionNotFoundApplicationException();
         RepetitionRange range = RepetitionRange.Create(command.Min, command.Max);
         AdvanceTrainingTechniques trainingTechniques = AdvanceTrainingTechniques.Create
         (
