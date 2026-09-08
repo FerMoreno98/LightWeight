@@ -34,6 +34,8 @@ public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemp
         }
         TemplateSession? templateSession = trainingTemplate.TemplateSessions.SingleOrDefault(s => s.Id == command.TemplateSessionId)
         ?? throw new TemplateSessionNotFoundApplicationException();
+        for(var i=0; i < command.Series; i++)
+        {
         RepetitionRange range = RepetitionRange.Create(command.Min, command.Max);
         AdvanceTrainingTechniques trainingTechniques = AdvanceTrainingTechniques.Create
         (
@@ -58,6 +60,7 @@ public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemp
             command.SuperSetGroupId
         );
         templateSession.AddSet(set);
+        }
         await _UOW.SaveChangesAsync(ct);
         
     }

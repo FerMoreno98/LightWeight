@@ -159,6 +159,7 @@ public static class TrainingModule
             request.IsMyoRep,
             request.IsCluster,
             request.ExpectedRIR,
+            request.Series,
             request.AimMuscleGroups,
             request.SuperSetGroupId
         ), ct);

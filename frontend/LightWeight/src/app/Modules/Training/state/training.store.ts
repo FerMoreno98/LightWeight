@@ -165,6 +165,7 @@ export class TrainingStore{
         isMyoRep:boolean,
         aimMuscleGroups : string [],
         expectedRIR:number,
+        series:number,
         superSetGroupId :string | null
     ) : Promise<boolean>{
         this._isLoading.set(true);
@@ -181,6 +182,7 @@ export class TrainingStore{
                     isMyoRep,
                     aimMuscleGroups,
                     expectedRIR,
+                    series,
                     superSetGroupId
                 ));
             return true;

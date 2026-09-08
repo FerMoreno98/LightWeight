@@ -33,6 +33,7 @@ export class ExerciseSettings {
   isCluster = false;
   isMyoRep = false;
   expectedRIR: number | null = null;
+  series: number | null = 1;
   emphasizedMuscleGroups: number[] = [];
 
   async ngOnInit(){
@@ -68,6 +69,7 @@ export class ExerciseSettings {
     this.isCluster = false;
     this.isMyoRep = false;
     this.expectedRIR = null;
+    this.series = 1;
     this.emphasizedMuscleGroups = [];
   }
 
@@ -89,6 +91,7 @@ export class ExerciseSettings {
       this.isMyoRep,
       aimMuscleGroups,
       this.expectedRIR!,
+      this.series!,
       null
     );
 

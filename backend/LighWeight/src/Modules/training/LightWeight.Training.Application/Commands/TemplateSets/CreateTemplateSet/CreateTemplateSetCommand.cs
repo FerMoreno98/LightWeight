@@ -13,6 +13,7 @@ public sealed record CreateTemplateSetCommand
     bool IsMyoRep,
     bool IsCluster,
     int ExpectedRIR,
+    int Series,
     List<string> AimMuscleGroups,
     Guid? SuperSetGroupId
 ) : ICommand;

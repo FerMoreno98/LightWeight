@@ -58,6 +58,7 @@ public class SetTemplateTests
             false,
             false,
             2,
+            1,
             new List<string>(),
             null
         );
@@ -102,6 +103,7 @@ public class SetTemplateTests
             false,
             false,
             false,
+            2,
             2,
             new List<string>(),
             null
@@ -159,6 +161,7 @@ public class SetTemplateTests
             false,
             false,
             2,
+            1,
             new List<string>(),
             null
         );
@@ -225,6 +228,7 @@ public class SetTemplateTests
             false,
             false,
             2,
+            1,
             new List<string>(),
             null
         );
@@ -289,6 +293,7 @@ public class SetTemplateTests
             false,
             false,
             2,
+            1,
             new List<string>(),
             null
         );

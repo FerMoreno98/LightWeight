@@ -125,6 +125,7 @@ export class TrainingApiService {
         isMyoRep:boolean,
         aimMuscleGroups : string [],
         expectedRIR:number,
+        series:number,
         superSetGroupId :string | null
     ) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/template-set`,{
@@ -136,6 +137,7 @@ export class TrainingApiService {
             isCluster,
             isMyoRep,
             expectedRIR,
+            series,
             aimMuscleGroups,
             superSetGroupId
         })

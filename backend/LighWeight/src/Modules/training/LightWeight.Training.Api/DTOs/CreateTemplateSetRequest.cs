@@ -12,6 +12,7 @@ public sealed record CreateTemplateSetRequest
     bool IsMyoRep,
     bool IsCluster,
     int ExpectedRIR,
+    int Series,
     List<string> AimMuscleGroups,
     Guid? SuperSetGroupId
 );
