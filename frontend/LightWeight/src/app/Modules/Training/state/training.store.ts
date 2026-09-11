@@ -264,4 +264,84 @@ export class TrainingStore{
             this._isLoading.set(false);
         }
     }
+    async DeleteSetTemplate(TemplateSetId : string) : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.DeleteSetTemplate(TemplateSetId))
+            this._sets.update(sets => sets.filter(s => s.id !== TemplateSetId));
+            return true;
+        }catch{
+            this._error.set("No se ha podido borrar la serie");
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+    async DeleteTemplateSession(TemplateSessionId : string) : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.DeleteTemplateSession(TemplateSessionId))
+            this._sessions.update(s => s.filter(s => s.id !== TemplateSessionId));
+            this._seriesPerGroupPerSession.update(s => s.filter(s => s.sessionId !== TemplateSessionId));
+            return true;
+        }catch{
+            this._error.set("No se ha podido borrar la sesion");
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+    async DeleteTrainingTemplate(TrainingTemplateId : string) : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.DeleteTrainingTemplate(TrainingTemplateId));
+            this._trainingTemplates.update(tt => tt.filter(tt => tt.id !== TrainingTemplateId))
+            return true;
+        }catch{
+            this._error.set("No se ha podido eliminar la plantilla");
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+    async UpdateTemplateSet
+    (
+        templateSessionId:string | null,
+        setId : string | null,
+        min:number,
+        max:number,
+        isDropset:boolean,
+        isCluster:boolean,
+        isMyoRep:boolean,
+        aimMuscleGroups : string [],
+        expectedRIR:number,
+        superSetGroupId :string | null
+    ){
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.UpdateTemplateSet
+                (
+                    templateSessionId,
+                    setId,
+                    min,
+                    max,
+                    isDropset,
+                    isCluster,
+                    isMyoRep,
+                    aimMuscleGroups,
+                    expectedRIR,
+                    superSetGroupId
+                ))
+            return true;
+        }catch{
+            this._error.set("No se ha podido actualizar el set");
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
 }

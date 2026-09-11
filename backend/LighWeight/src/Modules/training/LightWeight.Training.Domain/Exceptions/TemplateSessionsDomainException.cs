@@ -7,3 +7,10 @@ public sealed class SessionNameEmptyDomainException : TrainingDomainException
         
     }
 }
+public sealed class SessionNotFoundDomainException : TrainingDomainException
+{
+    public SessionNotFoundDomainException() : base("This session does not correspond to any sessiontemplate")
+    {
+        
+    }
+}

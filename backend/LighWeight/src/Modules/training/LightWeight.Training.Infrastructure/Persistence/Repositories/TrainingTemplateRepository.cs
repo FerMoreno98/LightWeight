@@ -38,6 +38,20 @@ public class TrainingTemplateRepository : ITrainingTemplateRepository
     {
         return await _dbContext.TrainingTemplates
             .Include(t => t.TemplateSessions)
+                .ThenInclude(s => s.TemplateExercises)
             .SingleOrDefaultAsync(t => t.TemplateSessions.Any(ts => ts.Id == SessionId));
+    }
+
+    public async Task<TrainingTemplate?> GetByTemplateSetIdAsync(Guid TemplateSetId)
+    {
+        return await _dbContext.TrainingTemplates
+            .Include(t => t.TemplateSessions)
+                .ThenInclude(ts => ts.TemplateExercises)
+                .SingleOrDefaultAsync(ts => ts.TemplateSessions.Any(t => t.TemplateExercises.Any(te=>te.Id == TemplateSetId)));
+    }
+    public Task DeleteAsync(TrainingTemplate trainingTemplate, CancellationToken ct)
+    {
+        _dbContext.TrainingTemplates.Remove(trainingTemplate);
+        return Task.CompletedTask;
     }
 }

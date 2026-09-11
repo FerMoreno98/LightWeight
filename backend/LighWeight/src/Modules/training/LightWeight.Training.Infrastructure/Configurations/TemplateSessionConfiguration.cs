@@ -16,6 +16,7 @@ public class TemplateSessionConfiguration : IEntityTypeConfiguration<TemplateSes
         builder.HasMany(t => t.TemplateExercises)
             .WithOne()
             .HasForeignKey("TemplateSessionId")
+            .IsRequired()
             .HasPrincipalKey(t => t.Id)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(t => t.TemplateExercises)

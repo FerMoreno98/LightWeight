@@ -6,9 +6,13 @@ using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
+using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
+using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
+using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetCurrentMacrocycle;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
@@ -44,6 +48,10 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSetsFromSessionTemplateQuery, List<GetSetsFromSessionTemplateResponse>>,GetSetsFromSessionTemplateQueryHandler>();
         services.AddScoped<IQueryHandler<GetNumberOfSeriesPerGroupPerSessionQuery,List<GetNumberOfSeriesPerGroupPerSessionResponse>>,GetNumberOfSeriesPerGroupPerSessionQueryHandler>();
         services.AddScoped<IQueryHandler<GetUserTrainingTemplatesQuery,List<GetUserTrainingTemplatesResponse>>,GetUserTrainingTemplatesQueryHandler>();
+        services.AddScoped<ICommandHandler<DeleteTemplateSetCommand>,DeleteTemplateSetCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteTemplateSessionCommand>,DeleteTemplateSessionCommandHandler>();
+        services.AddScoped<ICommandHandler<DeleteTrainingTemplateCommand>,DeleteTrainingTemplateCommandHandler>();
+        services.AddScoped<ICommandHandler<UpdateTemplateSetCommand>,UpdateTemplateSetCommandHandler>();
         return services;
     }
 }

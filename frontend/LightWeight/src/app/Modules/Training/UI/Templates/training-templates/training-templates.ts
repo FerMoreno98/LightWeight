@@ -65,4 +65,8 @@ export class TrainingTemplates {
   goToSessions(template: TrainingTemplate) {
     this.router.navigate(['/training/sessiontemplate', template.id]);
   }
+
+  async deleteTemplate(template: TrainingTemplate) {
+    await this.store.DeleteTrainingTemplate(template.id);
+  }
 }

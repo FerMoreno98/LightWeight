@@ -29,6 +29,7 @@ public class TrainingTemplateConfiguration : IEntityTypeConfiguration<TrainingTe
         builder.HasMany(t => t.TemplateSessions)
             .WithOne()
             .HasForeignKey("TrainingTemplateId")
+            .IsRequired()
             .HasPrincipalKey(t => t.Id)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(t => t.TemplateSessions)

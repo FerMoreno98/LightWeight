@@ -6,6 +6,7 @@ namespace LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessi
 public sealed record GetSetsFromSessionTemplateQuery(Guid TemplateSessionId, Guid TrainingTemplateId) : IQuery<List<GetSetsFromSessionTemplateResponse>>;
 
 public sealed record GetSetsFromSessionTemplateResponse(
+    Guid Id,
     Guid ExerciseId,
     int RepetitionRangeMin,
     int RepetitionRangeMax,

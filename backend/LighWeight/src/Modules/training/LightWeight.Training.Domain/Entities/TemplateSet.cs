@@ -13,7 +13,7 @@ public sealed class TemplateSet : Entity<Guid>
     /// <summary>Expected repetitions in reserve (how many reps left before failure)</summary>
     public int ExpectedRIR { get; private set; }
     /// <summary>Advanced technique planned, if any</summary>
-    public AdvanceTrainingTechniques AdvanceTrainingTechniques { get; private set; }
+    public AdvanceTrainingTechniques? AdvanceTrainingTechniques { get; private set; }
     /// <summary>Shared ID with other template sets that form a planned superset</summary>
     public Guid? SuperSetGroupId { get; private set; }
     /// <summary>
@@ -66,5 +66,21 @@ public sealed class TemplateSet : Entity<Guid>
             RepetitionRange = repetitionRange,
             AdvanceTrainingTechniques = advanceTrainingTechniques ?? AdvanceTrainingTechniques.None
         };
+    }
+    public void UpdateSet
+    (
+        RepetitionRange repetitionRange,
+        int expectedRIR,
+        List<MuscleGroups> aimMuscleGroups,
+        AdvanceTrainingTechniques? advanceTrainingTechniques = null,
+        Guid? superSetGroupId = null
+    )
+    {
+        RepetitionRange = repetitionRange;
+        ExpectedRIR = expectedRIR;
+        AimMuscleGroups = aimMuscleGroups;
+        AdvanceTrainingTechniques = advanceTrainingTechniques;
+        SuperSetGroupId = superSetGroupId;
+        
     }
 }

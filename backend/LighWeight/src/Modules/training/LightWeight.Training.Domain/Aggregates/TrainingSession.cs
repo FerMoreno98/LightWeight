@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using LightWeight.shared.BuildingBlocks;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.ValueObjects;
@@ -96,5 +97,6 @@ public sealed class TrainingSession : AggregateRoot<Guid>
     {
         _sets.Add(set);
     }
+    
 
 }

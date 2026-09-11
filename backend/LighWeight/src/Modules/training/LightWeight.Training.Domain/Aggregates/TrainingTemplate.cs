@@ -94,4 +94,11 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
         }
         return ret;
     }
+
+    public void DeleteSessionTemplate(Guid TemplateSessionId)
+    {
+        TemplateSession? session = _templateSessions.SingleOrDefault(ts => ts.Id == TemplateSessionId)
+        ?? throw new SessionNotFoundDomainException();
+        _templateSessions.Remove(session);
+    }
 }

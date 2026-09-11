@@ -8,4 +8,6 @@ public interface ITrainingTemplateRepository
     Task<TrainingTemplate?> GetByIdAsync(Guid TrainingTemplateId);
     Task<TrainingTemplate?> GetBySessionIdAsync(Guid SessionId);
     Task<List<TrainingTemplate>?> GetAllTrainingTemplatesOfAUserAsync(Guid UserId);
+    Task<TrainingTemplate?> GetByTemplateSetIdAsync(Guid TemplateSetId);
+    Task DeleteAsync(TrainingTemplate trainingTemplate, CancellationToken ct);
 }

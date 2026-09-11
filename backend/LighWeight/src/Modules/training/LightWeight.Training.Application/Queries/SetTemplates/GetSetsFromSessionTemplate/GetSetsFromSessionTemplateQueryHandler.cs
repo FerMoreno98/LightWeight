@@ -31,6 +31,7 @@ public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSe
         {
             var tempset = new GetSetsFromSessionTemplateResponse
             (
+                set.Id,
                 set.ExerciseId,
                 set.RepetitionRange.Min,
                 set.RepetitionRange.Max,

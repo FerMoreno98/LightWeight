@@ -32,6 +32,7 @@ export interface TrainingTemplate{
     totalVolume : Partial<Record<MuscleGroup, number>>
 }
 export interface Set{
+    id : string,
     exerciseId : string,
     repetitionRangeMin : number,
     repetitionRangeMax : number,
@@ -156,6 +157,42 @@ export class TrainingApiService {
     }
     GetUserTrainingTemplates () : Observable<TrainingTemplate[]>{
         return this.http.get<TrainingTemplate[]>(`${this.baseUrl}/training-template/trainingTemplates`);
+    }
+    DeleteSetTemplate(TemplateSetId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/training-set/${TemplateSetId}`);
+    }
+    DeleteTemplateSession(TemplateSessionId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/training-session/${TemplateSessionId}`);
+    }
+    DeleteTrainingTemplate(TrainingTemplateId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}`);
+    }
+    UpdateTemplateSet
+    (
+        templateSessionId:string | null,
+        setId : string | null,
+        min:number,
+        max:number,
+        isDropset:boolean,
+        isCluster:boolean,
+        isMyoRep:boolean,
+        aimMuscleGroups : string [],
+        expectedRIR:number,
+        superSetGroupId :string | null
+    ) : Observable<void>{
+        return this.http.put<void>(`${this.baseUrl}/template-set`,{
+            templateSessionId,
+            setId,
+            min,
+            max,
+            isDropset,
+            isCluster,
+            isMyoRep,
+            expectedRIR,
+            aimMuscleGroups,
+            superSetGroupId
+        
+        })
     }
 
 }

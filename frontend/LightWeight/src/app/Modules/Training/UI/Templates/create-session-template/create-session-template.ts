@@ -31,7 +31,7 @@ export class CreateSessionTemplate {
   isLoading = this.store.isLoading;
   error = this.store.error;
 
-  Sessions: SeriesPerGroupPerSession[] = [];
+  Sessions = this.store.seriesPerGroupPerSession;
   isAdding = false;
 
   name = '';
@@ -46,7 +46,6 @@ export class CreateSessionTemplate {
   async loadSessions(){
     if (!this.idTrainingTemplate) return;
     await this.store.GetSeriesPerMuscleGroupPerSession(this.idTrainingTemplate);
-    this.Sessions = this.store.seriesPerGroupPerSession();
   }
 
   showAddForm(){
@@ -60,6 +59,10 @@ export class CreateSessionTemplate {
 
   goToSession(session: SeriesPerGroupPerSession){
     this.router.navigate(['/training/sessionsets', this.idTrainingTemplate, session.sessionId]);
+  }
+
+  async deleteSession(session: SeriesPerGroupPerSession){
+    await this.store.DeleteTemplateSession(session.sessionId);
   }
 
   seriesEntries(session: SeriesPerGroupPerSession): [string, number][] {

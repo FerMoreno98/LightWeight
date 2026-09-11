@@ -7,3 +7,10 @@ public sealed class ReptitionRangeLessThanZeroDomainException : TrainingDomainEx
         
     }
 }
+public sealed class SetNotFoundDomainException : TrainingDomainException
+{
+    public SetNotFoundDomainException() : base("Set not found")
+    {
+        
+    }
+}

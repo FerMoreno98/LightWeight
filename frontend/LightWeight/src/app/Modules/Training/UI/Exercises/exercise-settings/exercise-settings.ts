@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Exercise } from '../../../data/training-api.service';
 
 const MUSCLE_GROUP_LABELS = ['Hombro', 'Espalda', 'Pecho', 'Bíceps', 'Tríceps', 'Glúteos', 'Cuádriceps', 'Isquios', 'Gemelos'];
-const MUSCLE_GROUP_NAMES = ['Shoulder', 'Back', 'Chest', 'Biceps', 'Triceps', 'Glutes', 'Quads', 'Hamstring', 'calves'];
+const MUSCLE_GROUP_NAMES = ['Shoulder', 'Back', 'Chest', 'Biceps', 'Triceps', 'Glutes', 'Quads', 'Hamstring', 'Calves'];
 
 @Component({
   selector: 'app-exercise-settings',
@@ -36,11 +36,37 @@ export class ExerciseSettings {
   series: number | null = 1;
   emphasizedMuscleGroups: number[] = [];
 
+  isEditMode = false;
+  editingSetId: string | null = null;
+  editingSuperSetGroupId: string | null = null;
+
   async ngOnInit(){
     this.TemplateId = this.route.snapshot.paramMap.get('templateid');
     this.SessionId = this.route.snapshot.paramMap.get('sessionid');
+    const setId = this.route.snapshot.queryParamMap.get('setId');
+
     await this.store.GetAllExercises();
     this.Exercises = this.store.exercises();
+
+    if (setId && this.TemplateId && this.SessionId){
+      await this.store.GetSetsFromASessionTemplate(this.TemplateId, this.SessionId);
+      const set = this.store.sets().find(s => s.id === setId);
+      if (set){
+        this.isEditMode = true;
+        this.editingSetId = set.id;
+        this.editingSuperSetGroupId = set.superSetGroupId;
+        this.selectedExercise = this.Exercises.find(e => e.id === set.exerciseId) ?? null;
+        this.min = set.repetitionRangeMin;
+        this.max = set.repetitionRangeMax;
+        this.expectedRIR = set.expectedRIR;
+        this.isDropset = set.advanceTrainingTechniques === 'DropSet';
+        this.isCluster = set.advanceTrainingTechniques === 'Cluster';
+        this.isMyoRep = set.advanceTrainingTechniques === 'MyoRep';
+        this.emphasizedMuscleGroups = set.aimMuscleGroups
+          .map(muscle => MUSCLE_GROUP_NAMES.indexOf(muscle))
+          .filter(index => index !== -1);
+      }
+    }
   }
 
   muscleGroupLabel(group: number): string {
@@ -62,6 +88,10 @@ export class ExerciseSettings {
   }
 
   backToExercises(){
+    if (this.isEditMode){
+      this.router.navigate(['/training/sessionsets', this.TemplateId, this.SessionId]);
+      return;
+    }
     this.selectedExercise = null;
     this.min = null;
     this.max = null;
@@ -81,22 +111,34 @@ export class ExerciseSettings {
       : this.selectedExercise.aimMuscleGroups;
     const aimMuscleGroups = emphasizedGroups.map(group => MUSCLE_GROUP_NAMES[group]);
 
-    const success = await this.store.CreateTemplateSet(
-      this.selectedExercise.id,
-      this.SessionId,
-      this.min!,
-      this.max!,
-      this.isDropset,
-      this.isCluster,
-      this.isMyoRep,
-      aimMuscleGroups,
-      this.expectedRIR!,
-      this.series!,
-      null
-    );
+    const success = this.isEditMode
+      ? await this.store.UpdateTemplateSet(
+          this.SessionId,
+          this.editingSetId,
+          this.min!,
+          this.max!,
+          this.isDropset,
+          this.isCluster,
+          this.isMyoRep,
+          aimMuscleGroups,
+          this.expectedRIR!,
+          this.editingSuperSetGroupId
+        )
+      : await this.store.CreateTemplateSet(
+          this.selectedExercise.id,
+          this.SessionId,
+          this.min!,
+          this.max!,
+          this.isDropset,
+          this.isCluster,
+          this.isMyoRep,
+          aimMuscleGroups,
+          this.expectedRIR!,
+          this.series!,
+          null
+        );
 
     if (success){
-      this.backToExercises();
       this.router.navigate(['/training/sessionsets', this.TemplateId, this.SessionId]);
     }
   }

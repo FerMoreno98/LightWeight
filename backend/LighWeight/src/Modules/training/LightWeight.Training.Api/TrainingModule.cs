@@ -17,6 +17,10 @@ using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
+using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
+using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
+using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
+using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 
 public static class TrainingModule
 {
@@ -36,6 +40,10 @@ public static class TrainingModule
         group.MapGet("/training-template/{trainingTemplateId:guid}/{sessionTemplateId:guid}/sets",GetSetsOfASessionTemplate).RequireAuthorization();
         group.MapGet("/training-session/{trainingTemplateId:guid}/seriespermusclegrouppersession",GetNumberOfSeriesPerMuscleGroupPerSession).RequireAuthorization();
         group.MapGet("/training-template/trainingTemplates", GetUserTrainingTemplates).RequireAuthorization();
+        group.MapDelete("/training-set/{templateSetId:guid}", DeleteTemplateSet).RequireAuthorization();
+        group.MapDelete("/training-session/{templateSessionId:guid}",DeleteTemplateSession).RequireAuthorization();
+        group.MapDelete("/training-template/{trainingTemplateId:guid}",DeleteTrainingTemplate).RequireAuthorization();
+        group.MapPut("/template-set",UpdateTemplateSet).RequireAuthorization();
 
         return app;
     }
@@ -242,5 +250,69 @@ public static class TrainingModule
             new GetUserTrainingTemplatesQuery(Guid.Parse(userId)),ct
         );
         return TypedResults.Ok(templates);
+    }
+    private static async Task<IResult> DeleteTemplateSet(
+        IMediator mediator,
+        Guid templateSetId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new DeleteTemplateSetCommand(templateSetId,Guid.Parse(userId)),ct);
+        return TypedResults.Ok();
+    }
+    private static async Task<IResult> DeleteTemplateSession
+    (
+        IMediator mediator,
+        Guid TemplateSessionId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new DeleteTemplateSessionCommand(TemplateSessionId,Guid.Parse(userId)),ct);
+        return TypedResults.Ok();  
+    }
+    private static async Task<IResult> DeleteTrainingTemplate(
+        IMediator mediator,
+        Guid TrainingTemplateId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new DeleteTrainingTemplateCommand(TrainingTemplateId,Guid.Parse(userId)),ct);
+        return TypedResults.Ok();
+    }
+    private static async Task<IResult> UpdateTemplateSet
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        UpdateTemplateSetRequest request,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new UpdateTemplateSetCommand
+        (
+            request.TemplateSessionId,
+            Guid.Parse(userId),
+            request.SetId,
+            request.Min,
+            request.Max,
+            request.IsDropSet,
+            request.IsMyoRep,
+            request.IsCluster,
+            request.ExpectedRIR,
+            request.AimMuscleGroups,
+            request.SuperSetGroupId
+
+        ),ct);
+        return TypedResults.Ok();
     }
 }

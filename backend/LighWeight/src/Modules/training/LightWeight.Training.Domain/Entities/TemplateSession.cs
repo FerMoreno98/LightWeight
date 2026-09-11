@@ -56,4 +56,10 @@ public sealed class TemplateSession : Entity<Guid>
         return NumberOfSeries;
 
     }
+    public void DeleteTemplateSet(Guid TemplateSetId)
+    {
+       TemplateSet? set = _templateExercises.SingleOrDefault(e => e.Id == TemplateSetId)
+       ?? throw new SetNotFoundDomainException();
+       _templateExercises.Remove(set);
+    }
 }
