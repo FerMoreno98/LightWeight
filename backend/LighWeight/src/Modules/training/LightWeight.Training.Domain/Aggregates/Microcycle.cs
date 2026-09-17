@@ -28,6 +28,8 @@ public sealed class Microcycle : AggregateRoot<Guid>
     /// <summary>Distribution type (Push/Pull/Legs, Upper/Lower, etc.)</summary>
     public TrainingDistribution TrainingDistribution{get;private set;} 
 
+    public Guid TrainingTemplateId{get;private set;}
+
     /// <summary>Creates a new microcycle within a mesocycle</summary>
     /// <param name="mesocycleId">Parent mesocycle ID</param>
     /// <param name="durationInDays">Duration in days</param>

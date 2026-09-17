@@ -14,7 +14,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         DateTime startAt, 
         DateTime? endAt,
         TrainingStage stage,
-        Periodization periodization,
         string? comments
     ) : base(Id)
     {
@@ -23,7 +22,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         StartAt = startAt;
         EndAt = endAt;
         Stage = stage;
-        Periodization = periodization;
         Comments = comments;
     }
     /// <summary>Owner of the macrocycle</summary>
@@ -35,8 +33,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     public DateTime? EndAt{get; private set;}
     /// <summary>Training stage (bulk, cut, maintenance)</summary>
     public TrainingStage Stage{get;private set;}
-    /// <summary>Type of periodization used</summary>
-    public Periodization Periodization{get;private set;}
+
     /// <summary>Optional notes about the macrocycle</summary>
     public string? Comments{get;private set;}
 
@@ -58,7 +55,7 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         string? comments
     )
     {
-        return new Macrocycle(Guid.CreateVersion7(),UserId,StartedAt,EndAt,stage,periodization,comments);
+        return new Macrocycle(Guid.CreateVersion7(),UserId,StartedAt,EndAt,stage,comments);
     }
 
     /// <summary>Marks the macrocycle as finished at the given time</summary>

@@ -21,6 +21,7 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     public DateTime StartAt{get;private set;}
     /// <summary>Date the mesocycle ends</summary>
     public DateTime EndAt{get; private set;}
+    public Guid ProgramId{get; private set;}
 
     private Mesocycle
     (
