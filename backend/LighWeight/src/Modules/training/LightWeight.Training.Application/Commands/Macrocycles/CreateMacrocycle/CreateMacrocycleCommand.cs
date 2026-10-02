@@ -8,6 +8,5 @@ public sealed record CreateMacrocycleCommand
     DateTime StartAt,
     DateTime? EndAt,
     string TrainingStage,
-    string Periodization,
     string? Comments
 ) : ICommand;

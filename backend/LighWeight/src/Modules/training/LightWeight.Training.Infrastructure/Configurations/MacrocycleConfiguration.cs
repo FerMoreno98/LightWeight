@@ -20,11 +20,6 @@ public class MacrocycleConfiguration : IEntityTypeConfiguration<Macrocycle>
             .HasMaxLength(20)
             .IsRequired()
             .HasConversion(s => s.ToString(), s => Enum.Parse<TrainingStage>(s));
-        builder.Property(m => m.Periodization)
-            .HasColumnName("Periodization")
-            .HasMaxLength(20)
-            .IsRequired()
-            .HasConversion(s => s.ToString(), s => Enum.Parse<Periodization>(s));
         builder.Property(m => m.Comments).HasColumnName("Comments");
         builder.Ignore(m => m.DomainEvents);
     }

@@ -6,7 +6,7 @@ public sealed record CreateMesocycleCommand
 (
     Guid MacrocycleId,
     Guid UserId,
-    List<string> AimMuscles,
+    Guid ProgramId,
     int MotivationLevel,
     string? Injuries,
     string? Comments,

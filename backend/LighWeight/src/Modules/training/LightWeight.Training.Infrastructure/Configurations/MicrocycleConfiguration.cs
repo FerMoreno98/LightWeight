@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using LightWeight.Training.Domain.Aggregates;
-using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Domain.Entities;
 
 namespace LightWeight.Training.Infrastructure.Configurations;
 
@@ -15,12 +15,8 @@ public class MicrocycleConfiguration : IEntityTypeConfiguration<Microcycle>
         builder.Property(m => m.MesocycleId).HasColumnName("MesocycleId").IsRequired();
         builder.Property(m => m.UserId).HasColumnName("UserId").IsRequired();
         builder.HasIndex(m => m.UserId).HasDatabaseName("Ix_Microcycle_UserId");
-        builder.Property(m => m.DurationInDays).HasColumnName("DurationInDays").IsRequired();
-        builder.Property(m => m.TrainingDistribution)
-            .HasColumnName("TrainingDistribution")
-            .HasMaxLength(20)
-            .IsRequired()
-            .HasConversion(s => s.ToString(), s => Enum.Parse<TrainingDistribution>(s));
+        builder.Property(m => m.TrainingTemplateId).HasColumnName("TrainingTemplateId").IsRequired();
+        builder.Property(m => m.WeekNumber).HasColumnName("WeekNumber").IsRequired();
         builder.Ignore(m => m.DomainEvents);
 
         builder.HasOne<Mesocycle>()
@@ -28,5 +24,12 @@ public class MicrocycleConfiguration : IEntityTypeConfiguration<Microcycle>
             .HasForeignKey(m => m.MesocycleId)
             .HasPrincipalKey(m => m.Id)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Templates are soft deleted, a hard delete must never remove the history
+        builder.HasOne<TrainingTemplate>()
+            .WithMany()
+            .HasForeignKey(m => m.TrainingTemplateId)
+            .HasPrincipalKey(t => t.Id)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

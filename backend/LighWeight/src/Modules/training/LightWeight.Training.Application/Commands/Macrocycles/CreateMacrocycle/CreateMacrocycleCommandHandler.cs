@@ -20,14 +20,12 @@ public sealed class CreateMacrocycleCommandHandler : ICommandHandler<CreateMacro
     public async Task HandleAsync(CreateMacrocycleCommand command, CancellationToken ct = default)
     {
         var Stage = Enum.Parse<TrainingStage>(command.TrainingStage);
-        var periodization = Enum.Parse<Periodization>(command.Periodization);
         Macrocycle macrocycle = Macrocycle.Create
         (
             command.UserId,
             command.StartAt,
             command.EndAt,
             Stage,
-            periodization,
             command.Comments
         );
         await _macrocycleRepository.AddAsync(macrocycle,ct);

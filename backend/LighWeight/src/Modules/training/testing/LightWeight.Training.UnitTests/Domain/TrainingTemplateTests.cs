@@ -9,129 +9,74 @@ namespace LightWeight.Training.UnitTests.Domain;
 public class TrainingTemplateTests
 {
     [Theory]
-    [InlineData("NombreValido", VolumeLandmarks.MV, TrainingDistribution.FullBody)]
-    [InlineData("123435",VolumeLandmarks.MAV,TrainingDistribution.PushPullLegs)]
-    [InlineData("A_23",VolumeLandmarks.MEV,TrainingDistribution.Phat)]
+    [InlineData(VolumeLandmarks.MV, TrainingDistribution.FullBody, 7, 1)]
+    [InlineData(VolumeLandmarks.MAV, TrainingDistribution.PushPullLegs, 5, 2)]
+    [InlineData(VolumeLandmarks.MEV, TrainingDistribution.Phat, 10, 3)]
     public void Create_WithValidData_ReturnATrainingTemplate
     (
-        string name,
         VolumeLandmarks volumeLandmark,
-        TrainingDistribution distribution
+        TrainingDistribution distribution,
+        int durationInDays,
+        int order
     )
     {
         // Arrange
-        var userId = Guid.CreateVersion7();
+        // Act
         TrainingTemplate template = TrainingTemplate.Create
         (
-            userId,
-            name,
             volumeLandmark,
-            distribution
+            distribution,
+            durationInDays,
+            order
         );
-        // Act
         // Assert
-        Assert.Equal(userId,template.UserId);
-        Assert.Equal(name,template.Name);
         Assert.Equal(volumeLandmark,template.VolumeLandmark);
         Assert.Equal(distribution,template.TrainingDistribution);
+        Assert.Equal(durationInDays,template.DurationInDays);
+        Assert.Equal(order,template.Order);
+        Assert.False(template.IsDeleted);
     }
 
     [Theory]
-    [InlineData("",VolumeLandmarks.MEV,TrainingDistribution.Phat)]
-    public void Create_WithEmptyName_ThrowsDomainException
-    (
-        string name,
-        VolumeLandmarks volumeLandmark,
-        TrainingDistribution distribution
-    )
-    {
-                // Arrange
-        var userId = Guid.CreateVersion7();
-
-        // Act
-        // Assert
-        Assert.Throws<NameEmptyDomainException>(
-        ()=> TrainingTemplate.Create
-        (
-            userId,
-            name,
-            volumeLandmark,
-            distribution
-        )
-        );
-        
-    }
-    [Theory]
-    [InlineData("NombreValido",VolumeLandmarks.MEV,TrainingDistribution.Phat)]
-    public void Create_WithEmptyGuid_ThrowsDomainException
-    (
-        string name,
-        VolumeLandmarks volumeLandmark,
-        TrainingDistribution distribution
-    )
-    {
-        // Arrange
-        var userId = Guid.Empty;
-
-        // Act
-        // Assert
-        Assert.Throws<UserIdEmptyDomainException>(
-        ()=> TrainingTemplate.Create
-        (
-            userId,
-            name,
-            volumeLandmark,
-            distribution
-        )
-        );
-    }
-
-    [Theory]
-    [InlineData("ValidName",(VolumeLandmarks)999,TrainingDistribution.Phat)]
+    [InlineData((VolumeLandmarks)999,TrainingDistribution.Phat)]
     public void Create_WithInvalidLandmark_ThrowsDomainException
     (
-        string name,
         VolumeLandmarks volumeLandmark,
         TrainingDistribution distribution
     )
     {
         // Arrange
-        var userId = Guid.CreateVersion7();
-
         // Act
         // Assert
         Assert.Throws<InvalidVolumeLandmarkDomainException>(
         ()=> TrainingTemplate.Create
         (
-            userId,
-            name,
             volumeLandmark,
-            distribution
+            distribution,
+            7,
+            1
         )
         );
     }
 
     [Theory]
-    [InlineData("ValidName",VolumeLandmarks.MEV,(TrainingDistribution)999)]
+    [InlineData(VolumeLandmarks.MEV,(TrainingDistribution)999)]
     public void Create_WithInvalidTrainingDistribution_ThrowsDomainException
     (
-        string name,
         VolumeLandmarks volumeLandmark,
         TrainingDistribution distribution
     )
     {
         // Arrange
-        var userId = Guid.CreateVersion7();
-
         // Act
         // Assert
         Assert.Throws<InvalidTrainingDistributionDomainException>(
         ()=> TrainingTemplate.Create
         (
-            userId,
-            name,
             volumeLandmark,
-            distribution
+            distribution,
+            7,
+            1
         )
         );
     }
@@ -152,10 +97,10 @@ public class TrainingTemplateTests
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
-            Guid.CreateVersion7(),
-            "ValidName",
             VolumeLandmarks.MEV,
-            TrainingDistribution.Phat
+            TrainingDistribution.Phat,
+            7,
+            1
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -209,10 +154,10 @@ public class TrainingTemplateTests
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
-            Guid.CreateVersion7(),
-            "ValidName",
             VolumeLandmarks.MEV,
-            TrainingDistribution.Phat
+            TrainingDistribution.Phat,
+            7,
+            1
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -252,10 +197,10 @@ public class TrainingTemplateTests
         // Arrange
         TrainingTemplate template = TrainingTemplate.Create
         (
-            Guid.CreateVersion7(),
-            "ValidName",
             VolumeLandmarks.MEV,
-            TrainingDistribution.Phat
+            TrainingDistribution.Phat,
+            7,
+            1
         );
 
         Dictionary<MuscleGroups,int> ret = template.GetNumberOfSeriesPerGroup();
@@ -269,10 +214,10 @@ public class TrainingTemplateTests
         // Arrange
         TrainingTemplate template = TrainingTemplate.Create
         (
-            Guid.CreateVersion7(),
-            "ValidName",
             VolumeLandmarks.MEV,
-            TrainingDistribution.Phat
+            TrainingDistribution.Phat,
+            7,
+            1
         );
         TemplateSession templateSession = TemplateSession.Create
         (

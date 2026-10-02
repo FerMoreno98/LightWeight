@@ -11,7 +11,7 @@ public sealed class TemplateSet : Entity<Guid>
     /// <summary>Planned repetition range (min-max)</summary>
     public RepetitionRange RepetitionRange { get; private set; }
     /// <summary>Expected repetitions in reserve (how many reps left before failure)</summary>
-    public int ExpectedRIR { get; private set; }
+    public decimal ExpectedRPE { get; private set; }
     /// <summary>Advanced technique planned, if any</summary>
     public AdvanceTrainingTechniques? AdvanceTrainingTechniques { get; private set; }
     /// <summary>Shared ID with other template sets that form a planned superset</summary>
@@ -20,19 +20,23 @@ public sealed class TemplateSet : Entity<Guid>
     /// Represents the muscle groups that the set is going to emphazise 
     /// </summary>
     public List<MuscleGroups> AimMuscleGroups {get; private set;}
+    /// <summary>Soft delete flag: deleted sets are kept so performed sets can still reference them</summary>
+    public bool IsDeleted { get; private set; }
+    /// <summary>Date the set was soft deleted (null while active)</summary>
+    public DateTime? DeletedAt { get; private set; }
 
     private TemplateSet
     (
         Guid Id,
         Guid exerciseId,
-        int expectedRIR,
+        decimal expectedRPE,
         List<MuscleGroups> aimMuscleGroups,
         Guid? superSetGroupId
     ) : base(Id)
     {
         ExerciseId = exerciseId;
         RepetitionRange = null!;
-        ExpectedRIR = expectedRIR;
+        ExpectedRPE = expectedRPE;
         AdvanceTrainingTechniques = null!;
         AimMuscleGroups = aimMuscleGroups;
         SuperSetGroupId = superSetGroupId;
@@ -48,7 +52,7 @@ public sealed class TemplateSet : Entity<Guid>
     (
         Guid exerciseId,
         RepetitionRange repetitionRange,
-        int expectedRIR,
+        decimal expectedRPE,
         List<MuscleGroups> aimMuscleGroups,
         AdvanceTrainingTechniques? advanceTrainingTechniques = null,
         Guid? superSetGroupId = null
@@ -58,7 +62,7 @@ public sealed class TemplateSet : Entity<Guid>
         (
             Guid.CreateVersion7(),
             exerciseId,
-            expectedRIR,
+            expectedRPE,
             aimMuscleGroups,
             superSetGroupId
         )
@@ -70,17 +74,26 @@ public sealed class TemplateSet : Entity<Guid>
     public void UpdateSet
     (
         RepetitionRange repetitionRange,
-        int expectedRIR,
+        decimal expectedRPE,
         List<MuscleGroups> aimMuscleGroups,
         AdvanceTrainingTechniques? advanceTrainingTechniques = null,
         Guid? superSetGroupId = null
     )
     {
         RepetitionRange = repetitionRange;
-        ExpectedRIR = expectedRIR;
+        ExpectedRPE = expectedRPE;
         AimMuscleGroups = aimMuscleGroups;
         AdvanceTrainingTechniques = advanceTrainingTechniques;
         SuperSetGroupId = superSetGroupId;
-        
+
+    }
+
+    /// <summary>Marks the set as deleted without removing it from the database</summary>
+    /// <param name="now">Deletion timestamp</param>
+    internal void MarkAsDeleted(DateTime now)
+    {
+        if (IsDeleted) return;
+        IsDeleted = true;
+        DeletedAt = now;
     }
 }

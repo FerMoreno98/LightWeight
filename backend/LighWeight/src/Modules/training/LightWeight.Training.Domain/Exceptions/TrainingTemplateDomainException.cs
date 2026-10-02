@@ -28,3 +28,10 @@ public sealed class InvalidTrainingDistributionDomainException : TrainingDomainE
         
     }
 }
+public sealed class TrainingTemplateNotFoundDomainException : TrainingDomainException
+{
+    public TrainingTemplateNotFoundDomainException() : base("This training template does not correspond to any program")
+    {
+        
+    }
+}

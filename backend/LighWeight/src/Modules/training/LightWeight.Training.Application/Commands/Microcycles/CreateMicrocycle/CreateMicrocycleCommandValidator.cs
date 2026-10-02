@@ -1,5 +1,4 @@
 using FluentValidation;
-using LightWeight.Training.Domain.Enum;
 
 namespace LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 
@@ -10,11 +9,10 @@ public sealed class CreateMicrocycleCommandValidator : AbstractValidator<CreateM
         RuleFor(x => x.MesocycleId)
             .NotEmpty();
 
-        RuleFor(x => x.DurationInDays)
-            .GreaterThan(0);
+        RuleFor(x => x.TrainingTemplateId)
+            .NotEmpty();
 
-        RuleFor(x => x.TrainingDistribution)
-            .NotEmpty()
-            .IsEnumName(typeof(TrainingDistribution));
+        RuleFor(x => x.WeekNumber)
+            .GreaterThan(0);
     }
 }

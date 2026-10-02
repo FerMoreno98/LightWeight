@@ -7,15 +7,25 @@ public sealed class CreateTrainingTemplateCommandValidator : AbstractValidator<C
 {
     public CreateTrainingTemplateCommandValidator()
     {
+        RuleFor(x => x.ProgramId)
+            .NotEmpty();
+
         RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.Name)
+        RuleFor(x => x.VolumeLandmark)
             .NotEmpty()
-            .MaximumLength(100);
+            .IsEnumName(typeof(VolumeLandmarks));
 
         RuleFor(x => x.TrainingDistribution)
             .NotEmpty()
             .IsEnumName(typeof(TrainingDistribution));
+
+        RuleFor(x => x.DurationInDays)
+            .GreaterThan(0);
+
+        RuleFor(x => x.Order)
+            .GreaterThanOrEqualTo(0);
     }
 }
+

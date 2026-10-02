@@ -4,8 +4,11 @@ namespace LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrai
 
 public sealed record CreateTrainingTemplateCommand
 (
+    Guid ProgramId,
     Guid UserId,
-    string Name,
     string VolumeLandmark,
-    string TrainingDistribution
+    string TrainingDistribution,
+    int DurationInDays,
+    int Order
 ) : ICommand<Guid>;
+

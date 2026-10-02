@@ -1,16 +1,11 @@
 using LightWeight.shared.BuildingBlocks;
-using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Exceptions;
 
-namespace LightWeight.Training.Domain.Aggregates;
+namespace LightWeight.Training.Domain.Entities;
 
-public sealed class TrainingTemplate : AggregateRoot<Guid>
+public sealed class TrainingTemplate : Entity<Guid>
 {
-    /// <summary>Owner of the template</summary>
-    public Guid UserId {get; private set;}
-    /// <summary>Name of the template (e.g. "Push/Pull/Legs", "Upper/Lower")</summary>
-    public string Name{get; private set;}
     /// <summary>Weekly distribution pattern this template follows</summary>
     public TrainingDistribution TrainingDistribution{get;private set;} 
     /// <summary>
@@ -18,45 +13,43 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     /// </summary>
     public VolumeLandmarks VolumeLandmark{get;private set;}
     private List<TemplateSession> _templateSessions = new();
+    public int DurationInDays{get; private set;}
+    public int Order{get; private set;}
+    /// <summary>Soft delete flag: deleted templates are kept so microcycles can still reference them</summary>
+    public bool IsDeleted { get; private set; }
+    /// <summary>Date the template was soft deleted (null while active)</summary>
+    public DateTime? DeletedAt { get; private set; }
+
 
     private TrainingTemplate
     (
         Guid Id,
-        Guid userId,
-        string name,
         VolumeLandmarks volumeLandmark,
-        TrainingDistribution trainingDistribution
+        TrainingDistribution trainingDistribution,
+        int durationInDays,
+        int order
     ) : base(Id)
     {
-        UserId = userId;
-        Name = name;
         VolumeLandmark = volumeLandmark;
         TrainingDistribution = trainingDistribution;
+        DurationInDays = durationInDays;
+        Order = order;
     }
 
-    /// <summary>Sessions defined in this template</summary>
-    public IReadOnlyCollection<TemplateSession> TemplateSessions => _templateSessions.AsReadOnly();
+    /// <summary>Sessions defined in this template (soft deleted sessions are excluded)</summary>
+    public IReadOnlyCollection<TemplateSession> TemplateSessions => _templateSessions.Where(s => !s.IsDeleted).ToList().AsReadOnly();
 
     /// <summary>Creates a new training template</summary>
     /// <param name="userId">Owner ID</param>
-    /// <param name="name">Template name</param>
     /// <param name="trainingDistribution">Weekly distribution pattern</param>
     public static TrainingTemplate Create
     (
-        Guid userId,
-        string name,
         VolumeLandmarks volumeLandmark,
-        TrainingDistribution trainingDistribution
+        TrainingDistribution trainingDistribution,
+        int durationInDays,
+        int order
     )
     {
-        if(userId == Guid.Empty)
-        {
-            throw new UserIdEmptyDomainException();
-        }
-        if(name.Trim() == "")
-        {
-            throw new NameEmptyDomainException();
-        }
         if(!System.Enum.IsDefined(volumeLandmark))
         {
             throw new InvalidVolumeLandmarkDomainException();
@@ -66,7 +59,7 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
             throw new InvalidTrainingDistributionDomainException();
         }
 
-        return new TrainingTemplate(Guid.CreateVersion7(),userId,name,volumeLandmark,trainingDistribution);
+        return new TrainingTemplate(Guid.CreateVersion7(),volumeLandmark,trainingDistribution, durationInDays,order);
     }
     
     public void AddSessionTemplate(TemplateSession session)
@@ -77,7 +70,7 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
     public Dictionary<MuscleGroups,int> GetNumberOfSeriesPerGroup()
     {
         var ret = new Dictionary<MuscleGroups,int>();
-        foreach(var session in _templateSessions)
+        foreach(var session in TemplateSessions)
         {
             var SeriesPerMusclePerSession = session.GetNumberOfSeriesPerGroupPerSession();
             foreach(var muscle in SeriesPerMusclePerSession.Keys)
@@ -95,10 +88,24 @@ public sealed class TrainingTemplate : AggregateRoot<Guid>
         return ret;
     }
 
-    public void DeleteSessionTemplate(Guid TemplateSessionId)
+    /// <summary>Soft deletes a session of this template and all its sets</summary>
+    /// <param name="TemplateSessionId">Session to delete</param>
+    /// <param name="now">Deletion timestamp</param>
+    public void DeleteSessionTemplate(Guid TemplateSessionId, DateTime now)
     {
-        TemplateSession? session = _templateSessions.SingleOrDefault(ts => ts.Id == TemplateSessionId)
+        TemplateSession? session = _templateSessions.SingleOrDefault(ts => ts.Id == TemplateSessionId && !ts.IsDeleted)
         ?? throw new SessionNotFoundDomainException();
-        _templateSessions.Remove(session);
+        session.MarkAsDeleted(now);
+    }
+
+    /// <summary>Marks the template and its whole hierarchy as deleted without removing it from the database</summary>
+    /// <param name="now">Deletion timestamp</param>
+    internal void MarkAsDeleted(DateTime now)
+    {
+        if (IsDeleted) return;
+        IsDeleted = true;
+        DeletedAt = now;
+        foreach (var session in _templateSessions)
+            session.MarkAsDeleted(now);
     }
 }

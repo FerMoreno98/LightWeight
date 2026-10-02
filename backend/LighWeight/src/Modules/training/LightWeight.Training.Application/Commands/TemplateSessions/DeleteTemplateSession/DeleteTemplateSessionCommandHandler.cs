@@ -1,6 +1,7 @@
 using LightWeight.shared.Mediator;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 
@@ -8,24 +9,27 @@ namespace LightWeight.Training.Application.Commands.TemplateSessions.DeleteTempl
 
 public sealed class DeleteTemplateSessionCommandHandler : ICommandHandler<DeleteTemplateSessionCommand>
 {
-    private readonly ITrainingTemplateRepository _trainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public DeleteTemplateSessionCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW)
+    public DeleteTemplateSessionCommandHandler(IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
-        _trainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
         _UOW = uOW;
     }
 
     public async Task HandleAsync(DeleteTemplateSessionCommand command, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetBySessionIdAsync(command.SessionId)
-        ?? throw new TrainingTemplateNotFoundApplicationException();
-        if(command.UserId != trainingTemplate.UserId)
+        Program? program = await _programRepository.GetByTemplateSessionIdAsync(command.SessionId)
+        ?? throw new TemplateSessionNotFoundApplicationException();
+        if(command.UserId != program.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        trainingTemplate.DeleteSessionTemplate(command.SessionId);
+        TrainingTemplate? trainingTemplate = program.trainingTemplates
+            .SingleOrDefault(t => t.TemplateSessions.Any(ts => ts.Id == command.SessionId))
+        ?? throw new TemplateSessionNotFoundApplicationException();
+        trainingTemplate.DeleteSessionTemplate(command.SessionId, DateTime.UtcNow);
         await _UOW.SaveChangesAsync(ct);
     }
 }

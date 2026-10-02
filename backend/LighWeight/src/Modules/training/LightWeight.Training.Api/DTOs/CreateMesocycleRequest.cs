@@ -3,10 +3,10 @@ namespace LightWeight.Training.Api.DTOs;
 public sealed record CreateMesocycleRequest
 (
     Guid MacrocycleId,
-    List<string> aimMuscleGroups,
+    Guid ProgramId,
     int MotivationLevel,
-    string Injuries,
-    string Comments,
+    string? Injuries,
+    string? Comments,
     DateTime StartAt,
     DateTime EndAt
 );

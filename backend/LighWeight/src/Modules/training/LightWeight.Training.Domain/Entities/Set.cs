@@ -14,7 +14,8 @@ public sealed class Set : Entity<Guid>
         AdvanceTrainingTechniques advanceTrainingTechniques,
         decimal weight,
         decimal rPE,
-        Guid? superSetGroupId
+        Guid? superSetGroupId,
+        Guid? templateSetId
     ) : base(Id)
     {
         ExerciseId = exerciseId;
@@ -24,6 +25,7 @@ public sealed class Set : Entity<Guid>
         Weight = weight;
         RPE = rPE;
         SuperSetGroupId = superSetGroupId;
+        TemplateSetId = templateSetId;
     }
 
     /// <summary>Exercise performed in this set</summary>
@@ -40,6 +42,7 @@ public sealed class Set : Entity<Guid>
     public decimal Weight { get; private set; }
     /// <summary>Rate of perceived exertion (1-10)</summary>
     public decimal RPE { get; private set; }
+    public Guid? TemplateSetId{get;private set;}
 
     /// <summary>Creates a new performed set</summary>
     /// <param name="exerciseId">Exercise performed</param>
@@ -57,7 +60,8 @@ public sealed class Set : Entity<Guid>
         AdvanceTrainingTechniques advanceTrainingTechniques,
         decimal weight,
         decimal rPE,
-        Guid? superSetGroupId = null
+        Guid? superSetGroupId = null,
+        Guid? TemplateSetId = null
     )
     {
         return new Set
@@ -69,7 +73,8 @@ public sealed class Set : Entity<Guid>
             advanceTrainingTechniques,
             weight,
             rPE,
-            superSetGroupId
+            superSetGroupId,
+            TemplateSetId
         );
     }
 }

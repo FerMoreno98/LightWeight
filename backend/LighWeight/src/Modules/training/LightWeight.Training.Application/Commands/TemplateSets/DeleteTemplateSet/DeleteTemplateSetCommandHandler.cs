@@ -9,27 +9,28 @@ namespace LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateS
 
 public sealed class DeleteTemplateSetCommandHandler : ICommandHandler<DeleteTemplateSetCommand>
 {
-    private readonly ITrainingTemplateRepository _trainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public DeleteTemplateSetCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork trainingUnitOfWork)
+    public DeleteTemplateSetCommandHandler(IProgramRepository programRepository, ITrainingUnitOfWork trainingUnitOfWork)
     {
         _UOW = trainingUnitOfWork;
-        _trainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
     }
 
     public async Task HandleAsync(DeleteTemplateSetCommand command, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetByTemplateSetIdAsync(command.TemplateSetId)
-        ?? throw new TrainingTemplateNotFoundApplicationException();
-        if(command.UserId != trainingTemplate.UserId)
+        Program? program = await _programRepository.GetByTemplateSetIdAsync(command.TemplateSetId)
+        ?? throw new TemplateSetNotFoundApplicationException();
+        if(command.UserId != program.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        TemplateSession templateSession = 
-            trainingTemplate.TemplateSessions
-                .Single(s => s.TemplateExercises.Any(ts => ts.Id == command.TemplateSetId));
-        templateSession.DeleteTemplateSet(command.TemplateSetId);
+        TemplateSession? templateSession = program.trainingTemplates
+            .SelectMany(t => t.TemplateSessions)
+            .SingleOrDefault(s => s.TemplateExercises.Any(ts => ts.Id == command.TemplateSetId))
+        ?? throw new TemplateSetNotFoundApplicationException();
+        templateSession.DeleteTemplateSet(command.TemplateSetId, DateTime.UtcNow);
         await _UOW.SaveChangesAsync(ct);
         
     }

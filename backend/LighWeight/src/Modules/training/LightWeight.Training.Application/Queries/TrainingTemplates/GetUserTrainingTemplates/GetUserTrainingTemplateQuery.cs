@@ -7,7 +7,10 @@ public sealed record GetUserTrainingTemplatesQuery(Guid UserId) : IQuery<List<Ge
 public sealed record GetUserTrainingTemplatesResponse
 (
     Guid Id,
-    string Name,
+    Guid ProgramId,
+    string ProgramName,
+    int Order,
+    int DurationInDays,
     string VolumeLandmark,
     string TrainingDistribution,
     Dictionary<string,int> TotalVolume

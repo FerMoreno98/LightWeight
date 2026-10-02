@@ -10,7 +10,7 @@ public sealed record GetSetsFromSessionTemplateResponse(
     Guid ExerciseId,
     int RepetitionRangeMin,
     int RepetitionRangeMax,
-    int ExpectedRIR,
+    decimal ExpectedRPE,
     string? Technique,
     Guid? SuperSetGroupId,
     IReadOnlyCollection<string> AimMuscleGroups

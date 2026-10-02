@@ -1,7 +1,6 @@
 using LightWeight.shared.Mediator;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
-using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 
@@ -11,12 +10,14 @@ public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocy
 {
     private readonly IMesocycleRepository _mesocycleRepository;
     private readonly IMacrocycleRepository _macrocycleRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateMesocycleCommandHandler(IMesocycleRepository mesocycleRepository, IMacrocycleRepository macrocycleRepository, ITrainingUnitOfWork uOW)
+    public CreateMesocycleCommandHandler(IMesocycleRepository mesocycleRepository, IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
         _mesocycleRepository = mesocycleRepository;
         _macrocycleRepository = macrocycleRepository;
+        _programRepository = programRepository;
         _UOW = uOW;
     }
 
@@ -25,22 +26,19 @@ public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocy
         Macrocycle? macrocycle = await _macrocycleRepository.GetByIdAsync(command.MacrocycleId)
         ?? throw new MacrocycleNotFoundException();
         if (macrocycle.UserId != command.UserId) throw new UnauthorizedAccessException();
-        List<MuscleGroups> AimMuscleGroups = new List<MuscleGroups>();
-        foreach(var Muscle in command.AimMuscles)
-        {
-            var muscle = Enum.Parse<MuscleGroups>(Muscle);
-            AimMuscleGroups.Add(muscle);
-        }
+        Program? program = await _programRepository.GetByIdAsync(command.ProgramId)
+        ?? throw new ProgramNotFoundApplicationException();
+        if (program.UserId != command.UserId) throw new UnauthorizedAccessException();
         Mesocycle mesocycle = Mesocycle.Create
         (
             command.MacrocycleId,
             macrocycle.UserId,
-            AimMuscleGroups,
             command.MotivationLevel,
             command.Injuries,
             command.Comments,
             command.StartAt,
-            command.EndAt
+            command.EndAt,
+            command.ProgramId
         );
         await _mesocycleRepository.AddAsync(mesocycle,ct);
         await _UOW.SaveChangesAsync(ct);

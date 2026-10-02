@@ -5,6 +5,7 @@ using LightWeight.shared.Messaging;
 using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
+using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CreateMacrocycleCommand>, CreateMacrocycleCommandHandler>();
         services.AddScoped<ICommandHandler<CreateMesocycleCommand>, CreateMesocycleCommandHandler>();
         services.AddScoped<ICommandHandler<CreateMicrocycleCommand>, CreateMicrocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateProgramCommand, Guid>, CreateProgramCommandHandler>();
         services.AddScoped<ICommandHandler<CreateTrainingSessionCommand>, CreateTrainingSessionCommandHandler>();
         services.AddScoped<ICommandHandler<CreateTrainingTemplateCommand, Guid>, CreateTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<CreateTrainingSessionCommand>,CreateTrainingSessionCommandHandler>();

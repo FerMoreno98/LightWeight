@@ -9,7 +9,7 @@ public sealed record UpdateTemplateSetRequest
     bool IsDropSet,
     bool IsMyoRep,
     bool IsCluster,
-    int ExpectedRIR,
+    decimal ExpectedRPE,
     List<string> AimMuscleGroups,
     Guid? SuperSetGroupId
 );

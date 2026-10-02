@@ -24,6 +24,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
     public int SleepLevel{get; private set;}
     /// <summary>Delayed onset muscle soreness level (1-10)</summary>
     public int DOMSLevel{get; private set;}
+    public Guid? TemplateSessionId{get; private set;}
     
     private List<Set> _sets = new();
 
@@ -38,7 +39,8 @@ public sealed class TrainingSession : AggregateRoot<Guid>
         string? comments, 
         int motivationLevel, 
         int sleepLevel, 
-        int dOMSLevel
+        int dOMSLevel,
+        Guid? templateSessionId
     ) : base(Id)
     {
         MicrocycleId = microcycleId;
@@ -50,6 +52,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
         MotivationLevel = motivationLevel;
         SleepLevel = sleepLevel;
         DOMSLevel = dOMSLevel;
+        TemplateSessionId = templateSessionId;
     }
 
     /// <summary>Sets registered in this session</summary>
@@ -71,7 +74,8 @@ public sealed class TrainingSession : AggregateRoot<Guid>
         string? comments, 
         int motivationLevel, 
         int sleepLevel, 
-        int dOMSLevel      
+        int dOMSLevel,
+        Guid? TemplateSessionId = null     
     )
     {
         return new TrainingSession
@@ -85,7 +89,8 @@ public sealed class TrainingSession : AggregateRoot<Guid>
             comments,
             motivationLevel,
             sleepLevel,
-            dOMSLevel
+            dOMSLevel,
+            TemplateSessionId
         );
     }
     /// <summary>Ends the session and calculates total duration</summary>

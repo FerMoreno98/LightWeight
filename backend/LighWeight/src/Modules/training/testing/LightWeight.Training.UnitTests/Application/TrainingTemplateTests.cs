@@ -1,4 +1,6 @@
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
+using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
@@ -12,50 +14,157 @@ namespace LightWeight.Training.UnitTests.Application;
 
 public class TrainingTemplateTests
 {
+    private static Program CreateProgram(Guid userId)
+    {
+        return Program.Create
+        (
+            userId,
+            Periodization.Linear,
+            "ValidProgramName",
+            new List<MuscleGroups>()
+        );
+    }
+
     [Theory]
-    [InlineData("ValidName","MV","FullBody")]
-    [InlineData("1234","MAV","UpperLower")]
-    [InlineData("Valid__?Name","MV","FullBody")]
-    public async Task CreateTrainingTemplateCommand_WithValidData_ReturnsGuid
+    [InlineData("MV","FullBody",7,1)]
+    [InlineData("MAV","UpperLower",5,2)]
+    [InlineData("MRV","PushPullLegs",10,3)]
+    public async Task CreateTrainingTemplateCommand_WithValidData_AddsTheTemplateToTheProgram
     (
-        string Name,
         string VolumeLandmark,
-        string TrainingDistribution
+        string TrainingDistribution,
+        int DurationInDays,
+        int Order
     )
     {
         // Arrange
-        ITrainingTemplateRepository _trainingTemplate = Substitute.For<ITrainingTemplateRepository>();
+        Guid UserId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(UserId);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
         CreateTrainingTemplateCommandHandler commandHandler = new CreateTrainingTemplateCommandHandler
         (
-            _trainingTemplate,
+            _programRepository,
             _Uow
         );
-        Guid UserId = Guid.CreateVersion7();
         CreateTrainingTemplateCommand command = new CreateTrainingTemplateCommand
         (
+            program.Id,
             UserId,
-            Name,
             VolumeLandmark,
-            TrainingDistribution
+            TrainingDistribution,
+            DurationInDays,
+            Order
         );
         // Act
         Guid TemplateId = await commandHandler.HandleAsync(command,default);
         // Assert
         Assert.NotEqual(Guid.Empty,TemplateId);
+        TrainingTemplate template = Assert.Single(program.trainingTemplates);
+        Assert.Equal(TemplateId, template.Id);
+        Assert.Equal(DurationInDays, template.DurationInDays);
+        Assert.Equal(Order, template.Order);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateTrainingTemplateCommand_ProgramNotFound_ThrowApplicationException()
+    {
+        // Arrange
+        var fakeProgramId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        _programRepository.GetByIdAsync(fakeProgramId).Returns((Program?) null);
+        CreateTrainingTemplateCommandHandler commandHandler =
+            new CreateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<ProgramNotFoundApplicationException>
+        (
+            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(fakeProgramId,Guid.CreateVersion7(),"MV","FullBody",7,1),default)
+        );
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateTrainingTemplateCommand_UserIdDoesNotCorrespondWithProgramUserId_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(Guid.CreateVersion7());
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        CreateTrainingTemplateCommandHandler commandHandler =
+            new CreateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(program.Id,Guid.CreateVersion7(),"MV","FullBody",7,1),default)
+        );
+        Assert.Empty(program.trainingTemplates);
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteTrainingTemplateCommand_WhenHappyPath_SoftDeletesTheTemplateAndSaves()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TemplateSession session = TemplateSession.Create("ValidName");
+        template.AddSessionTemplate(session);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        DeleteTrainingTemplateCommandHandler commandHandler =
+            new DeleteTrainingTemplateCommandHandler(_Uow,_programRepository);
+        // Act
+        await commandHandler.HandleAsync(new DeleteTrainingTemplateCommand(template.Id,userId),default);
+        // Assert
+        Assert.True(template.IsDeleted);
+        Assert.True(session.IsDeleted);
+        Assert.Empty(program.trainingTemplates);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteTrainingTemplateCommand_UserIdDoesNotCorrespondWithProgramUserId_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(Guid.CreateVersion7());
+        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        DeleteTrainingTemplateCommandHandler commandHandler =
+            new DeleteTrainingTemplateCommandHandler(_Uow,_programRepository);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new DeleteTrainingTemplateCommand(template.Id,Guid.CreateVersion7()),default)
+        );
+        Assert.False(template.IsDeleted);
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task GetUserTrainingTemplate_ReturnsDataSuccessfullyAsync()
     {
         var userId = Guid.CreateVersion7();
-        ITrainingTemplateRepository _trainingTemplateRepository = Substitute.For<ITrainingTemplateRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        Program program = CreateProgram(userId);
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
-            userId,
-            "ValidName",
-            Training.Domain.Enum.VolumeLandmarks.MAV,
-            Training.Domain.Enum.TrainingDistribution.FullBody
+            VolumeLandmarks.MAV,
+            TrainingDistribution.FullBody,
+            7,
+            1
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -93,7 +202,7 @@ public class TrainingTemplateTests
         (
             exercise.Id,
             repetitionRange,
-            2,
+            8,
             muscleGroups,
             advanceTrainingTechniques
         );
@@ -101,7 +210,7 @@ public class TrainingTemplateTests
         (
             exercise2.Id,
             repetitionRange,
-            2,
+            8,
             muscleGroups,
             advanceTrainingTechniques
         );
@@ -109,7 +218,7 @@ public class TrainingTemplateTests
         (
             exercise3.Id,
             repetitionRange,
-            2,
+            8,
             muscleGroups,
             advanceTrainingTechniques
         );
@@ -117,24 +226,25 @@ public class TrainingTemplateTests
         templateSession.AddSet(set2);
         templateSession.AddSet(set3);
         trainingTemplate.AddSessionTemplate(templateSession);
-        List<TrainingTemplate> templates = new List<TrainingTemplate>();
-        templates.Add(trainingTemplate);
-        _trainingTemplateRepository
-            .GetAllTrainingTemplatesOfAUserAsync(userId)
-                .Returns(templates);
+        program.AddTrainingTemplate(trainingTemplate);
+        _programRepository
+            .GetAllProgramsOfAUserAsync(userId)
+                .Returns(new List<Program> { program });
         GetUserTrainingTemplatesQuery query = new GetUserTrainingTemplatesQuery
         (
             userId
         );
         GetUserTrainingTemplatesQueryHandler queryHandler =
-        new GetUserTrainingTemplatesQueryHandler(_trainingTemplateRepository);
+        new GetUserTrainingTemplatesQueryHandler(_programRepository);
         // act
         var result = await queryHandler.HandleAsync(query,default);
         // assert
-        Assert.All(result, r => Assert.Equal(6, r.TotalVolume["Biceps"]));
-        Assert.All(result, r => Assert.Equal(3, r.TotalVolume["Back"]));
-        Assert.All(result, r => Assert.Equal(3, r.TotalVolume["Chest"]));
-        
-    
+        var response = Assert.Single(result);
+        Assert.Equal(trainingTemplate.Id, response.Id);
+        Assert.Equal(program.Id, response.ProgramId);
+        Assert.Equal(program.Name, response.ProgramName);
+        Assert.Equal(6, response.TotalVolume["Biceps"]);
+        Assert.Equal(3, response.TotalVolume["Back"]);
+        Assert.Equal(3, response.TotalVolume["Chest"]);
     }
 }

@@ -10,7 +10,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     (
         Guid Id,
         Guid userId,
-         
         DateTime startAt, 
         DateTime? endAt,
         TrainingStage stage,
@@ -18,7 +17,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     ) : base(Id)
     {
         UserId = userId;
-        
         StartAt = startAt;
         EndAt = endAt;
         Stage = stage;
@@ -43,7 +41,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
     /// <param name="StartedAt">Start date</param>
     /// <param name="EndAt">Expected end date</param>
     /// <param name="stage">Training stage</param>
-    /// <param name="periodization">Periodization type</param>
     /// <param name="comments">Optional notes</param>
     public static Macrocycle Create
     (
@@ -51,7 +48,6 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         DateTime StartedAt, 
         DateTime? EndAt,
         TrainingStage stage,
-        Periodization periodization,
         string? comments
     )
     {

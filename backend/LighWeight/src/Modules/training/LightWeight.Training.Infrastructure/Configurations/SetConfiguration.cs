@@ -26,6 +26,7 @@ public class SetConfiguration : IEntityTypeConfiguration<Set>
         builder.Property(s => s.Weight).HasColumnName("Weight").HasColumnType("decimal(8,2)").IsRequired();
         builder.Property(s => s.RPE).HasColumnName("RPE").HasColumnType("decimal(3,1)").IsRequired();
         builder.Property(s => s.SuperSetGroupId).HasColumnName("SuperSetGroupId");
+        builder.Property(s => s.TemplateSetId).HasColumnName("TemplateSetId");
         builder.Property(s => s.AdvanceTrainingTechniques)
             .HasColumnName("AdvanceTrainingTechniques")
             .HasColumnType("jsonb")
@@ -36,5 +37,13 @@ public class SetConfiguration : IEntityTypeConfiguration<Set>
             .HasForeignKey(s => s.ExerciseId)
             .HasPrincipalKey(e => e.Id)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Templates are soft deleted, a hard delete must never remove the history
+        builder.HasOne<TemplateSet>()
+            .WithMany()
+            .HasForeignKey(s => s.TemplateSetId)
+            .HasPrincipalKey(ts => ts.Id)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

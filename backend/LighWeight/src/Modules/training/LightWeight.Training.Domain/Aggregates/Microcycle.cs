@@ -10,25 +10,22 @@ public sealed class Microcycle : AggregateRoot<Guid>
         Guid Id,
         Guid mesocycleId, 
         Guid userId,
-        int durationInDays, 
-        TrainingDistribution trainingDistribution
+        Guid trainingTemplateId,
+        int weekNumber
     ) : base(Id)
     {
         MesocycleId = mesocycleId;
         UserId = userId;
-        DurationInDays = durationInDays;
-        TrainingDistribution = trainingDistribution;
+        TrainingTemplateId = trainingTemplateId;
+        WeekNumber = weekNumber;
     }
 
     /// <summary>Parent mesocycle ID</summary>
     public Guid MesocycleId{get;private set;}
     public Guid UserId{get; private set;}
-    /// <summary>Number of days this microcycle spans (typically 7)</summary>
-    public int DurationInDays{get;private set;}
-    /// <summary>Distribution type (Push/Pull/Legs, Upper/Lower, etc.)</summary>
-    public TrainingDistribution TrainingDistribution{get;private set;} 
 
     public Guid TrainingTemplateId{get;private set;}
+    public int WeekNumber{get; private set;}
 
     /// <summary>Creates a new microcycle within a mesocycle</summary>
     /// <param name="mesocycleId">Parent mesocycle ID</param>
@@ -37,12 +34,12 @@ public sealed class Microcycle : AggregateRoot<Guid>
     public static Microcycle Create
     (
         Guid mesocycleId,
-        Guid userId, 
-        int durationInDays, 
-        TrainingDistribution trainingDistribution
+        Guid userId,
+        Guid TrainingTemplateId,
+        int WeekNumber
     )
     {
-        return new Microcycle(Guid.CreateVersion7(),mesocycleId,userId,durationInDays,trainingDistribution);
+        return new Microcycle(Guid.CreateVersion7(),mesocycleId,userId,TrainingTemplateId,WeekNumber);
     }
     
 }

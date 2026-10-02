@@ -9,23 +9,25 @@ namespace LightWeight.Training.Application.Commands.TemplateSessions.CreateTempl
 
 public sealed class CreateTemplateSessionCommandHandler : ICommandHandler<CreateTemplateSessionCommand, Guid>
 {
-    private readonly ITrainingTemplateRepository _TrainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateTemplateSessionCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW)
+    public CreateTemplateSessionCommandHandler(IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
-        _TrainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
         _UOW = uOW;
     }
 
     public async Task<Guid> HandleAsync(CreateTemplateSessionCommand command, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _TrainingTemplateRepository.GetByIdAsync(command.TrainingTemplateId)
-        ?? throw new TrainingTemplateNotFoundApplicationException();// Cambiar Cambiar Cambiar Cambiar
-        if(trainingTemplate.UserId != command.UserId)
+        Program? program = await _programRepository.GetByTrainingTemplateIdAsync(command.TrainingTemplateId)
+        ?? throw new TrainingTemplateNotFoundApplicationException();
+        if(program.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();
         }
+        TrainingTemplate? trainingTemplate = program.trainingTemplates.SingleOrDefault(t => t.Id == command.TrainingTemplateId)
+        ?? throw new TrainingTemplateNotFoundApplicationException();
         TemplateSession template = TemplateSession.Create
         (
             command.Name

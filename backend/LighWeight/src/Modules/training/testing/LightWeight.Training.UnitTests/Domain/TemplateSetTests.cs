@@ -9,14 +9,14 @@ namespace LightWeight.Training.UnitTests.Domain;
 public class TemplateSetTests
 {
     [Theory]
-    [InlineData(6,8,2,MuscleGroups.Back)]
-    [InlineData(16,12,3,MuscleGroups.Chest)]
-    [InlineData(7,15,0,MuscleGroups.Biceps)]
+    [InlineData(6,8,8,MuscleGroups.Back)]
+    [InlineData(16,12,7.5,MuscleGroups.Chest)]
+    [InlineData(7,15,10,MuscleGroups.Biceps)]
     public void Create_WithValidData_ReturnSetTemplate
     (
         int min,
         int max,
-        int rir,
+        double rpe,
         MuscleGroups muscleGroups
     )
     {
@@ -30,13 +30,13 @@ public class TemplateSetTests
         (
             exerciseId,
             repetitionRange,
-            rir,
+            (decimal)rpe,
             aimMuscles
         );
         // Assert
         Assert.Equal(exerciseId,set.ExerciseId);
         Assert.Equal(repetitionRange,set.RepetitionRange);
-        Assert.Equal(rir,set.ExpectedRIR);
+        Assert.Equal((decimal)rpe,set.ExpectedRPE);
         Assert.Equal(muscleGroups,set.AimMuscleGroups.SingleOrDefault());
     }
 

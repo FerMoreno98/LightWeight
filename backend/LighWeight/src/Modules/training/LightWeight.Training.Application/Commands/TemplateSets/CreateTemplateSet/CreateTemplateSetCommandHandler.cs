@@ -11,13 +11,13 @@ namespace LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateS
 
 public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemplateSetCommand>
 {
-    private readonly ITrainingTemplateRepository _TrainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly IExerciseRepository _ExerciseRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateTemplateSetCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW,IExerciseRepository exerciseRepository)
+    public CreateTemplateSetCommandHandler(IProgramRepository programRepository, ITrainingUnitOfWork uOW,IExerciseRepository exerciseRepository)
     {
-        _TrainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
         _ExerciseRepository = exerciseRepository;
         _UOW = uOW;
     }
@@ -26,13 +26,15 @@ public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemp
     {
         Exercise? exercise = await _ExerciseRepository.GetByIdAsync(command.ExerciseId)
         ?? throw new ExerciseNotFounApplicationException();
-        TrainingTemplate? trainingTemplate = await _TrainingTemplateRepository.GetBySessionIdAsync(command.TemplateSessionId)
-        ?? throw new TrainingTemplateNotFoundApplicationException();
-        if(trainingTemplate.UserId != command.UserId)
+        Program? program = await _programRepository.GetByTemplateSessionIdAsync(command.TemplateSessionId)
+        ?? throw new TemplateSessionNotFoundApplicationException();
+        if(program.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        TemplateSession? templateSession = trainingTemplate.TemplateSessions.SingleOrDefault(s => s.Id == command.TemplateSessionId)
+        TemplateSession? templateSession = program.trainingTemplates
+            .SelectMany(t => t.TemplateSessions)
+            .SingleOrDefault(s => s.Id == command.TemplateSessionId)
         ?? throw new TemplateSessionNotFoundApplicationException();
         for(var i=0; i < command.Series; i++)
         {
@@ -54,7 +56,7 @@ public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemp
         (
             command.ExerciseId,
             range,
-            command.ExpectedRIR,
+            command.ExpectedRPE,
             aimGroups,
             trainingTechniques,
             command.SuperSetGroupId

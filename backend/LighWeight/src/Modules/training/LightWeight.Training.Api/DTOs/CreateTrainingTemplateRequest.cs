@@ -2,7 +2,9 @@ namespace LightWeight.Training.Api.DTOs;
 
 public sealed record CreateTrainingTemplateRequest
 (
-    string Name,
+    Guid ProgramId,
     string VolumeLandmark,
-    string TrainingDistribution
+    string TrainingDistribution,
+    int DurationInDays,
+    int Order
 );

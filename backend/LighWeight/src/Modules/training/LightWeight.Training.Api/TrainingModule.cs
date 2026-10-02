@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
+using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
@@ -31,6 +32,7 @@ public static class TrainingModule
         group.MapPost("/macrocycle", CreateMacrocycle).RequireAuthorization();
         group.MapPost("/mesocycle", CreateMesocycle).RequireAuthorization();
         group.MapPost("/microcycle", CreateMicrocycle).RequireAuthorization();
+        group.MapPost("/program", CreateProgram).RequireAuthorization();
         group.MapPost("/training-template", CreateTrainingTemplate).RequireAuthorization();
         group.MapPost("/template-session", CreateTemplateSession).RequireAuthorization();
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
@@ -62,7 +64,6 @@ public static class TrainingModule
             request.StartAt,
             request.EndAt,
             request.TrainingStage,
-            request.Periodization,
             request.Comments
         ), ct);
 
@@ -81,13 +82,13 @@ public static class TrainingModule
         await mediator.SendAsync(new CreateMesocycleCommand(
             request.MacrocycleId,
             Guid.Parse(userId),
-            request.aimMuscleGroups,
+            request.ProgramId,
             request.MotivationLevel,
             request.Injuries,
             request.Comments,
             request.StartAt,
             request.EndAt
-        ));
+        ), ct);
         return TypedResults.Ok();
     }
 
@@ -104,10 +105,29 @@ public static class TrainingModule
         await mediator.SendAsync(new CreateMicrocycleCommand(
             request.MesocycleId,
             Guid.Parse(userId),
-            request.DurationInDays,
-            request.TrainingDistribution
+            request.TrainingTemplateId,
+            request.WeekNumber
         ), ct);
         return TypedResults.Ok();
+    }
+
+    private static async Task<IResult> CreateProgram
+    (
+        CreateProgramRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<CreateProgramCommand, Guid>(new CreateProgramCommand(
+            Guid.Parse(userId),
+            request.Name,
+            request.Periodization,
+            request.AimMuscleGroups
+        ), ct);
+        return TypedResults.Ok(new { id });
     }
 
     private static async Task<IResult> CreateTrainingTemplate
@@ -121,10 +141,12 @@ public static class TrainingModule
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
         var id = await mediator.SendAsync<CreateTrainingTemplateCommand, Guid>(new CreateTrainingTemplateCommand(
+            request.ProgramId,
             Guid.Parse(userId),
-            request.Name,
             request.VolumeLandmark,
-            request.TrainingDistribution
+            request.TrainingDistribution,
+            request.DurationInDays,
+            request.Order
         ), ct);
         return TypedResults.Ok(new { id });
     }
@@ -166,7 +188,7 @@ public static class TrainingModule
             request.IsDropSet,
             request.IsMyoRep,
             request.IsCluster,
-            request.ExpectedRIR,
+            request.ExpectedRPE,
             request.Series,
             request.AimMuscleGroups,
             request.SuperSetGroupId
@@ -308,7 +330,7 @@ public static class TrainingModule
             request.IsDropSet,
             request.IsMyoRep,
             request.IsCluster,
-            request.ExpectedRIR,
+            request.ExpectedRPE,
             request.AimMuscleGroups,
             request.SuperSetGroupId
 

@@ -21,8 +21,8 @@ public class UpdateTemplateSetCommandValidator : AbstractValidator<UpdateTemplat
             .GreaterThanOrEqualTo(x => x.Min)
             .WithMessage("Max must be greater than or equal to Min");
 
-        RuleFor(x => x.ExpectedRIR)
-            .InclusiveBetween(0, 10);
+        RuleFor(x => x.ExpectedRPE)
+            .InclusiveBetween(1, 10);
 
         RuleFor(x => x)
             .Must(x => (x.IsDropSet ? 1 : 0) + (x.IsCluster ? 1 : 0) + (x.IsMyoRep ? 1 : 0) <= 1)

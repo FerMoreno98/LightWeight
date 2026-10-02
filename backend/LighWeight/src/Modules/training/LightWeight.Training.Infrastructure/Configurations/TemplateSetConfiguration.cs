@@ -22,8 +22,11 @@ public class TemplateSetConfiguration : IEntityTypeConfiguration<TemplateSet>
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(t => t.ExerciseId).HasColumnName("ExerciseId").IsRequired();
-        builder.Property(t => t.ExpectedRIR).HasColumnName("ExpectedRIR").IsRequired();
+        builder.Property(t => t.ExpectedRPE).HasColumnName("ExpectedRPE").HasColumnType("decimal(3,1)").IsRequired();
         builder.Property(t => t.SuperSetGroupId).HasColumnName("SuperSetGroupId");
+        builder.Property(t => t.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false).IsRequired();
+        builder.Property(t => t.DeletedAt).HasColumnName("DeletedAt");
+        builder.HasQueryFilter(t => !t.IsDeleted);
         builder.Property(t => t.AimMuscleGroups)
         .HasColumnName("AimMuscleGroups")
         .HasColumnType("jsonb")

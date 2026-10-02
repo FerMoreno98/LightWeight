@@ -12,6 +12,9 @@ public class TemplateSessionConfiguration : IEntityTypeConfiguration<TemplateSes
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
         builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(200).IsRequired();
+        builder.Property(t => t.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false).IsRequired();
+        builder.Property(t => t.DeletedAt).HasColumnName("DeletedAt");
+        builder.HasQueryFilter(t => !t.IsDeleted);
 
         builder.HasMany(t => t.TemplateExercises)
             .WithOne()

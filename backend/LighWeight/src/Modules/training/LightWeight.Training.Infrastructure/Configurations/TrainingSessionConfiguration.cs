@@ -22,6 +22,7 @@ public class TrainingSessionConfiguration : IEntityTypeConfiguration<TrainingSes
         builder.Property(t => t.MotivationLevel).HasColumnName("MotivationLevel").IsRequired();
         builder.Property(t => t.SleepLevel).HasColumnName("SleepLevel").IsRequired();
         builder.Property(t => t.DOMSLevel).HasColumnName("DOMSLevel").IsRequired();
+        builder.Property(t => t.TemplateSessionId).HasColumnName("TemplateSessionId");
         builder.Ignore(t => t.DomainEvents);
 
         builder.HasMany(t => t.Sets)
@@ -37,5 +38,13 @@ public class TrainingSessionConfiguration : IEntityTypeConfiguration<TrainingSes
             .HasForeignKey(t => t.MicrocycleId)
             .HasPrincipalKey(m => m.Id)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Templates are soft deleted, a hard delete must never remove the history
+        builder.HasOne<TemplateSession>()
+            .WithMany()
+            .HasForeignKey(t => t.TemplateSessionId)
+            .HasPrincipalKey(ts => ts.Id)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

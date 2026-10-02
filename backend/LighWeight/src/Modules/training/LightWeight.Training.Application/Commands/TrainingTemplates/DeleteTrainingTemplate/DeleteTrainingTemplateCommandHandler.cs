@@ -9,22 +9,23 @@ namespace LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrai
 public sealed class DeleteTrainingTemplateCommandHandler : ICommandHandler<DeleteTrainingTemplateCommand>
 {
     private readonly ITrainingUnitOfWork _UOW;
-    private readonly ITrainingTemplateRepository _trainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
 
-    public DeleteTrainingTemplateCommandHandler(ITrainingUnitOfWork uOW, ITrainingTemplateRepository trainingTemplateRepository)
+    public DeleteTrainingTemplateCommandHandler(ITrainingUnitOfWork uOW, IProgramRepository programRepository)
     {
         _UOW = uOW;
-        _trainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
     }
 
     public async Task HandleAsync(DeleteTrainingTemplateCommand command, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetByIdAsync(command.TrainingTemplateId)
+        Program? program = await _programRepository.GetByTrainingTemplateIdAsync(command.TrainingTemplateId)
         ?? throw new TrainingTemplateNotFoundApplicationException();
-        if(command.UserId != trainingTemplate.UserId)
+        if(command.UserId != program.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        await _trainingTemplateRepository.DeleteAsync(trainingTemplate, ct);
+        program.DeleteTrainingTemplate(command.TrainingTemplateId, DateTime.UtcNow);
+        await _UOW.SaveChangesAsync(ct);
     }
 }

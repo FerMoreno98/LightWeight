@@ -12,7 +12,7 @@ public sealed record CreateTemplateSetCommand
     bool IsDropSet,
     bool IsMyoRep,
     bool IsCluster,
-    int ExpectedRIR,
+    decimal ExpectedRPE,
     int Series,
     List<string> AimMuscleGroups,
     Guid? SuperSetGroupId

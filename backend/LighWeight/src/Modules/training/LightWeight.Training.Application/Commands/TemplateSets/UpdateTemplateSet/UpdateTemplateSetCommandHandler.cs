@@ -11,25 +11,26 @@ namespace LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateS
 
 public sealed class UpdateTemplateSetCommandHandler : ICommandHandler<UpdateTemplateSetCommand>
 {
-    private readonly ITrainingTemplateRepository _trainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public UpdateTemplateSetCommandHandler(ITrainingTemplateRepository trainingTemplateRepository, ITrainingUnitOfWork uOW)
+    public UpdateTemplateSetCommandHandler(IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
-        _trainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
         _UOW = uOW;
     }
 
     public async Task HandleAsync(UpdateTemplateSetCommand command, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetBySessionIdAsync(command.TemplateSessionId)
-        ?? throw new TrainingTemplateNotFoundApplicationException();
-        if(command.UserId != trainingTemplate.UserId)
+        Program? program = await _programRepository.GetByTemplateSessionIdAsync(command.TemplateSessionId)
+        ?? throw new TemplateSessionNotFoundApplicationException();
+        if(command.UserId != program.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        TemplateSession? templateSession =  trainingTemplate
-            .TemplateSessions.SingleOrDefault(ts => ts.Id == command.TemplateSessionId)
+        TemplateSession? templateSession = program.trainingTemplates
+            .SelectMany(t => t.TemplateSessions)
+            .SingleOrDefault(ts => ts.Id == command.TemplateSessionId)
                 ?? throw new TemplateSessionNotFoundApplicationException();
 
         TemplateSet? templateSet = templateSession
@@ -54,7 +55,7 @@ public sealed class UpdateTemplateSetCommandHandler : ICommandHandler<UpdateTemp
         templateSet.UpdateSet
         (
             range,
-            command.ExpectedRIR,
+            command.ExpectedRPE,
             aimGroups,
             trainingTechniques,
             command.SuperSetGroupId

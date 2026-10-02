@@ -51,14 +51,28 @@ This module handles strength and bodybuilding training planning and logging. It 
   - `RegisterSet(Set set)`: adds a performed set to the session
 - **DB table**: `training_TrainingSessions` (FK → Microcycle, `Duration` as `interval`)
 
-### `TrainingTemplate` (AggregateRoot)
-- **Properties**: `UserId`, `Name`, `TrainingDistribution`
+### `Program` (AggregateRoot)
+- **Properties**: `UserId`, `Name`, `Periodization`, `AimMuscleGroups` (List\<MuscleGroups\>)
 - **Invariants**:
-  - Belongs to a single user (`UserId`)
-  - `Name` is user-defined and should be unique per user
-  - `TrainingDistribution` mirrors the same enum used by `Microcycle`
-- **Child entities**: `TemplateSession`
+  - Belongs to a single user (`UserId`, cannot be empty → `UserIdEmptyDomainException`)
+  - `Name` cannot be empty → `NameEmptyDomainException`
+  - Is the only entry point to the template hierarchy (`TrainingTemplate` → `TemplateSession` → `TemplateSet`)
+  - `trainingTemplates` only exposes non-deleted templates
+- **Child entities**: `TrainingTemplate`
+- **Behaviour methods**:
+  - `AddTrainingTemplate(TrainingTemplate)`
+  - `DeleteTrainingTemplate(Guid trainingTemplateId, DateTime now)`: soft deletes the template and its whole hierarchy
 - **Domain events it emits**: None yet
+
+### `TrainingTemplate` (Entity, child of `Program`)
+- **Properties**: `TrainingDistribution`, `VolumeLandmark`, `DurationInDays`, `Order`, `IsDeleted`, `DeletedAt?`
+- **Invariants**:
+  - `VolumeLandmark` and `TrainingDistribution` must be defined enum values
+  - `TemplateSessions` only exposes non-deleted sessions
+- **Child entities**: `TemplateSession`
+- **Behaviour methods**:
+  - `DeleteSessionTemplate(Guid templateSessionId, DateTime now)`: soft deletes the session and its sets
+  - `GetNumberOfSeriesPerGroup()`: ignores soft deleted sessions and sets
 - **DB table**: `training_TrainingTemplates`
 
 ### `Exercise` (AggregateRoot)
@@ -78,13 +92,14 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **DB table**: `training_Sets` (FK → TrainingSession, FK → Exercise; `AdvanceTrainingTechniques` columns embedded)
 
 ### `TemplateSession` (Entity, child of `TrainingTemplate`)
-- **Properties**: `Name`
+- **Properties**: `Name`, `IsDeleted`, `DeletedAt?`
 - Represents a planned session within a template
-- Contains a collection of `TemplateSet`
+- Contains a collection of `TemplateSet` (`TemplateExercises` only exposes non-deleted sets)
+- `DeleteTemplateSet(Guid templateSetId, DateTime now)`: soft deletes a set
 - **DB table**: `training_TemplateSessions` (FK → TrainingTemplate)
 
 ### `TemplateSet` (Entity, child of `TemplateSession`)
-- **Properties**: `ExerciseId`, `RepetitionRange` (ValueObject: Min/Max), `ExpectedRIR`, `AdvanceTrainingTechniques`, `SuperSetGroupId?`
+- **Properties**: `ExerciseId`, `RepetitionRange` (ValueObject: Min/Max), `ExpectedRPE`, `AdvanceTrainingTechniques`, `SuperSetGroupId?`, `AimMuscleGroups`, `IsDeleted`, `DeletedAt?`
 - Uses `RepetitionRange` (min-max) instead of a fixed rep count to allow autoregulation
 - **DB table**: `training_TemplateSets` (FK → TemplateSession, FK → Exercise; `RepetitionRange` and `AdvanceTrainingTechniques` columns embedded)
 
@@ -93,6 +108,11 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **Supersets are modeled via `SuperSetGroupId`**: There is no `IsSuperSet` boolean. Sets sharing the same `SuperSetGroupId` belong to the same superset. This allows pairs, triplets, or any group size and keeps the model relational without coupling entities.
 - **At most one advanced technique per set**: `AdvanceTrainingTechniques` enforces that only one of `IsDropSet`, `IsCluster`, or `IsMyoRep` can be `true`. Attempting to create with more than one active throws `AdvanceTrainingTechniquesExceptions`.
 - **Template vs. real sessions**: `TrainingTemplate`, `TemplateSession`, and `TemplateSet` are planning aggregates and never reference real session IDs. Real `TrainingSession` and its `Set` are created independently, possibly copying structure from a template.
+- **Templates use soft delete**: `TrainingTemplate`, `TemplateSession` and `TemplateSet` are never physically deleted. `Microcycle.TrainingTemplateId`, `TrainingSession.TemplateSessionId` and `Set.TemplateSetId` point to these inner entities of the `Program` aggregate, so a hard delete would leave dangling references in the training history.
+  - Deleting goes through the parent (`Program.DeleteTrainingTemplate`, `TrainingTemplate.DeleteSessionTemplate`, `TemplateSession.DeleteTemplateSet`), which sets `IsDeleted`/`DeletedAt`. `MarkAsDeleted` is `internal` and cascades down the hierarchy.
+  - **Never remove an item from the private collections** (`_trainingTemplates`, `_templateSessions`, `_templateExercises`): with the required FK + cascade configuration EF Core would physically delete the row.
+  - Public collections and the series-count methods skip deleted items, so they behave correctly inside the same unit of work before reloading.
+  - EF Core applies a global query filter (`HasQueryFilter(t => !t.IsDeleted)`) on the three entities, also inside `Include`. Use `IgnoreQueryFilters()` only when reading history (e.g. resolving the template of an old `TrainingSession`).
 - **`EndTraining` duration calculation**: Currently uses `TimeOnly` subtraction, which may produce incorrect results if the session crosses midnight. This is a known bug.
 - **`RepetitionRange.Create` silently swaps values**: If `max < min`, the values are swapped instead of throwing. A `DomainException` may be more appropriate for invalid input.
 
@@ -108,12 +128,15 @@ This module handles strength and bodybuilding training planning and logging. It 
 | `training_Microcycles` | `Id` (guid PK), `MesocycleId`, `DurationInDays`, `TrainingDistribution` (varchar 20) | `MesocycleId` → Mesocycles (cascade) |
 | `training_TrainingSessions` | `Id` (guid PK), `MicrocycleId`, `Name` (200), `StartAt`, `Duration` (interval), `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` | `MicrocycleId` → Microcycles (cascade) |
 | `training_Sets` | `Id` (guid PK), `TrainingSessionId`, `ExerciseId`, `Repetitions`, `IsBodyWeight`, `Weight` (decimal 8,2), `RPE` (decimal 3,1), `SuperSetGroupId?`, `IsDropSet`, `IsCluster`, `IsMyoRep` | `TrainingSessionId` → TrainingSessions (cascade), `ExerciseId` → Exercises (cascade) |
-| `training_TrainingTemplates` | `Id` (guid PK), `UserId`, `Name` (200), `TrainingDistribution` (varchar 20) | — |
-| `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200) | `TrainingTemplateId` → TrainingTemplates (cascade) |
-| `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRIR`, `SuperSetGroupId?`, `RepetitionRange_Min`, `RepetitionRange_Max`, `IsDropSet`, `IsCluster`, `IsMyoRep` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
+| `training_Programs` | `Id` (guid PK), `UserId`, `Name` (200), `Periodization` (varchar 20), `AimMuscleGroups` (jsonb) | — |
+| `training_TrainingTemplates` | `Id` (guid PK), `ProgramId`, `TrainingDistribution` (varchar 20), `VolumeLandmark`, `DurationInDays`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `ProgramId` → Programs (cascade) |
+| `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200), `IsDeleted` (bool, default false), `DeletedAt?` | `TrainingTemplateId` → TrainingTemplates (cascade) |
+| `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRIR`, `SuperSetGroupId?`, `AimMuscleGroups` (jsonb), `RepetitionRange_Min`, `RepetitionRange_Max`, `AdvanceTrainingTechniques`, `IsDeleted` (bool, default false), `DeletedAt?` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
 | `training_Exercises` | `Id` (guid PK), `Name` (200), `IsBilateral`, `AimMuscleGroups` (jsonb) | — |
 
-- **Migrations**: located in `Infrastructure/Migrations/`, naming convention `{yyyyMMddHHmm}_{Description}.cs`
+- **Migrations**: located in `Infrastructure/Migrations/`, naming convention `{yyyyMMddHHmm}_{Description}.cs` (soft delete columns added in `202607291213_AddSoftDeleteToTemplates`)
+- **Program restructure** (`202607291214_RestructureTrainingAroundProgram`): creates `training_Programs` (one Program per pre-existing template, reusing its Id), moves `UserId`/`Name` out of `training_TrainingTemplates` (now `ProgramId`, `DurationInDays`, `Order`), drops `Macrocycles.Periodization`, `Mesocycles.AimMuscleGroups` and `Microcycles.DurationInDays/TrainingDistribution`, adds `Mesocycles.ProgramId`, `Microcycles.TrainingTemplateId/WeekNumber`, `TrainingSessions.TemplateSessionId`, `Sets.TemplateSetId`, and converts `TemplateSets.ExpectedRIR` into `ExpectedRPE` (`10 - RIR`). FKs pointing to templates are `NO ACTION` (templates are only soft deleted). It fails on purpose if there are mesocycles/microcycles, because they cannot be mapped to a program/template automatically
+- **Repositories**: `IProgramRepository` / `ProgramRepository` is the only entry point to the template hierarchy (always loads the whole aggregate with split queries)
 - **EF Core configurations**: located in `Infrastructure/Configurations/`, implementing `IEntityTypeConfiguration<T>`
 
 ## 5. Folder structure
@@ -121,8 +144,8 @@ This module handles strength and bodybuilding training planning and logging. It 
 ```
 training/
 ├── LightWeight.Training.Domain/
-│   ├── Aggregates/            # Macrocycle, Mesocycle, Microcycle, TrainingSession, TrainingTemplate, Exercise
-│   ├── Entities/              # Set, TemplateSession, TemplateSet
+│   ├── Aggregates/            # Macrocycle, Mesocycle, Microcycle, Program, TrainingSession, Exercise
+│   ├── Entities/              # Set, TrainingTemplate, TemplateSession, TemplateSet
 │   ├── Enum/                  # MuscleGroups, Periodization, TrainingDistribution, TrainingStage
 │   ├── Events/                # (empty — no domain events defined yet)
 │   ├── Exceptions/            # TrainingDomainException, AdvanceTrainingTechniquesExceptions
@@ -193,4 +216,5 @@ training/
 - Do NOT create EF Core relationships in more than one `IEntityTypeConfiguration` for the same FK
 - Do NOT reference other module's domain types directly — communicate only via integration events
 - Do NOT change value object persistence from embedded columns to separate tables without updating both Configuration and Migration
+- Do NOT hard delete `TrainingTemplate`, `TemplateSession` or `TemplateSet` (neither `Remove()` on the DbSet nor on the aggregate collections) — use the soft delete methods
 - Do NOT add queries that belong in a dedicated read-side module without considering the separation

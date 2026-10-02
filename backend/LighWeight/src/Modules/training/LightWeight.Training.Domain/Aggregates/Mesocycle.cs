@@ -8,9 +8,6 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     /// <summary>Parent macrocycle ID</summary>
     public Guid MacrocycleId {get; private set;}
     public Guid UserId{get;private set;}
-    private List<MuscleGroups> _aimMuscleGroups = new();
-    /// <summary>Muscle groups the user aims to develop during this mesocycle</summary>
-    public IReadOnlyCollection<MuscleGroups> AimMuscleGroups => _aimMuscleGroups.AsReadOnly();
     /// <summary>User's motivation level at the start (1-10)</summary>
     public int MotivationLevel{get;private set;}
     /// <summary>Injuries the user wants to track during this block</summary>
@@ -28,22 +25,22 @@ public sealed class Mesocycle : AggregateRoot<Guid>
         Guid Id,
         Guid macrocycleId,
         Guid userId,
-        List<MuscleGroups> aimMuscleGroups,
         int motivationLevel, 
         string? injuries, 
         string? comments, 
         DateTime startAt, 
-        DateTime endAt
+        DateTime endAt,
+        Guid programId
     ) : base(Id)
     {
         MacrocycleId = macrocycleId;
         UserId = userId;
-        _aimMuscleGroups = aimMuscleGroups;
         MotivationLevel = motivationLevel;
         Injuries = injuries;
         Comments = comments;
         StartAt = startAt;
         EndAt = endAt;
+        ProgramId = programId;
     }
     /// <summary>Creates a new mesocycle within a macrocycle</summary>
     /// <param name="macrocycleId">Parent macrocycle ID</param>
@@ -56,12 +53,12 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     (
         Guid macrocycleId,
         Guid userId,
-        List<MuscleGroups> aimMuscleGroups,
         int motivationLevel,
         string? injuries,
         string? comments,
         DateTime startAt,
-        DateTime endAt
+        DateTime endAt,
+        Guid ProgramId
     )
     {
         return new Mesocycle
@@ -69,12 +66,12 @@ public sealed class Mesocycle : AggregateRoot<Guid>
             Guid.CreateVersion7(),
             macrocycleId,
             userId,
-            aimMuscleGroups,
             motivationLevel,
             injuries,
             comments,
             startAt,
-            endAt
+            endAt,
+            ProgramId
         );
     }
 }

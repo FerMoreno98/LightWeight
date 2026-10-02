@@ -1,7 +1,6 @@
 using LightWeight.shared.Mediator;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
-using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 
@@ -11,12 +10,14 @@ public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicro
 {
     private readonly IMesocycleRepository _mesocycleRepository;
     private readonly IMicrocycleRepository _microcycleRepository;
+    private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateMicrocycleCommandHandler(IMesocycleRepository mesocycleRepository, IMicrocycleRepository microcycleRepository, ITrainingUnitOfWork uOW)
+    public CreateMicrocycleCommandHandler(IMesocycleRepository mesocycleRepository, IMicrocycleRepository microcycleRepository, IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
         _mesocycleRepository = mesocycleRepository;
         _microcycleRepository = microcycleRepository;
+        _programRepository = programRepository;
         _UOW = uOW;
     }
 
@@ -29,13 +30,19 @@ public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicro
         {
             throw new UnauthorizedAccessException();
         }
-        var trainingDistribution = Enum.Parse<TrainingDistribution>(command.TrainingDistribution);
+        // The template must belong to the program the mesocycle follows
+        Program program = await _programRepository.GetByIdAsync(mesocycle.ProgramId)
+            ?? throw new ProgramNotFoundApplicationException();
+        if(!program.trainingTemplates.Any(t => t.Id == command.TrainingTemplateId))
+        {
+            throw new TrainingTemplateNotFoundApplicationException();
+        }
         Microcycle microcycle = Microcycle.Create
         (
             command.MesocycleId,
             command.UserId,
-            command.DurationInDays,
-            trainingDistribution
+            command.TrainingTemplateId,
+            command.WeekNumber
         );
         await _microcycleRepository.AddAsync(microcycle,ct);
         await _UOW.SaveChangesAsync(ct);

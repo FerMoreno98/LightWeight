@@ -9,6 +9,9 @@ public sealed class CreateMesocycleCommandValidator : AbstractValidator<CreateMe
         RuleFor(x => x.MacrocycleId)
             .NotEmpty();
 
+        RuleFor(x => x.ProgramId)
+            .NotEmpty();
+
         RuleFor(x => x.MotivationLevel)
             .InclusiveBetween(0, 10);
 

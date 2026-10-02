@@ -20,9 +20,5 @@ public sealed class CreateMacrocycleCommandValidator : AbstractValidator<CreateM
         RuleFor(x => x.TrainingStage)
             .NotEmpty()
             .IsEnumName(typeof(TrainingStage));
-
-        RuleFor(x => x.Periodization)
-            .NotEmpty()
-            .IsEnumName(typeof(Periodization));
     }
 }

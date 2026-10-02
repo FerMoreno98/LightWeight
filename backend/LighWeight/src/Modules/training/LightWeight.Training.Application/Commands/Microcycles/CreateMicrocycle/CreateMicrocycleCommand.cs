@@ -6,6 +6,6 @@ public sealed record CreateMicrocycleCommand
 (
     Guid MesocycleId,
     Guid UserId,
-    int DurationInDays,
-    string TrainingDistribution
+    Guid TrainingTemplateId,
+    int WeekNumber
 ) : ICommand;

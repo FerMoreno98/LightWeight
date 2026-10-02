@@ -11,16 +11,18 @@ namespace LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessi
 
 public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSetsFromSessionTemplateQuery, List<GetSetsFromSessionTemplateResponse>>
 {
-    private readonly ITrainingTemplateRepository _trainingTemplateRepository;
+    private readonly IProgramRepository _programRepository;
 
-    public GetSetsFromSessionTemplateQueryHandler(ITrainingTemplateRepository trainingTemplateRepository)
+    public GetSetsFromSessionTemplateQueryHandler(IProgramRepository programRepository)
     {
-        _trainingTemplateRepository = trainingTemplateRepository;
+        _programRepository = programRepository;
     }
 
     public async Task<List<GetSetsFromSessionTemplateResponse>> HandleAsync(GetSetsFromSessionTemplateQuery query, CancellationToken ct = default)
     {
-        TrainingTemplate? trainingTemplate = await _trainingTemplateRepository.GetByIdAsync(query.TrainingTemplateId)
+        Program? program = await _programRepository.GetByTrainingTemplateIdAsync(query.TrainingTemplateId)
+        ?? throw new TrainingTemplateNotFoundApplicationException();
+        TrainingTemplate? trainingTemplate = program.trainingTemplates.SingleOrDefault(t => t.Id == query.TrainingTemplateId)
         ?? throw new TrainingTemplateNotFoundApplicationException();
         TemplateSession? session = trainingTemplate.TemplateSessions.SingleOrDefault(ts => ts.Id == query.TemplateSessionId)
         ?? throw new TemplateSessionNotFoundApplicationException();
@@ -35,7 +37,7 @@ public sealed class GetSetsFromSessionTemplateQueryHandler : IQueryHandler<GetSe
                 set.ExerciseId,
                 set.RepetitionRange.Min,
                 set.RepetitionRange.Max,
-                set.ExpectedRIR,
+                set.ExpectedRPE,
                 Converters.MapTechnique(set.AdvanceTrainingTechniques),
                 set.SuperSetGroupId,
                 set.AimMuscleGroups.Select(Converters.MapMuscleGroup).ToList()

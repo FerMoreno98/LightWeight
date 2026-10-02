@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
 
@@ -13,8 +12,6 @@ public class TrainingTemplateConfiguration : IEntityTypeConfiguration<TrainingTe
         builder.ToTable("training_TrainingTemplates");
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
-        builder.Property(t => t.UserId).HasColumnName("UserId").IsRequired();
-        builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(200).IsRequired();
         builder.Property(v => v.VolumeLandmark)
             .HasColumnName("VolumeLandmark")
             .HasMaxLength(50)
@@ -24,7 +21,11 @@ public class TrainingTemplateConfiguration : IEntityTypeConfiguration<TrainingTe
             .HasMaxLength(20)
             .IsRequired()
             .HasConversion(s => s.ToString(), s => Enum.Parse<TrainingDistribution>(s));
-        builder.Ignore(t => t.DomainEvents);
+        builder.Property(t => t.DurationInDays).HasColumnName("DurationInDays").IsRequired();
+        builder.Property(t => t.Order).HasColumnName("Order").IsRequired();
+        builder.Property(t => t.IsDeleted).HasColumnName("IsDeleted").HasDefaultValue(false).IsRequired();
+        builder.Property(t => t.DeletedAt).HasColumnName("DeletedAt");
+        builder.HasQueryFilter(t => !t.IsDeleted);
 
         builder.HasMany(t => t.TemplateSessions)
             .WithOne()
