@@ -6,7 +6,5 @@ public sealed record CreateMesocycleRequest
     Guid ProgramId,
     int MotivationLevel,
     string? Injuries,
-    string? Comments,
-    DateTime StartAt,
-    DateTime EndAt
+    string? Comments
 );

@@ -1,0 +1,60 @@
+@if (open()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <!-- Backdrop: clicking outside cancels -->
+    <div class="backdrop-fade absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="cancel()"></div>
+
+    <div
+      class="dialog-pop relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="confirm-dialog-title"
+      aria-describedby="confirm-dialog-message"
+    >
+      <div class="flex items-start gap-4">
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+          [class]="danger() ? 'bg-red-950/60 text-red-400' : 'bg-emerald-950/60 text-emerald-400'"
+        >
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h2 id="confirm-dialog-title" class="text-lg font-semibold text-white">{{ title() }}</h2>
+          @if (message()) {
+            <p id="confirm-dialog-message" class="mt-1.5 text-sm text-slate-400">{{ message() }}</p>
+          }
+        </div>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          #cancelButton
+          type="button"
+          (click)="cancel()"
+          [disabled]="busy()"
+          class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400/40 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {{ cancelLabel() }}
+        </button>
+        <button
+          type="button"
+          (click)="confirm()"
+          [disabled]="busy()"
+          class="inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 disabled:cursor-wait disabled:opacity-60"
+          [class]="danger()
+            ? 'bg-red-500 text-white hover:bg-red-400 focus:ring-red-400/40'
+            : 'bg-emerald-500 text-slate-900 hover:bg-emerald-400 focus:ring-emerald-400/40'"
+        >
+          @if (busy()) {
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+            </svg>
+          }
+          {{ confirmLabel() }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

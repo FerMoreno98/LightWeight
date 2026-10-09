@@ -9,10 +9,10 @@ public sealed class CreateMicrocycleCommandValidator : AbstractValidator<CreateM
         RuleFor(x => x.MesocycleId)
             .NotEmpty();
 
-        RuleFor(x => x.TrainingTemplateId)
+        RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.WeekNumber)
-            .GreaterThan(0);
+        RuleFor(x => x.TrainingTemplateId)
+            .NotEmpty();
     }
 }

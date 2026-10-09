@@ -17,6 +17,9 @@ public class MicrocycleConfiguration : IEntityTypeConfiguration<Microcycle>
         builder.HasIndex(m => m.UserId).HasDatabaseName("Ix_Microcycle_UserId");
         builder.Property(m => m.TrainingTemplateId).HasColumnName("TrainingTemplateId").IsRequired();
         builder.Property(m => m.WeekNumber).HasColumnName("WeekNumber").IsRequired();
+        builder.HasIndex(m => new { m.MesocycleId, m.WeekNumber })
+            .HasDatabaseName("Ux_Microcycle_WeekNumber")
+            .IsUnique();
         builder.Ignore(m => m.DomainEvents);
 
         builder.HasOne<Mesocycle>()

@@ -6,7 +6,7 @@ using LightWeight.Training.Domain.Uow;
 
 namespace LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 
-public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocycleCommand>
+public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocycleCommand, Guid>
 {
     private readonly IMesocycleRepository _mesocycleRepository;
     private readonly IMacrocycleRepository _macrocycleRepository;
@@ -21,7 +21,7 @@ public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocy
         _UOW = uOW;
     }
 
-    public async Task HandleAsync(CreateMesocycleCommand command, CancellationToken ct = default)
+    public async Task<Guid> HandleAsync(CreateMesocycleCommand command, CancellationToken ct = default)
     {
         Macrocycle? macrocycle = await _macrocycleRepository.GetByIdAsync(command.MacrocycleId)
         ?? throw new MacrocycleNotFoundException();
@@ -29,18 +29,19 @@ public sealed class CreateMesocycleCommandHandler : ICommandHandler<CreateMesocy
         Program? program = await _programRepository.GetByIdAsync(command.ProgramId)
         ?? throw new ProgramNotFoundApplicationException();
         if (program.UserId != command.UserId) throw new UnauthorizedAccessException();
-        Mesocycle mesocycle = Mesocycle.Create
+        // The macrocycle checks it is still active and has no active mesocycle
+        List<Mesocycle> mesocycles = await _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle
         (
-            command.MacrocycleId,
-            macrocycle.UserId,
+            mesocycles,
+            command.ProgramId,
             command.MotivationLevel,
             command.Injuries,
             command.Comments,
-            command.StartAt,
-            command.EndAt,
-            command.ProgramId
+            DateTime.UtcNow
         );
         await _mesocycleRepository.AddAsync(mesocycle,ct);
         await _UOW.SaveChangesAsync(ct);
+        return mesocycle.Id;
     }
 }

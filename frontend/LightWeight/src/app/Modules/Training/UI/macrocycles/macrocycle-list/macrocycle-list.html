@@ -1,0 +1,104 @@
+<div class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-5xl fade-slide-in">
+
+    <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-bold text-white">Macrociclos</h1>
+        <p class="mt-1 text-sm text-slate-400">Tus bloques de entrenamiento, uno detrás de otro.</p>
+      </div>
+      @if (activeMacrocycle()) {
+        <span
+          class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-emerald-500/40 px-4 py-2 text-sm font-semibold text-slate-900/70"
+          title="Finaliza el macrociclo activo para empezar otro"
+        >
+          Nuevo macrociclo
+        </span>
+      } @else {
+        <a
+          routerLink="/training/macrocycle"
+          class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+        >
+          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+          </svg>
+          Nuevo macrociclo
+        </a>
+      }
+    </div>
+
+    @if (error()) {
+      <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+    }
+
+    @if (!loaded()) {
+      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        @for (skeleton of [1, 2, 3]; track skeleton) {
+          <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-5">
+            <div class="h-5 w-2/3 rounded bg-slate-700"></div>
+            <div class="mt-4 h-4 w-1/2 rounded bg-slate-700"></div>
+            <div class="mt-4 h-6 w-24 rounded-full bg-slate-700"></div>
+          </div>
+        }
+      </div>
+    } @else if (!activeMacrocycle() && finishedMacrocycles().length === 0) {
+      <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-16 text-center">
+        <p class="text-sm font-medium text-slate-300">Todavía no has empezado ningún macrociclo</p>
+        <p class="max-w-xs text-xs text-slate-500">Crea uno para empezar a organizar tus mesociclos y tus semanas de entrenamiento.</p>
+      </div>
+    } @else {
+      @if (activeMacrocycle(); as active) {
+        <section class="mb-10">
+          <h2 class="mb-3 text-sm font-medium uppercase tracking-wide text-slate-500">En curso</h2>
+          <button
+            type="button"
+            (click)="open(active)"
+            class="group flex w-full flex-col rounded-2xl border border-emerald-400/60 bg-gradient-to-b from-emerald-950/40 to-slate-800/80 p-6 text-left shadow-lg shadow-emerald-500/10 transition duration-200 hover:-translate-y-1 hover:border-emerald-400"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <div class="flex items-center gap-2">
+                  <h3 class="text-xl font-semibold text-white">{{ stageLabel(active) }}</h3>
+                  <span class="rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">Activo</span>
+                </div>
+                <p class="mt-1 text-sm text-slate-400">{{ period(active) }}</p>
+              </div>
+              <svg class="h-5 w-5 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            @if (active.comments) {
+              <p class="mt-3 text-sm text-slate-300">{{ active.comments }}</p>
+            }
+            <p class="mt-4 text-xs text-slate-400">
+              {{ active.mesocyclesCount }} {{ active.mesocyclesCount === 1 ? 'mesociclo' : 'mesociclos' }}
+            </p>
+          </button>
+        </section>
+      }
+
+      @if (finishedMacrocycles().length > 0) {
+        <section>
+          <h2 class="mb-3 text-sm font-medium uppercase tracking-wide text-slate-500">Historial</h2>
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (macrocycle of finishedMacrocycles(); track macrocycle.id) {
+              <button
+                type="button"
+                (click)="open(macrocycle)"
+                class="flex flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60"
+              >
+                <div class="flex items-center gap-2">
+                  <h3 class="text-lg font-semibold text-white">{{ stageLabel(macrocycle) }}</h3>
+                  <span class="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-400">Finalizado</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-400">{{ period(macrocycle) }}</p>
+                <p class="mt-4 border-t border-slate-700/60 pt-3 text-xs text-slate-400">
+                  {{ macrocycle.mesocyclesCount }} {{ macrocycle.mesocyclesCount === 1 ? 'mesociclo' : 'mesociclos' }}
+                </p>
+              </button>
+            }
+          </div>
+        </section>
+      }
+    }
+  </div>
+</div>

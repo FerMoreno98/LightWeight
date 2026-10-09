@@ -9,20 +9,13 @@ public sealed class CreateMesocycleCommandValidator : AbstractValidator<CreateMe
         RuleFor(x => x.MacrocycleId)
             .NotEmpty();
 
+        RuleFor(x => x.UserId)
+            .NotEmpty();
+
         RuleFor(x => x.ProgramId)
             .NotEmpty();
 
         RuleFor(x => x.MotivationLevel)
-            .InclusiveBetween(0, 10);
-
-        RuleFor(x => x.StartAt)
-            .NotEmpty()
-            .LessThan(x => x.EndAt)
-            .WithMessage("StartAt must be before EndAt");
-
-        RuleFor(x => x.EndAt)
-            .NotEmpty()
-            .GreaterThan(x => x.StartAt)
-            .WithMessage("EndAt must be after StartAt");
+            .InclusiveBetween(1, 10);
     }
 }

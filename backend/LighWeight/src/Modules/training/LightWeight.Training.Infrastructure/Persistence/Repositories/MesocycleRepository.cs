@@ -22,4 +22,18 @@ public class MesocycleRepository : IMesocycleRepository
     {
         return await _dbContext.Mesocycles.SingleOrDefaultAsync(m => m.Id == MesocycleId);
     }
+
+    public async Task<List<Mesocycle>> GetByMacrocycleIdAsync(Guid MacrocycleId)
+    {
+        return await _dbContext.Mesocycles
+            .Where(m => m.MacrocycleId == MacrocycleId)
+            .ToListAsync();
+    }
+
+    public async Task<List<Mesocycle>> GetAllOfAUserAsync(Guid UserId)
+    {
+        return await _dbContext.Mesocycles
+            .Where(m => m.UserId == UserId)
+            .ToListAsync();
+    }
 }

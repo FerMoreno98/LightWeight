@@ -1,59 +1,61 @@
-<body class="min-h-screen bg-slate-900 text-white flex items-center justify-center px-4 py-10">
+<div class="flex min-h-screen items-center justify-center px-4 py-10 text-white">
 
-  <form #form="ngForm" (ngSubmit)="onSubmit(form.value)"
-        class="w-full max-w-lg bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl flex flex-col gap-6">
-
-    <div>
-      <h1 class="text-3xl font-bold">Crear Macrociclo</h1>
-      <p class="mt-1 text-sm text-slate-400">Define el periodo principal de entrenamiento</p>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div class="flex flex-col gap-2">
-        <label for="startAt" class="text-sm font-medium text-slate-300">Fecha de inicio</label>
-        <input id="startAt" name="startAt" type="date" required ngModel
-               class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
-      </div>
-      <div class="flex flex-col gap-2">
-        <label for="endAt" class="text-sm font-medium text-slate-300">Fecha de fin <span class="text-slate-500">(opcional)</span></label>
-        <input id="endAt" name="endAt" type="date" ngModel
-               class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
+  @if (loaded() && activeMacrocycle(); as active) {
+    <div class="w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-800 p-8 text-center shadow-xl">
+      <h1 class="text-2xl font-bold">Ya tienes un macrociclo en curso</h1>
+      <p class="mt-2 text-sm text-slate-400">Finalízalo para poder empezar uno nuevo.</p>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+        <button type="button" (click)="cancel()"
+                class="flex-1 rounded-lg border border-slate-600 px-4 py-2.5 transition hover:bg-slate-700">
+          Volver
+        </button>
+        <a [routerLink]="['/training/macrocycle', active.id]"
+           class="flex-1 rounded-lg bg-emerald-500 px-4 py-2.5 font-semibold text-slate-900 transition hover:bg-emerald-400">
+          Ir al macrociclo activo
+        </a>
       </div>
     </div>
+  } @else {
+    <form #form="ngForm" (ngSubmit)="onSubmit()"
+          class="w-full max-w-lg bg-slate-800 border border-slate-700 rounded-2xl p-8 shadow-xl flex flex-col gap-6">
 
-    <div class="flex flex-col gap-4">
+      <div>
+        <h1 class="text-3xl font-bold">Crear Macrociclo</h1>
+        <p class="mt-1 text-sm text-slate-400">Empieza hoy un nuevo bloque de entrenamiento. Lo finalizarás cuando acabe.</p>
+      </div>
+
       <div class="flex flex-col gap-2">
         <label for="stage" class="text-sm font-medium text-slate-300">Fase de entrenamiento</label>
-        <select id="stage" name="stage" required ngModel
+        <select id="stage" name="stage" required [(ngModel)]="stage"
                 class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
-          <option value="" disabled selected>Selecciona una fase</option>
+          <option value="" disabled>Selecciona una fase</option>
           <option value="Bulk">Volumen (Bulk)</option>
           <option value="Cut">Definicion (Cut)</option>
           <option value="Maintenance">Mantenimiento (Maintenance)</option>
         </select>
       </div>
-    </div>
 
-    <div class="flex flex-col gap-2">
-      <label for="comments" class="text-sm font-medium text-slate-300">Comentarios <span class="text-slate-500">(opcional)</span></label>
-      <textarea id="comments" name="comments" rows="4" ngModel
-                placeholder="Observaciones, prioridades, restricciones..."
-                class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition resize-none"></textarea>
-    </div>
+      <div class="flex flex-col gap-2">
+        <label for="comments" class="text-sm font-medium text-slate-300">Comentarios <span class="text-slate-500">(opcional)</span></label>
+        <textarea id="comments" name="comments" rows="4" [(ngModel)]="comments"
+                  placeholder="Observaciones, prioridades, restricciones..."
+                  class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 placeholder:text-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition resize-none"></textarea>
+      </div>
 
-    @if (error()) {
-      <p class="text-sm text-red-400">{{ error() }}</p>
-    }
+      @if (error()) {
+        <p class="text-sm text-red-400">{{ error() }}</p>
+      }
 
-    <div class="flex flex-col sm:flex-row gap-3 pt-2">
-      <button type="button" (click)="cancel()"
-              class="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-700 transition">
-        Cancelar
-      </button>
-      <button type="submit" [disabled]="!form.valid || isLoading()"
-              class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
-        {{ isLoading() ? 'Creando...' : 'Crear macrociclo' }}
-      </button>
-    </div>
-  </form>
-</body>
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button type="button" (click)="cancel()"
+                class="flex-1 px-4 py-2.5 rounded-lg border border-slate-600 hover:bg-slate-700 transition">
+          Cancelar
+        </button>
+        <button type="submit" [disabled]="!form.valid || isLoading() || !loaded()"
+                class="flex-1 px-4 py-2.5 rounded-lg bg-emerald-500 text-slate-900 font-semibold hover:bg-emerald-400 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          {{ isLoading() ? 'Creando...' : 'Crear macrociclo' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

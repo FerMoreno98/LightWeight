@@ -54,19 +54,84 @@ export interface Set{
     aimMuscleGroups : MuscleGroup[]
 }
 
+export type TrainingStage = 'Bulk' | 'Cut' | 'Maintenance';
+export interface MacrocycleSummary{
+    id : string,
+    stage : TrainingStage,
+    comments : string | null,
+    startedAt : string,
+    finishedAt : string | null,
+    mesocyclesCount : number
+}
+export interface MacrocycleMesocycle{
+    id : string,
+    programId : string,
+    programName : string,
+    startedAt : string,
+    finishedAt : string | null,
+    motivationLevel : number,
+    injuries : string | null,
+    comments : string | null,
+    microcyclesCount : number
+}
+export interface MacrocycleDetail{
+    id : string,
+    stage : TrainingStage,
+    comments : string | null,
+    startedAt : string,
+    finishedAt : string | null,
+    mesocycles : MacrocycleMesocycle[]
+}
+export interface MesocycleMicrocycle{
+    id : string,
+    weekNumber : number,
+    trainingTemplateId : string,
+    /** null when the template has been deleted */
+    templateName : string | null,
+    durationInDays : number | null
+}
+export interface MesocycleTemplate{
+    id : string,
+    name : string,
+    order : number,
+    durationInDays : number,
+    volumeLandmark : VolumeLandmark,
+    trainingDistribution : TrainingDistribution
+}
+export interface MesocycleDetail{
+    id : string,
+    macrocycleId : string,
+    programId : string,
+    programName : string,
+    startedAt : string,
+    finishedAt : string | null,
+    motivationLevel : number,
+    injuries : string | null,
+    comments : string | null,
+    microcycles : MesocycleMicrocycle[],
+    availableTemplates : MesocycleTemplate[]
+}
+
 @Service()
 export class TrainingApiService {
     private http = inject(HttpClient);
     private baseUrl = `${environment.apiUrl}/training`
 
-    CreateMacrocycle(startAt:Date,endAt:Date | null,trainingStage:string,comments:string | null) : Observable<void>{
-        return this.http.post<void>(`${this.baseUrl}/macrocycle`,
+    CreateMacrocycle(trainingStage:string,comments:string | null) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/macrocycle`,
             {
-                startAt,
-                endAt,
                 trainingStage,
                 comments
             })
+    }
+    GetUserMacrocycles() : Observable<MacrocycleSummary[]>{
+        return this.http.get<MacrocycleSummary[]>(`${this.baseUrl}/macrocycles`);
+    }
+    GetMacrocycleDetail(macrocycleId : string) : Observable<MacrocycleDetail>{
+        return this.http.get<MacrocycleDetail>(`${this.baseUrl}/macrocycle/${macrocycleId}`);
+    }
+    FinishMacrocycle(macrocycleId : string) : Observable<void>{
+        return this.http.post<void>(`${this.baseUrl}/macrocycle/${macrocycleId}/finish`, {});
     }
     CreateProgram
     (
@@ -90,30 +155,30 @@ export class TrainingApiService {
         programId:string,
         motivationLevel:number,
         injuries:string | null,
-        comments: string | null,
-        startAt:Date,
-        endAt:Date
-    ) : Observable<void>{
-        return this.http.post<void>(`${this.baseUrl}/mesocycle`,{
+        comments: string | null
+    ) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/mesocycle`,{
             macrocycleId,
             programId,
             motivationLevel,
             injuries,
-            comments,
-            startAt,
-            endAt
+            comments
         })
+    }
+    GetMesocycleDetail(mesocycleId : string) : Observable<MesocycleDetail>{
+        return this.http.get<MesocycleDetail>(`${this.baseUrl}/mesocycle/${mesocycleId}`);
+    }
+    FinishMesocycle(mesocycleId : string) : Observable<void>{
+        return this.http.post<void>(`${this.baseUrl}/mesocycle/${mesocycleId}/finish`, {});
     }
     CreateMicrocycle
     (
         mesocycleId : string,
-        trainingTemplateId : string,
-        weekNumber : number
-    ) : Observable<void>{
-        return this.http.post<void>(`${this.baseUrl}/microcycle`,{
+        trainingTemplateId : string
+    ) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/microcycle`,{
             mesocycleId,
-            trainingTemplateId,
-            weekNumber
+            trainingTemplateId
         });
     }
     CreateTrainingTemplate

@@ -10,15 +10,8 @@ public sealed class CreateMacrocycleCommandValidator : AbstractValidator<CreateM
         RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.StartAt)
-            .NotEmpty();
-
-        RuleFor(x => x.EndAt)
-            .Must((cmd, endAt) => endAt is null || endAt > cmd.StartAt)
-            .WithMessage("EndAt must be after StartAt when provided");
-
         RuleFor(x => x.TrainingStage)
             .NotEmpty()
-            .IsEnumName(typeof(TrainingStage));
+            .IsEnumName(typeof(TrainingStage), caseSensitive: false);
     }
 }

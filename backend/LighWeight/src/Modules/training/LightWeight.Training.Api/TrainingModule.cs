@@ -2,6 +2,11 @@ namespace LightWeight.Training.Api;
 using System.Security.Claims;
 using LightWeight.Training.Api.DTOs;
 using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
+using LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle;
+using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
+using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
+using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
+using LightWeight.Training.Application.Queries.Mesocycles.GetMesocycleDetail;
 using LightWeight.shared.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -33,7 +38,12 @@ public static class TrainingModule
         var group = app.MapGroup("/api/training");
 
         group.MapPost("/macrocycle", CreateMacrocycle).RequireAuthorization();
+        group.MapGet("/macrocycles", GetUserMacrocycles).RequireAuthorization();
+        group.MapGet("/macrocycle/{macrocycleId:guid}", GetMacrocycleDetail).RequireAuthorization();
+        group.MapPost("/macrocycle/{macrocycleId:guid}/finish", FinishMacrocycle).RequireAuthorization();
         group.MapPost("/mesocycle", CreateMesocycle).RequireAuthorization();
+        group.MapGet("/mesocycle/{mesocycleId:guid}", GetMesocycleDetail).RequireAuthorization();
+        group.MapPost("/mesocycle/{mesocycleId:guid}/finish", FinishMesocycle).RequireAuthorization();
         group.MapPost("/microcycle", CreateMicrocycle).RequireAuthorization();
         group.MapPost("/program", CreateProgram).RequireAuthorization();
         group.MapGet("/programs", GetUserPrograms).RequireAuthorization();
@@ -65,15 +75,55 @@ public static class TrainingModule
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
 
-        await mediator.SendAsync(new CreateMacrocycleCommand(
+        var id = await mediator.SendAsync<CreateMacrocycleCommand, Guid>(new CreateMacrocycleCommand(
             Guid.Parse(userId),
-            request.StartAt,
-            request.EndAt,
             request.TrainingStage,
             request.Comments
         ), ct);
 
-        return TypedResults.Ok();
+        return TypedResults.Ok(new { id });
+    }
+    private static async Task<IResult> GetUserMacrocycles
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var macrocycles = await mediator.QueryAsync<GetUserMacrocyclesQuery, List<GetUserMacrocyclesResponse>>(
+            new GetUserMacrocyclesQuery(Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(macrocycles);
+    }
+    private static async Task<IResult> GetMacrocycleDetail
+    (
+        IMediator mediator,
+        Guid macrocycleId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var macrocycle = await mediator.QueryAsync<GetMacrocycleDetailQuery, GetMacrocycleDetailResponse>(
+            new GetMacrocycleDetailQuery(macrocycleId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(macrocycle);
+    }
+    private static async Task<IResult> FinishMacrocycle
+    (
+        IMediator mediator,
+        Guid macrocycleId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new FinishMacrocycleCommand(macrocycleId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
     }
     private static async Task<IResult> CreateMesocycle
     (
@@ -85,17 +135,43 @@ public static class TrainingModule
     {
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
-        await mediator.SendAsync(new CreateMesocycleCommand(
+        var id = await mediator.SendAsync<CreateMesocycleCommand, Guid>(new CreateMesocycleCommand(
             request.MacrocycleId,
             Guid.Parse(userId),
             request.ProgramId,
             request.MotivationLevel,
             request.Injuries,
-            request.Comments,
-            request.StartAt,
-            request.EndAt
+            request.Comments
         ), ct);
-        return TypedResults.Ok();
+        return TypedResults.Ok(new { id });
+    }
+    private static async Task<IResult> GetMesocycleDetail
+    (
+        IMediator mediator,
+        Guid mesocycleId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var mesocycle = await mediator.QueryAsync<GetMesocycleDetailQuery, GetMesocycleDetailResponse>(
+            new GetMesocycleDetailQuery(mesocycleId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(mesocycle);
+    }
+    private static async Task<IResult> FinishMesocycle
+    (
+        IMediator mediator,
+        Guid mesocycleId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new FinishMesocycleCommand(mesocycleId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
     }
 
     private static async Task<IResult> CreateMicrocycle
@@ -108,15 +184,13 @@ public static class TrainingModule
     {
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
-        await mediator.SendAsync(new CreateMicrocycleCommand(
+        var id = await mediator.SendAsync<CreateMicrocycleCommand, Guid>(new CreateMicrocycleCommand(
             request.MesocycleId,
             Guid.Parse(userId),
-            request.TrainingTemplateId,
-            request.WeekNumber
+            request.TrainingTemplateId
         ), ct);
-        return TypedResults.Ok();
+        return TypedResults.Ok(new { id });
     }
-
     private static async Task<IResult> CreateProgram
     (
         CreateProgramRequest request,

@@ -1,0 +1,182 @@
+<div class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-4xl">
+
+    @if (error()) {
+      <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+    }
+
+    @if (!mesocycle()) {
+      @if (isLoading()) {
+        <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-6">
+          <div class="h-6 w-1/3 rounded bg-slate-700"></div>
+          <div class="mt-3 h-4 w-1/4 rounded bg-slate-700"></div>
+        </div>
+      }
+    } @else if (!isAdding) {
+      <div class="fade-slide-in">
+        <a
+          [routerLink]="['/training/macrocycle', mesocycle()!.macrocycleId]"
+          class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Volver al macrociclo
+        </a>
+
+        <!-- Header -->
+        <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-bold text-white">Mesociclo · {{ mesocycle()!.programName }}</h1>
+              @if (isFinished()) {
+                <span class="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-400">Finalizado</span>
+              } @else {
+                <span class="rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">En curso</span>
+              }
+            </div>
+            <p class="mt-1 text-sm text-slate-400">{{ period() }}</p>
+            <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
+              <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+                Motivación {{ mesocycle()!.motivationLevel }}/10
+              </span>
+              @if (mesocycle()!.injuries) {
+                <span class="rounded-full border border-amber-800/60 bg-amber-950/40 px-2.5 py-1 text-amber-300">
+                  Lesiones: {{ mesocycle()!.injuries }}
+                </span>
+              }
+            </div>
+            @if (mesocycle()!.comments) {
+              <p class="mt-3 max-w-2xl text-sm text-slate-300">{{ mesocycle()!.comments }}</p>
+            }
+          </div>
+          @if (!isFinished()) {
+            <button
+              type="button"
+              (click)="askFinishMesocycle()"
+              [disabled]="isFinishing()"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/70 disabled:cursor-wait disabled:opacity-50"
+            >
+              {{ isFinishing() ? 'Finalizando...' : 'Finalizar mesociclo' }}
+            </button>
+          }
+        </div>
+
+        <!-- Weeks -->
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-lg font-semibold text-white">Semanas</h2>
+          @if (!isFinished()) {
+            <button
+              type="button"
+              (click)="showAddWeek()"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+              </svg>
+              Añadir semana {{ nextWeek() }}
+            </button>
+          }
+        </div>
+
+        @if (mesocycle()!.microcycles.length === 0) {
+          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
+            <p class="text-sm font-medium text-slate-300">Este mesociclo todavía no tiene semanas</p>
+            @if (!isFinished()) {
+              <p class="max-w-xs text-xs text-slate-500">Añade la primera eligiendo una de las plantillas del programa.</p>
+            }
+          </div>
+        } @else {
+          <ol class="flex flex-col divide-y divide-slate-700/60 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/80">
+            @for (microcycle of mesocycle()!.microcycles; track microcycle.id) {
+              <li class="flex items-center gap-4 px-5 py-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-800/60 bg-emerald-950/40 text-sm font-semibold text-emerald-300">
+                  {{ microcycle.weekNumber }}
+                </span>
+                <div class="min-w-0">
+                  <p class="text-sm font-medium text-white">Semana {{ microcycle.weekNumber }}</p>
+                  @if (microcycle.templateName) {
+                    <p class="truncate text-xs text-slate-400">{{ microcycle.templateName }} · {{ microcycle.durationInDays }} días</p>
+                  } @else {
+                    <p class="text-xs italic text-slate-500">Plantilla eliminada</p>
+                  }
+                </div>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+    } @else {
+      <!-- Add week: pick a template of the program -->
+      <div class="fade-slide-in">
+        <button
+          type="button"
+          (click)="backToWeeks()"
+          class="mb-4 flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Volver a las semanas
+        </button>
+
+        <h1 class="text-2xl font-bold text-white">Semana {{ nextWeek() }}</h1>
+        <p class="mt-1 mb-8 text-sm text-slate-400">Elige qué plantilla de <span class="text-slate-200">{{ mesocycle()!.programName }}</span> vas a seguir esta semana.</p>
+
+        @if (mesocycle()!.availableTemplates.length === 0) {
+          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
+            <p class="text-sm font-medium text-slate-300">Este programa todavía no tiene plantillas</p>
+            <a
+              routerLink="/training/trainingtemplate"
+              [queryParams]="{ programId: mesocycle()!.programId }"
+              class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+            >
+              Crear una plantilla
+            </a>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            @for (template of mesocycle()!.availableTemplates; track template.id) {
+              <button
+                type="button"
+                (click)="addWeek(template)"
+                [disabled]="addingTemplateId() !== null"
+                class="flex flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
+              >
+                <div class="flex items-start justify-between gap-2">
+                  <h3 class="text-lg font-semibold leading-tight text-white">{{ template.name }}</h3>
+                  @if (addingTemplateId() === template.id) {
+                    <svg class="h-4 w-4 shrink-0 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                    </svg>
+                  }
+                </div>
+                <p class="mt-0.5 text-xs text-slate-400">{{ template.durationInDays }} días</p>
+                <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
+                  <span class="rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 font-medium text-emerald-300">
+                    {{ volumeLandmarkLabel(template) }}
+                  </span>
+                  <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+                    {{ trainingDistributionLabel(template) }}
+                  </span>
+                </div>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+  </div>
+</div>
+
+<app-confirm-dialog
+  [open]="isConfirmingFinish()"
+  title="¿Finalizar el mesociclo?"
+  message="Ya no podrás añadirle semanas, pero podrás empezar el siguiente mesociclo del macrociclo. Esta acción no se puede deshacer."
+  [confirmLabel]="isFinishing() ? 'Finalizando...' : 'Finalizar mesociclo'"
+  [busy]="isFinishing()"
+  (confirmed)="finishMesocycle()"
+  (cancelled)="cancelFinishMesocycle()"
+/>

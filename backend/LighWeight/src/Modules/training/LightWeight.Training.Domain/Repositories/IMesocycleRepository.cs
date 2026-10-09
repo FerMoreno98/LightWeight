@@ -6,4 +6,6 @@ public interface IMesocycleRepository
 {
     Task AddAsync(Mesocycle mesocycle,CancellationToken cancellationToken);
     Task<Mesocycle?> GetByIdAsync(Guid MesocycleId);
+    Task<List<Mesocycle>> GetByMacrocycleIdAsync(Guid MacrocycleId);
+    Task<List<Mesocycle>> GetAllOfAUserAsync(Guid UserId);
 }

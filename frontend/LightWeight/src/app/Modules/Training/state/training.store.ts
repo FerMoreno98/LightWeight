@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail } from "../data/training-api.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
@@ -14,6 +14,9 @@ export class TrainingStore{
     private _seriesPerGroupPerSession = signal<SeriesPerGroupPerSession[]>([]);
     private _trainingTemplates = signal<TrainingTemplate[]>([]);
     private _programs = signal<Program[]>([]);
+    private _macrocycles = signal<MacrocycleSummary[]>([]);
+    private _macrocycleDetail = signal<MacrocycleDetail | null>(null);
+    private _mesocycleDetail = signal<MesocycleDetail | null>(null);
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
@@ -23,33 +26,68 @@ export class TrainingStore{
     seriesPerGroupPerSession = this._seriesPerGroupPerSession.asReadonly();
     trainingTemplates = this._trainingTemplates.asReadonly();
     programs = this._programs.asReadonly();
+    macrocycles = this._macrocycles.asReadonly();
+    macrocycleDetail = this._macrocycleDetail.asReadonly();
+    mesocycleDetail = this._mesocycleDetail.asReadonly();
 
     async CreateMacrocycle
     (
-        startAt: Date,
-        endAt :Date | null,
         trainingStage:string,
         comments:string | null
-    ) : Promise<boolean>{
+    ) : Promise<string | null>{
         this._isLoading.set(true);
-        this._error.set(null); 
+        this._error.set(null);
         try{
-            await firstValueFrom(this.api.CreateMacrocycle
-                (
-                    startAt,
-                    endAt,
-                    trainingStage,
-                    comments
-                ));
-            return true;
+            const result = await firstValueFrom(this.api.CreateMacrocycle(trainingStage, comments));
+            return result.id;
         }catch{
             this._error.set('No se ha podido crear el macrociclo');
-            return false;
+            return null;
         }finally{
-
             this._isLoading.set(false);
         }
+    }
 
+    async GetUserMacrocycles() : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            this._macrocycles.set(await firstValueFrom(this.api.GetUserMacrocycles()));
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar los macrociclos');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    /** Loads a macrocycle with its mesocycles. The previous detail is cleared so another macrocycle is never shown */
+    async GetMacrocycleDetail(macrocycleId : string) : Promise<boolean>{
+        if (this._macrocycleDetail()?.id !== macrocycleId) this._macrocycleDetail.set(null);
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            this._macrocycleDetail.set(await firstValueFrom(this.api.GetMacrocycleDetail(macrocycleId)));
+            return true;
+        }catch{
+            this._error.set('No se ha podido cargar el macrociclo');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    /** Finishes the macrocycle (and its active mesocycle) and reloads its detail */
+    async FinishMacrocycle(macrocycleId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.FinishMacrocycle(macrocycleId));
+        }catch{
+            this._error.set('No se ha podido finalizar el macrociclo');
+            return false;
+        }
+        return this.GetMacrocycleDetail(macrocycleId);
     }
 
     async CreateMesocycle
@@ -58,54 +96,70 @@ export class TrainingStore{
         programId:string,
         motivationLevel:number,
         injuries:string | null,
-        comments: string | null,
-        startAt:Date,
-        endAt:Date
-    ) : Promise<boolean>{
+        comments: string | null
+    ) : Promise<string | null>{
         this._isLoading.set(true);
         this._error.set(null);
         try{
-            await firstValueFrom(this.api.CreateMesocycle
+            const result = await firstValueFrom(this.api.CreateMesocycle
                 (
                     macrocycleId,
                     programId,
                     motivationLevel,
                     injuries,
-                    comments,
-                    startAt,
-                    endAt
+                    comments
                 ));
-            return true;
+            return result.id;
         }catch{
             this._error.set('No se ha podido crear el mesociclo');
+            return null;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    /** Loads a mesocycle with its weeks and the templates available. The previous detail is cleared first */
+    async GetMesocycleDetail(mesocycleId : string) : Promise<boolean>{
+        if (this._mesocycleDetail()?.id !== mesocycleId) this._mesocycleDetail.set(null);
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            this._mesocycleDetail.set(await firstValueFrom(this.api.GetMesocycleDetail(mesocycleId)));
+            return true;
+        }catch{
+            this._error.set('No se ha podido cargar el mesociclo');
             return false;
         }finally{
             this._isLoading.set(false);
         }
     }
 
+    /** Finishes the mesocycle and reloads its detail */
+    async FinishMesocycle(mesocycleId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.FinishMesocycle(mesocycleId));
+        }catch{
+            this._error.set('No se ha podido finalizar el mesociclo');
+            return false;
+        }
+        return this.GetMesocycleDetail(mesocycleId);
+    }
+
+    /** Adds the next week to the mesocycle and reloads its detail */
     async CreateMicrocycle
     (
         mesocycleId : string,
-        trainingTemplateId : string,
-        weekNumber : number
+        trainingTemplateId : string
     ) : Promise<boolean>{
-        this._isLoading.set(true);
         this._error.set(null);
         try{
-            await firstValueFrom(this.api.CreateMicrocycle
-                (
-                    mesocycleId,
-                    trainingTemplateId,
-                    weekNumber
-                ));
-            return true;
+            await firstValueFrom(this.api.CreateMicrocycle(mesocycleId, trainingTemplateId));
         }catch{
-            this._error.set('No se ha podido crear el microciclo');
+            this._error.set('No se ha podido añadir la semana');
             return false;
-        }finally{
-            this._isLoading.set(false);
         }
+        return this.GetMesocycleDetail(mesocycleId);
     }
 
     async CreateProgram

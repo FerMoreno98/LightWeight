@@ -6,7 +6,7 @@ using LightWeight.Training.Domain.Uow;
 
 namespace LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 
-public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicrocycleCommand>
+public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicrocycleCommand, Guid>
 {
     private readonly IMesocycleRepository _mesocycleRepository;
     private readonly IMicrocycleRepository _microcycleRepository;
@@ -21,7 +21,7 @@ public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicro
         _UOW = uOW;
     }
 
-    public async Task HandleAsync(CreateMicrocycleCommand command, CancellationToken ct = default)
+    public async Task<Guid> HandleAsync(CreateMicrocycleCommand command, CancellationToken ct = default)
     {
         Mesocycle mesocycle = await _mesocycleRepository.GetByIdAsync(command.MesocycleId)
             ?? throw new MesocycleNotFoundException();
@@ -37,14 +37,11 @@ public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicro
         {
             throw new TrainingTemplateNotFoundApplicationException();
         }
-        Microcycle microcycle = Microcycle.Create
-        (
-            command.MesocycleId,
-            command.UserId,
-            command.TrainingTemplateId,
-            command.WeekNumber
-        );
+        // The mesocycle checks it is still active and numbers the new week
+        List<Microcycle> microcycles = await _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id);
+        Microcycle microcycle = mesocycle.PlanMicrocycle(microcycles, command.TrainingTemplateId);
         await _microcycleRepository.AddAsync(microcycle,ct);
         await _UOW.SaveChangesAsync(ct);
+        return microcycle.Id;
     }
 }

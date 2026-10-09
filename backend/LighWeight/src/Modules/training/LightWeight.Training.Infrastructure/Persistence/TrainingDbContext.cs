@@ -11,6 +11,7 @@ public class TrainingDbContext(DbContextOptions<TrainingDbContext> options) : Db
 {
     public DbSet<Macrocycle> Macrocycles => Set<Macrocycle>();
     public DbSet<Mesocycle> Mesocycles => Set<Mesocycle>();
+    public DbSet<Microcycle> Microcycles => Set<Microcycle>();
     public DbSet<Program> Programs => Set<Program>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
 

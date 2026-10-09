@@ -3,7 +3,9 @@ using LightWeight.shared.Behavior;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Messaging;
 using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
+using LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
+using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
@@ -18,6 +20,9 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrain
 using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetCurrentMacrocycle;
+using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
+using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
+using LightWeight.Training.Application.Queries.Mesocycles.GetMesocycleDetail;
 using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 // using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
@@ -38,9 +43,14 @@ public static class DependencyInjection
         services.AddScoped(typeof(IPipelineBehavior<>), typeof(ValidationPipelineBehavior<>));
         services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
 
-        services.AddScoped<ICommandHandler<CreateMacrocycleCommand>, CreateMacrocycleCommandHandler>();
-        services.AddScoped<ICommandHandler<CreateMesocycleCommand>, CreateMesocycleCommandHandler>();
-        services.AddScoped<ICommandHandler<CreateMicrocycleCommand>, CreateMicrocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateMacrocycleCommand, Guid>, CreateMacrocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<FinishMacrocycleCommand>, FinishMacrocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateMesocycleCommand, Guid>, CreateMesocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<FinishMesocycleCommand>, FinishMesocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<CreateMicrocycleCommand, Guid>, CreateMicrocycleCommandHandler>();
+        services.AddScoped<IQueryHandler<GetUserMacrocyclesQuery,List<GetUserMacrocyclesResponse>>,GetUserMacrocyclesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetMacrocycleDetailQuery,GetMacrocycleDetailResponse>,GetMacrocycleDetailQueryHandler>();
+        services.AddScoped<IQueryHandler<GetMesocycleDetailQuery,GetMesocycleDetailResponse>,GetMesocycleDetailQueryHandler>();
         services.AddScoped<ICommandHandler<CreateProgramCommand, Guid>, CreateProgramCommandHandler>();
         services.AddScoped<ICommandHandler<CreateTrainingSessionCommand>, CreateTrainingSessionCommandHandler>();
         services.AddScoped<ICommandHandler<CreateTrainingTemplateCommand, Guid>, CreateTrainingTemplateCommandHandler>();

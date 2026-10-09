@@ -2,9 +2,21 @@ import { Routes } from "@angular/router";
 
 export const TrainingRoutes: Routes = [
     {
+        path: 'macrocycles',
+        loadComponent: () => import('./UI/macrocycles/macrocycle-list/macrocycle-list').then(m => m.MacrocycleList)
+    },
+    {
         path: 'macrocycle',
         loadComponent: () => import('./UI/macrocycles/macrocycle-create/macrocycle-create').then(m => m.MacrocicloCreatePage)
 
+    },
+    {
+        path: 'macrocycle/:id',
+        loadComponent: () => import('./UI/macrocycles/macrocycle-detail/macrocycle-detail').then(m => m.MacrocycleDetail)
+    },
+    {
+        path: 'mesocycle/:id',
+        loadComponent: () => import('./UI/mesocycles/mesocycle-detail/mesocycle-detail').then(m => m.MesocycleDetail)
     },
     {
         path:'createprogram',

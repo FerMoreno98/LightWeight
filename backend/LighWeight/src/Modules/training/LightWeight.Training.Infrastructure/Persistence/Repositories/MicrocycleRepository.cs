@@ -15,6 +15,13 @@ public class MicrocycleRepository : IMicrocycleRepository
 
     public async Task AddAsync(Microcycle microcycle, CancellationToken ct)
     {
-        await _dbContext.AddAsync(microcycle);
+        await _dbContext.AddAsync(microcycle, ct);
+    }
+
+    public async Task<List<Microcycle>> GetByMesocycleIdAsync(Guid MesocycleId)
+    {
+        return await _dbContext.Microcycles
+            .Where(m => m.MesocycleId == MesocycleId)
+            .ToListAsync();
     }
 }

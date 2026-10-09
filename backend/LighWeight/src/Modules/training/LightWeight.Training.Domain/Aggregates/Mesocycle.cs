@@ -1,8 +1,11 @@
 using LightWeight.shared.BuildingBlocks;
-using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Domain.Exceptions;
 
 namespace LightWeight.Training.Domain.Aggregates;
 
+/// <summary>
+/// Training block inside a macrocycle that follows a Program. Its microcycles use the templates of that program
+/// </summary>
 public sealed class Mesocycle : AggregateRoot<Guid>
 {
     /// <summary>Parent macrocycle ID</summary>
@@ -14,10 +17,13 @@ public sealed class Mesocycle : AggregateRoot<Guid>
     public string? Injuries {get;private set;}
     /// <summary>Optional notes</summary>
     public string? Comments {get;private set;}
-    /// <summary>Date the mesocycle starts</summary>
-    public DateTime StartAt{get;private set;}
-    /// <summary>Date the mesocycle ends</summary>
-    public DateTime EndAt{get; private set;}
+    /// <summary>Date the mesocycle was started (set by the system on creation)</summary>
+    public DateTime StartedAt{get;private set;}
+    /// <summary>Date the mesocycle was finished (null while active)</summary>
+    public DateTime? FinishedAt{get; private set;}
+    /// <summary>Whether the mesocycle has been finished</summary>
+    public bool IsFinished => FinishedAt is not null;
+    /// <summary>Program whose templates are used by the microcycles</summary>
     public Guid ProgramId{get; private set;}
 
     private Mesocycle
@@ -25,40 +31,32 @@ public sealed class Mesocycle : AggregateRoot<Guid>
         Guid Id,
         Guid macrocycleId,
         Guid userId,
-        int motivationLevel, 
-        string? injuries, 
-        string? comments, 
-        DateTime startAt, 
-        DateTime endAt,
-        Guid programId
+        Guid programId,
+        int motivationLevel,
+        string? injuries,
+        string? comments,
+        DateTime startedAt
     ) : base(Id)
     {
         MacrocycleId = macrocycleId;
         UserId = userId;
+        ProgramId = programId;
         MotivationLevel = motivationLevel;
         Injuries = injuries;
         Comments = comments;
-        StartAt = startAt;
-        EndAt = endAt;
-        ProgramId = programId;
+        StartedAt = startedAt;
     }
-    /// <summary>Creates a new mesocycle within a macrocycle</summary>
-    /// <param name="macrocycleId">Parent macrocycle ID</param>
-    /// <param name="motivationLevel">Motivation level (1-10)</param>
-    /// <param name="injuries">Any injuries to track</param>
-    /// <param name="comments">Optional notes</param>
-    /// <param name="startAt">Start date</param>
-    /// <param name="endAt">End date</param>
-    public static Mesocycle Create
+
+    /// <summary>Creates a new mesocycle. Only the Macrocycle creates them (see Macrocycle.PlanMesocycle)</summary>
+    internal static Mesocycle Create
     (
         Guid macrocycleId,
         Guid userId,
+        Guid programId,
         int motivationLevel,
         string? injuries,
         string? comments,
-        DateTime startAt,
-        DateTime endAt,
-        Guid ProgramId
+        DateTime startedAt
     )
     {
         return new Mesocycle
@@ -66,15 +64,32 @@ public sealed class Mesocycle : AggregateRoot<Guid>
             Guid.CreateVersion7(),
             macrocycleId,
             userId,
+            programId,
             motivationLevel,
             injuries,
             comments,
-            startAt,
-            endAt,
-            ProgramId
+            startedAt
         );
     }
+
+    /// <summary>Finishes the mesocycle, so a new one can be started in the macrocycle</summary>
+    /// <param name="now">Completion timestamp</param>
+    public void Finish(DateTime now)
+    {
+        if(IsFinished)
+            throw new MesocycleFinishedDomainException();
+        FinishedAt = now;
+    }
+
+    /// <summary>Adds the next week to this mesocycle using one of the templates of its program</summary>
+    /// <param name="microcycles">Microcycles already in this mesocycle</param>
+    /// <param name="trainingTemplateId">Template of the mesocycle's program to follow this week</param>
+    /// <returns>The new microcycle, numbered after the last week</returns>
+    public Microcycle PlanMicrocycle(IReadOnlyCollection<Microcycle> microcycles, Guid trainingTemplateId)
+    {
+        if(IsFinished)
+            throw new MesocycleFinishedDomainException();
+        int nextWeek = microcycles.Count == 0 ? 1 : microcycles.Max(m => m.WeekNumber) + 1;
+        return Microcycle.Create(Id, UserId, trainingTemplateId, nextWeek);
+    }
 }
-
-
-

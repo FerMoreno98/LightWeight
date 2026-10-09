@@ -6,7 +6,7 @@ using LightWeight.Training.Domain.Uow;
 
 namespace LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
 
-public sealed class CreateMacrocycleCommandHandler : ICommandHandler<CreateMacrocycleCommand>
+public sealed class CreateMacrocycleCommandHandler : ICommandHandler<CreateMacrocycleCommand, Guid>
 {
     private readonly IMacrocycleRepository _macrocycleRepository;
     private readonly ITrainingUnitOfWork _UOW;
@@ -17,19 +17,21 @@ public sealed class CreateMacrocycleCommandHandler : ICommandHandler<CreateMacro
         _UOW = uOW;
     }
 
-    public async Task HandleAsync(CreateMacrocycleCommand command, CancellationToken ct = default)
+    public async Task<Guid> HandleAsync(CreateMacrocycleCommand command, CancellationToken ct = default)
     {
-        var Stage = Enum.Parse<TrainingStage>(command.TrainingStage);
+        var stage = Enum.Parse<TrainingStage>(command.TrainingStage, ignoreCase: true);
+        // The domain refuses to start a macrocycle while another one is active
+        Macrocycle? activeMacrocycle = await _macrocycleRepository.GetActiveOfAUserAsync(command.UserId);
         Macrocycle macrocycle = Macrocycle.Create
         (
             command.UserId,
-            command.StartAt,
-            command.EndAt,
-            Stage,
-            command.Comments
+            stage,
+            command.Comments,
+            DateTime.UtcNow,
+            activeMacrocycle
         );
         await _macrocycleRepository.AddAsync(macrocycle,ct);
         await _UOW.SaveChangesAsync(ct);
+        return macrocycle.Id;
     }
 }
-

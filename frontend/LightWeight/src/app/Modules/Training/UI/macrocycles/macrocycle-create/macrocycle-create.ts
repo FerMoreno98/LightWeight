@@ -1,12 +1,12 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 
 @Component({
-  selector: 'app-macrociclo-create',
+  selector: 'app-macrocycle-create',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './macrocycle-create.html',
   styleUrl: './macrocycle-create.css',
 })
@@ -17,24 +17,27 @@ export class MacrocicloCreatePage {
   isLoading = this.store.isLoading;
   error = this.store.error;
 
-  async onSubmit(values: {
-    startAt: string;
-    endAt?: string;
-    stage: string;
-    comments?: string;
-  }) {
-    const success = await this.store.CreateMacrocycle(
-      new Date(values.startAt + 'T00:00:00'),
-      values.endAt ? new Date(values.endAt + 'T00:00:00') : null,
-      values.stage,
-      values.comments ?? null,
-    );
-    if (success) {
-      this.router.navigate(['/training/macrocycle']);
+  private _loaded = signal(false);
+  loaded = this._loaded.asReadonly();
+  /** Only one macrocycle can be active: if there is one, the form is not shown */
+  activeMacrocycle = computed(() => this.store.macrocycles().find(m => !m.finishedAt) ?? null);
+
+  stage = '';
+  comments = '';
+
+  async ngOnInit() {
+    await this.store.GetUserMacrocycles();
+    this._loaded.set(true);
+  }
+
+  async onSubmit() {
+    const id = await this.store.CreateMacrocycle(this.stage, this.comments.trim() || null);
+    if (id) {
+      this.router.navigate(['/training/macrocycle', id]);
     }
   }
 
   cancel() {
-    this.router.navigate(['/training/macrocycle']);
+    this.router.navigate(['/training/macrocycles']);
   }
 }

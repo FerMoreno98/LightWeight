@@ -24,4 +24,17 @@ public class MacrocycleRepository : IMacrocycleRepository
         await _dbContext.Macrocycles
         .SingleOrDefaultAsync(m => m.Id == MacrocycleId);
     }
+
+    public async Task<List<Macrocycle>> GetAllOfAUserAsync(Guid UserId)
+    {
+        return await _dbContext.Macrocycles
+            .Where(m => m.UserId == UserId)
+            .ToListAsync();
+    }
+
+    public async Task<Macrocycle?> GetActiveOfAUserAsync(Guid UserId)
+    {
+        return await _dbContext.Macrocycles
+            .SingleOrDefaultAsync(m => m.UserId == UserId && m.FinishedAt == null);
+    }
 }
