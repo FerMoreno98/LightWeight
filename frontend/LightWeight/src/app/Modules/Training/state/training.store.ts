@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program } from "../data/training-api.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
@@ -13,6 +13,7 @@ export class TrainingStore{
     private _sets = signal<Set[]>([]);
     private _seriesPerGroupPerSession = signal<SeriesPerGroupPerSession[]>([]);
     private _trainingTemplates = signal<TrainingTemplate[]>([]);
+    private _programs = signal<Program[]>([]);
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
@@ -21,13 +22,13 @@ export class TrainingStore{
     sets = this._sets.asReadonly();
     seriesPerGroupPerSession = this._seriesPerGroupPerSession.asReadonly();
     trainingTemplates = this._trainingTemplates.asReadonly();
+    programs = this._programs.asReadonly();
 
     async CreateMacrocycle
     (
         startAt: Date,
         endAt :Date | null,
         trainingStage:string,
-        periodization:string,
         comments:string | null
     ) : Promise<boolean>{
         this._isLoading.set(true);
@@ -38,7 +39,6 @@ export class TrainingStore{
                     startAt,
                     endAt,
                     trainingStage,
-                    periodization,
                     comments
                 ));
             return true;
@@ -55,7 +55,7 @@ export class TrainingStore{
     async CreateMesocycle
     (
         macrocycleId:string,
-        aimMuscleGroups :string [],
+        programId:string,
         motivationLevel:number,
         injuries:string | null,
         comments: string | null,
@@ -68,7 +68,7 @@ export class TrainingStore{
             await firstValueFrom(this.api.CreateMesocycle
                 (
                     macrocycleId,
-                    aimMuscleGroups,
+                    programId,
                     motivationLevel,
                     injuries,
                     comments,
@@ -87,8 +87,8 @@ export class TrainingStore{
     async CreateMicrocycle
     (
         mesocycleId : string,
-        durationInDays: number,
-        trainingDistribution: string
+        trainingTemplateId : string,
+        weekNumber : number
     ) : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);
@@ -96,8 +96,8 @@ export class TrainingStore{
             await firstValueFrom(this.api.CreateMicrocycle
                 (
                     mesocycleId,
-                    durationInDays,
-                    trainingDistribution
+                    trainingTemplateId,
+                    weekNumber
                 ));
             return true;
         }catch{
@@ -108,20 +108,63 @@ export class TrainingStore{
         }
     }
 
-    async CreateTrainingTemplate
+    async CreateProgram
     (
         name : string,
+        periodization : string,
+        aimMuscleGroups : string []
+    ) : Promise<string | null>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const result = await firstValueFrom(this.api.CreateProgram
+                (
+                    name,
+                    periodization,
+                    aimMuscleGroups
+                ));
+            return result.id;
+        }catch{
+            this._error.set('No se ha podido crear el programa');
+            return null;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    async GetUserPrograms() : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const programs = await firstValueFrom(this.api.GetUserPrograms());
+            this._programs.set(programs);
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar los programas');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    async CreateTrainingTemplate
+    (
+        programId : string,
         volumeLandmark: string,
-        trainingDistribution: string
+        trainingDistribution: string,
+        durationInDays : number,
+        order : number
     ) : Promise<string | null>{
         this._isLoading.set(true);
         this._error.set(null);
         try{
             const result = await firstValueFrom(this.api.CreateTrainingTemplate
                 (
-                    name,
+                    programId,
                     volumeLandmark,
-                    trainingDistribution
+                    trainingDistribution,
+                    durationInDays,
+                    order
                 ));
             return result.id;
         }catch{
@@ -164,7 +207,7 @@ export class TrainingStore{
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRIR:number,
+        expectedRPE:number,
         series:number,
         superSetGroupId :string | null
     ) : Promise<boolean>{
@@ -181,7 +224,7 @@ export class TrainingStore{
                     isCluster,
                     isMyoRep,
                     aimMuscleGroups,
-                    expectedRIR,
+                    expectedRPE,
                     series,
                     superSetGroupId
                 ));
@@ -298,7 +341,13 @@ export class TrainingStore{
         this._error.set(null);
         try{
             await firstValueFrom(this.api.DeleteTrainingTemplate(TrainingTemplateId));
-            this._trainingTemplates.update(tt => tt.filter(tt => tt.id !== TrainingTemplateId))
+            const deleted = this._trainingTemplates().find(tt => tt.id === TrainingTemplateId);
+            this._trainingTemplates.update(tt => tt.filter(tt => tt.id !== TrainingTemplateId));
+            if (deleted){
+                this._programs.update(ps => ps.map(p => p.id === deleted.programId
+                    ? { ...p, trainingTemplatesCount: p.trainingTemplatesCount - 1 }
+                    : p));
+            }
             return true;
         }catch{
             this._error.set("No se ha podido eliminar la plantilla");
@@ -317,7 +366,7 @@ export class TrainingStore{
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRIR:number,
+        expectedRPE:number,
         superSetGroupId :string | null
     ){
         this._isLoading.set(true);
@@ -333,7 +382,7 @@ export class TrainingStore{
                     isCluster,
                     isMyoRep,
                     aimMuscleGroups,
-                    expectedRIR,
+                    expectedRPE,
                     superSetGroupId
                 ))
             return true;

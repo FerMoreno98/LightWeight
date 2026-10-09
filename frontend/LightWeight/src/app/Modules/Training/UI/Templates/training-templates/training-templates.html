@@ -7,15 +7,23 @@
           <h1 class="text-2xl font-bold text-white">Plantillas de entrenamiento</h1>
           <p class="mt-1 text-sm text-slate-400">Gestiona y consulta tus rutinas guardadas.</p>
         </div>
-        <a
-          routerLink="/training/trainingtemplate"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
-        >
-          <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
-          </svg>
-          Nueva plantilla
-        </a>
+        <div class="flex items-center gap-2">
+          <a
+            routerLink="/training/trainingtemplate"
+            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+          >
+            Nueva plantilla
+          </a>
+          <a
+            routerLink="/training/createprogram"
+            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+          >
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+            </svg>
+            Nuevo programa
+          </a>
+        </div>
       </div>
 
       @if (error()) {
@@ -39,25 +47,57 @@
             </div>
           }
         </div>
-      } @else if (templates().length === 0) {
+      } @else if (programsWithTemplates().length === 0) {
         <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-16 text-center">
           <div class="rounded-full bg-slate-800 p-3">
             <svg class="h-6 w-6 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M4 4a2 2 0 0 1 2-2h6.5a1 1 0 0 1 .707.293l3.5 3.5A1 1 0 0 1 17 6.5V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9 0v3a1 1 0 0 0 1 1h3l-4-4Z" clip-rule="evenodd" />
             </svg>
           </div>
-          <p class="text-sm font-medium text-slate-300">No hay plantillas todavía</p>
-          <p class="max-w-xs text-xs text-slate-500">Crea tu primera plantilla de entrenamiento para empezar a planificar tus rutinas.</p>
+          <p class="text-sm font-medium text-slate-300">No hay programas todavía</p>
+          <p class="max-w-xs text-xs text-slate-500">Crea tu primer programa y añádele plantillas de entrenamiento para empezar a planificar tus rutinas.</p>
         </div>
       } @else {
+        <div class="flex flex-col gap-10">
+        @for (group of programsWithTemplates(); track group.program.id) {
+        <section>
+          <div class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-3">
+            <div>
+              <h2 class="text-xl font-semibold text-white">{{ group.program.name }}</h2>
+              <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
+                <span class="rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 font-medium text-emerald-300">
+                  {{ periodizationLabel(group.program) }}
+                </span>
+                @for (muscle of aimMuscleGroupLabels(group.program); track muscle) {
+                  <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">{{ muscle }}</span>
+                }
+              </div>
+            </div>
+            <a
+              routerLink="/training/trainingtemplate"
+              [queryParams]="{ programId: group.program.id }"
+              class="text-sm font-medium text-emerald-400 transition hover:text-emerald-300"
+            >
+              + Añadir plantilla
+            </a>
+          </div>
+
+          @if (group.templates.length === 0) {
+            <p class="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-4 py-6 text-center text-xs text-slate-500">
+              Este programa todavía no tiene plantillas.
+            </p>
+          } @else {
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          @for (template of templates(); track template.id) {
+          @for (template of group.templates; track template.id) {
             <div
               (click)="goToSessions(template)"
               class="group flex cursor-pointer flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-xl hover:shadow-emerald-500/10 focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-400/40"
             >
               <div class="flex items-start justify-between gap-2">
-                <h2 class="text-lg font-semibold leading-tight text-white">{{ template.name }}</h2>
+                <div>
+                  <h3 class="text-lg font-semibold leading-tight text-white">Plantilla {{ template.order }}</h3>
+                  <p class="mt-0.5 text-xs text-slate-400">{{ template.durationInDays }} días</p>
+                </div>
                 <div class="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
@@ -98,6 +138,10 @@
               </div>
             </div>
           }
+        </div>
+          }
+        </section>
+        }
         </div>
       }
     </div>

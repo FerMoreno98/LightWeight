@@ -296,4 +296,47 @@ public class SetTemplateTests
         );
         await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
+
+    [Fact]
+    public async Task CreateTemplateSetCommand_WithMuscleGroupNamesAsReturnedByTheApi_ParsesThemIgnoringCase()
+    {
+        // Arrange
+        var UserId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
+        IExerciseRepository _exerciseRepository = Substitute.For<IExerciseRepository>();
+        Exercise exercise = Exercise.Create("Gemelo de pie", true, new List<MuscleGroups> { MuscleGroups.calves });
+        _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
+        var (program, sessionTemplate) = CreateProgramWithSession(UserId);
+        _programRepository.GetByTemplateSessionIdAsync(sessionTemplate.Id).Returns(program);
+        CreateTemplateSetCommand command = CreateCommand(exercise.Id, sessionTemplate.Id, UserId) with
+        {
+            AimMuscleGroups = new List<string> { "Calves" }
+        };
+        CreateTemplateSetCommandHandler commandHandler =
+            new CreateTemplateSetCommandHandler(_programRepository,_UOW,_exerciseRepository);
+        // Act
+        await commandHandler.HandleAsync(command,default);
+        // Assert
+        TemplateSet set = Assert.Single(sessionTemplate.TemplateExercises);
+        Assert.Equal(MuscleGroups.calves, Assert.Single(set.AimMuscleGroups));
+    }
+
+    [Theory]
+    [InlineData("Calves", true)]
+    [InlineData("calves", true)]
+    [InlineData("Gemelos", false)]
+    public void CreateTemplateSetCommandValidator_ValidatesMuscleGroupNamesIgnoringCase(string muscleGroup, bool isValid)
+    {
+        // Arrange
+        var validator = new CreateTemplateSetCommandValidator();
+        CreateTemplateSetCommand command = CreateCommand(Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7()) with
+        {
+            AimMuscleGroups = new List<string> { muscleGroup }
+        };
+        // Act
+        var result = validator.Validate(command);
+        // Assert
+        Assert.Equal(isValid, result.IsValid);
+    }
 }

@@ -7,6 +7,10 @@ export const TrainingRoutes: Routes = [
 
     },
     {
+        path:'createprogram',
+        loadComponent: () => import('./UI/Programs/create-program/create-program').then(p => p.CreateProgram)
+    },
+    {
         path:'trainingtemplate',
         loadComponent: () => import('./UI/Templates/create-training-template/create-training-template').then(t=>t.CreateTrainingTemplate)
     },

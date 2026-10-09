@@ -16,7 +16,7 @@
       <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 class="text-2xl font-bold text-white">Series de la sesión</h1>
-          <p class="mt-1 text-sm text-slate-400">Ejercicios, rangos de repeticiones y RIR objetivo.</p>
+          <p class="mt-1 text-sm text-slate-400">Ejercicios, rangos de repeticiones y RPE objetivo.</p>
         </div>
         <div class="flex items-center gap-2">
           <button
@@ -90,8 +90,8 @@
                         <p class="text-sm font-semibold text-white">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</p>
                       </div>
                       <div class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">
-                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">RIR</p>
-                        <p class="text-sm font-semibold text-white">{{ set.expectedRIR }}</p>
+                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">RPE</p>
+                        <p class="text-sm font-semibold text-white">{{ set.expectedRPE }}</p>
                       </div>
                       @if (set.aimMuscleGroups.length) {
                         <div class="flex flex-wrap gap-1.5">

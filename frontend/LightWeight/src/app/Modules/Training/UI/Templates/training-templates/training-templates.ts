@@ -1,7 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
-import { MuscleGroup, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
+import { MuscleGroup, Periodization, Program, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
 
 const VOLUME_LANDMARK_LABELS: Record<VolumeLandmark, string> = {
   MV: 'MV — Maintenance Volume',
@@ -19,6 +19,13 @@ const TRAINING_DISTRIBUTION_LABELS: Record<TrainingDistribution, string> = {
   Other: 'Otra',
 };
 
+const PERIODIZATION_LABELS: Record<Periodization, string> = {
+  Linear: 'Lineal',
+  Ondulating: 'Ondulante',
+  block: 'Bloques',
+  MikeIsraetel: 'Mike Israetel',
+};
+
 const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   Shoulder: 'Hombro',
   Back: 'Espalda',
@@ -31,6 +38,11 @@ const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   Calves: 'Gemelos',
 };
 
+export interface ProgramWithTemplates {
+  program: Program;
+  templates: TrainingTemplate[];
+}
+
 @Component({
   selector: 'app-training-templates',
   standalone: true,
@@ -42,12 +54,38 @@ export class TrainingTemplates {
   private store = inject(TrainingStore);
   private router = inject(Router);
 
-  isLoading = this.store.isLoading;
+  // Local flag: two requests run in parallel and each one toggles the store flag
+  private _isLoadingPage = signal(true);
+  isLoading = this._isLoadingPage.asReadonly();
   error = this.store.error;
-  templates = this.store.trainingTemplates;
+
+  programsWithTemplates = computed<ProgramWithTemplates[]>(() =>
+    this.store.programs().map(program => ({
+      program,
+      templates: this.store.trainingTemplates()
+        .filter(t => t.programId === program.id)
+        .sort((a, b) => a.order - b.order),
+    }))
+  );
 
   async ngOnInit() {
-    await this.store.GetUserTrainingTemplates();
+    this._isLoadingPage.set(true);
+    try {
+      await Promise.all([
+        this.store.GetUserPrograms(),
+        this.store.GetUserTrainingTemplates(),
+      ]);
+    } finally {
+      this._isLoadingPage.set(false);
+    }
+  }
+
+  periodizationLabel(program: Program): string {
+    return PERIODIZATION_LABELS[program.periodization] ?? program.periodization;
+  }
+
+  aimMuscleGroupLabels(program: Program): string[] {
+    return program.aimMuscleGroups.map(group => MUSCLE_GROUP_LABELS[group] ?? group);
   }
 
   volumeLandmarkLabel(template: TrainingTemplate): string {

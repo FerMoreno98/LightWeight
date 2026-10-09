@@ -22,6 +22,6 @@ public sealed class CreateProgramCommandValidator : AbstractValidator<CreateProg
             .NotNull();
 
         RuleForEach(x => x.AimMuscleGroups)
-            .IsEnumName(typeof(MuscleGroups));
+            .IsEnumName(typeof(MuscleGroups), caseSensitive: false);
     }
 }

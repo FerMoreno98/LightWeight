@@ -22,11 +22,22 @@ export interface SeriesPerGroupPerSession{
     series : Partial<Record<MuscleGroup, number>>
 }
 export type VolumeLandmark = 'MV' | 'MEV' | 'MAV' | 'MRV';
+export type Periodization = 'Linear' | 'Ondulating' | 'block' | 'MikeIsraetel';
+export interface Program{
+    id : string,
+    name : string,
+    periodization : Periodization,
+    aimMuscleGroups : MuscleGroup[],
+    trainingTemplatesCount : number
+}
 export type TrainingDistribution =
     | 'PushPullLegs' | 'UpperLower' | 'Weider' | 'Phat' | 'FullBody' | 'Other';
 export interface TrainingTemplate{
     id : string,
-    name : string,
+    programId : string,
+    programName : string,
+    order : number,
+    durationInDays : number,
     volumeLandmark : VolumeLandmark,
     trainingDistribution : TrainingDistribution,
     totalVolume : Partial<Record<MuscleGroup, number>>
@@ -36,7 +47,7 @@ export interface Set{
     exerciseId : string,
     repetitionRangeMin : number,
     repetitionRangeMax : number,
-    expectedRIR : number,
+    expectedRPE : number,
     advanceTrainingTechniques : string,
     superSetGroupId : string | null,
     aimMuscleGroups : MuscleGroup[]
@@ -47,20 +58,35 @@ export class TrainingApiService {
     private http = inject(HttpClient);
     private baseUrl = `${environment.apiUrl}/training`
 
-    CreateMacrocycle(startAt:Date,endAt:Date | null,trainingStage:string,periodization:string,comments:string | null) : Observable<void>{
+    CreateMacrocycle(startAt:Date,endAt:Date | null,trainingStage:string,comments:string | null) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/macrocycle`,
             {
                 startAt,
                 endAt,
                 trainingStage,
-                periodization,
                 comments
             })
+    }
+    CreateProgram
+    (
+        name : string,
+        periodization : string,
+        aimMuscleGroups : string []
+    ) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/program`,
+            {
+                name,
+                periodization,
+                aimMuscleGroups
+            });
+    }
+    GetUserPrograms () : Observable<Program[]>{
+        return this.http.get<Program[]>(`${this.baseUrl}/programs`);
     }
     CreateMesocycle
     (
         macrocycleId:string,
-        aimMuscleGroups :string [],
+        programId:string,
         motivationLevel:number,
         injuries:string | null,
         comments: string | null,
@@ -69,7 +95,7 @@ export class TrainingApiService {
     ) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/mesocycle`,{
             macrocycleId,
-            aimMuscleGroups,
+            programId,
             motivationLevel,
             injuries,
             comments,
@@ -80,27 +106,30 @@ export class TrainingApiService {
     CreateMicrocycle
     (
         mesocycleId : string,
-        durationInDays: number,
-        trainingDistribution: string
-
+        trainingTemplateId : string,
+        weekNumber : number
     ) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/microcycle`,{
             mesocycleId,
-            durationInDays,
-            trainingDistribution
+            trainingTemplateId,
+            weekNumber
         });
     }
     CreateTrainingTemplate
     (
-        name : string,
+        programId : string,
         volumeLandmark: string,
-        trainingDistribution: string
+        trainingDistribution: string,
+        durationInDays : number,
+        order : number
     ) : Observable<{id: string}>{
         return this.http.post<{id: string}>(`${this.baseUrl}/training-template`,
             {
-                name,
+                programId,
                 volumeLandmark,
-                trainingDistribution
+                trainingDistribution,
+                durationInDays,
+                order
             });
     }
     CreateTemplateSession
@@ -125,7 +154,7 @@ export class TrainingApiService {
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRIR:number,
+        expectedRPE:number,
         series:number,
         superSetGroupId :string | null
     ) : Observable<void>{
@@ -137,7 +166,7 @@ export class TrainingApiService {
             isDropset,
             isCluster,
             isMyoRep,
-            expectedRIR,
+            expectedRPE,
             series,
             aimMuscleGroups,
             superSetGroupId
@@ -177,7 +206,7 @@ export class TrainingApiService {
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRIR:number,
+        expectedRPE:number,
         superSetGroupId :string | null
     ) : Observable<void>{
         return this.http.put<void>(`${this.baseUrl}/template-set`,{
@@ -188,7 +217,7 @@ export class TrainingApiService {
             isDropset,
             isCluster,
             isMyoRep,
-            expectedRIR,
+            expectedRPE,
             aimMuscleGroups,
             superSetGroupId
         

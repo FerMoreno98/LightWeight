@@ -16,6 +16,7 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTraining
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetCurrentMacrocycle;
+using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 // using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
@@ -50,6 +51,7 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSetsFromSessionTemplateQuery, List<GetSetsFromSessionTemplateResponse>>,GetSetsFromSessionTemplateQueryHandler>();
         services.AddScoped<IQueryHandler<GetNumberOfSeriesPerGroupPerSessionQuery,List<GetNumberOfSeriesPerGroupPerSessionResponse>>,GetNumberOfSeriesPerGroupPerSessionQueryHandler>();
         services.AddScoped<IQueryHandler<GetUserTrainingTemplatesQuery,List<GetUserTrainingTemplatesResponse>>,GetUserTrainingTemplatesQueryHandler>();
+        services.AddScoped<IQueryHandler<GetUserProgramsQuery,List<GetUserProgramsResponse>>,GetUserProgramsQueryHandler>();
         services.AddScoped<ICommandHandler<DeleteTemplateSetCommand>,DeleteTemplateSetCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteTemplateSessionCommand>,DeleteTemplateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteTrainingTemplateCommand>,DeleteTrainingTemplateCommandHandler>();

@@ -32,7 +32,7 @@ export class ExerciseSettings {
   isDropset = false;
   isCluster = false;
   isMyoRep = false;
-  expectedRIR: number | null = null;
+  expectedRPE: number | null = null;
   series: number | null = 1;
   emphasizedMuscleGroups: number[] = [];
 
@@ -58,7 +58,7 @@ export class ExerciseSettings {
         this.selectedExercise = this.Exercises.find(e => e.id === set.exerciseId) ?? null;
         this.min = set.repetitionRangeMin;
         this.max = set.repetitionRangeMax;
-        this.expectedRIR = set.expectedRIR;
+        this.expectedRPE = set.expectedRPE;
         this.isDropset = set.advanceTrainingTechniques === 'DropSet';
         this.isCluster = set.advanceTrainingTechniques === 'Cluster';
         this.isMyoRep = set.advanceTrainingTechniques === 'MyoRep';
@@ -98,7 +98,7 @@ export class ExerciseSettings {
     this.isDropset = false;
     this.isCluster = false;
     this.isMyoRep = false;
-    this.expectedRIR = null;
+    this.expectedRPE = null;
     this.series = 1;
     this.emphasizedMuscleGroups = [];
   }
@@ -121,7 +121,7 @@ export class ExerciseSettings {
           this.isCluster,
           this.isMyoRep,
           aimMuscleGroups,
-          this.expectedRIR!,
+          this.expectedRPE!,
           this.editingSuperSetGroupId
         )
       : await this.store.CreateTemplateSet(
@@ -133,7 +133,7 @@ export class ExerciseSettings {
           this.isCluster,
           this.isMyoRep,
           aimMuscleGroups,
-          this.expectedRIR!,
+          this.expectedRPE!,
           this.series!,
           null
         );

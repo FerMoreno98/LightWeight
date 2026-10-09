@@ -21,14 +21,12 @@ export class MacrocicloCreatePage {
     startAt: string;
     endAt?: string;
     stage: string;
-    periodization: string;
     comments?: string;
   }) {
     const success = await this.store.CreateMacrocycle(
       new Date(values.startAt + 'T00:00:00'),
       values.endAt ? new Date(values.endAt + 'T00:00:00') : null,
       values.stage,
-      values.periodization,
       values.comments ?? null,
     );
     if (success) {

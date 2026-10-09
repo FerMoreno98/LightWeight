@@ -6,67 +6,106 @@
       <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
     }
 
-    <form
-      #templateForm="ngForm"
-      (ngSubmit)="onSubmit({ name: name, volumeLandmark: volumeLandmark, trainingDistribution: trainingDistribution })"
-      class="space-y-4"
-    >
-      <div>
-        <label for="name" class="block text-sm font-medium text-slate-300">Nombre</label>
-        <input
-          id="name"
-          type="text"
-          [(ngModel)]="name"
-          name="name"
-          required
-          placeholder="Nombre de la plantilla"
-          class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-        />
-      </div>
-
-      <div>
-        <label for="volumeLandmark" class="block text-sm font-medium text-slate-300">Volume landmark</label>
-        <select
-          id="volumeLandmark"
-          [(ngModel)]="volumeLandmark"
-          name="volumeLandmark"
-          required
-          class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+    @if (!isLoading() && programs().length === 0) {
+      <div class="flex flex-col items-center gap-3 text-center">
+        <p class="text-sm text-slate-300">Las plantillas pertenecen a un programa y todavía no tienes ninguno.</p>
+        <a
+          routerLink="/training/createprogram"
+          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
         >
-          <option value="" disabled selected>Selecciona un volume landmark</option>
-          <option value="MV">MV — Maintenance Volume</option>
-          <option value="MEV">MEV — Minimum Effective Volume</option>
-          <option value="MAV">MAV — Maximum Adaptive Volume</option>
-          <option value="MRV">MRV — Maximum Recoverable Volume</option>
-        </select>
+          Crear programa
+        </a>
       </div>
+    } @else {
+      <form #templateForm="ngForm" (ngSubmit)="onSubmit()" class="space-y-4">
+        <div>
+          <label for="programId" class="block text-sm font-medium text-slate-300">Programa</label>
+          <select
+            id="programId"
+            [(ngModel)]="programId"
+            (ngModelChange)="onProgramChange()"
+            name="programId"
+            required
+            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          >
+            <option value="" disabled>Selecciona un programa</option>
+            @for (program of programs(); track program.id) {
+              <option [value]="program.id">{{ program.name }}</option>
+            }
+          </select>
+        </div>
 
-      <div>
-        <label for="trainingDistribution" class="block text-sm font-medium text-slate-300">Distribución del entrenamiento</label>
-        <select
-          id="trainingDistribution"
-          [(ngModel)]="trainingDistribution"
-          name="trainingDistribution"
-          required
-          class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+        <div>
+          <label for="volumeLandmark" class="block text-sm font-medium text-slate-300">Volume landmark</label>
+          <select
+            id="volumeLandmark"
+            [(ngModel)]="volumeLandmark"
+            name="volumeLandmark"
+            required
+            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          >
+            <option value="" disabled selected>Selecciona un volume landmark</option>
+            <option value="MV">MV — Maintenance Volume</option>
+            <option value="MEV">MEV — Minimum Effective Volume</option>
+            <option value="MAV">MAV — Maximum Adaptive Volume</option>
+            <option value="MRV">MRV — Maximum Recoverable Volume</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="trainingDistribution" class="block text-sm font-medium text-slate-300">Distribución del entrenamiento</label>
+          <select
+            id="trainingDistribution"
+            [(ngModel)]="trainingDistribution"
+            name="trainingDistribution"
+            required
+            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          >
+            <option value="" disabled selected>Selecciona una distribución</option>
+            <option value="PushPullLegs">Push Pull Legs</option>
+            <option value="UpperLower">Upper Lower</option>
+            <option value="Weider">Weider</option>
+            <option value="Phat">Phat</option>
+            <option value="FullBody">Full Body</option>
+            <option value="Other">Otra</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="durationInDays" class="block text-sm font-medium text-slate-300">Duración (días)</label>
+            <input
+              id="durationInDays"
+              type="number"
+              [(ngModel)]="durationInDays"
+              name="durationInDays"
+              required
+              min="1"
+              class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            />
+          </div>
+          <div>
+            <label for="order" class="block text-sm font-medium text-slate-300">Orden en el programa</label>
+            <input
+              id="order"
+              type="number"
+              [(ngModel)]="order"
+              name="order"
+              required
+              min="0"
+              class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          [disabled]="isLoading() || templateForm.invalid || !durationInDays || durationInDays < 1 || order === null || order < 0"
+          class="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <option value="" disabled selected>Selecciona una distribución</option>
-          <option value="PushPullLegs">Push Pull Legs</option>
-          <option value="UpperLower">Upper Lower</option>
-          <option value="Weider">Weider</option>
-          <option value="Phat">Phat</option>
-          <option value="FullBody">Full Body</option>
-          <option value="Other">Otra</option>
-        </select>
-      </div>
-
-      <button
-        type="submit"
-        [disabled]="isLoading() || templateForm.invalid"
-        class="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {{ isLoading() ? 'Creando...' : 'Crear plantilla' }}
-      </button>
-    </form>
+          {{ isLoading() ? 'Creando...' : 'Crear plantilla' }}
+        </button>
+      </form>
+    }
   </div>
 </div>

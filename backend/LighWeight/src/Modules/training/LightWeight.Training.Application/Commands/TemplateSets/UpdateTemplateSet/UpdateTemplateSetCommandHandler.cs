@@ -48,7 +48,7 @@ public sealed class UpdateTemplateSetCommandHandler : ICommandHandler<UpdateTemp
         List<MuscleGroups> aimGroups = new List<MuscleGroups>();
         foreach(var muscleGroup in command.AimMuscleGroups)
         {
-            var muscle = Enum.Parse<MuscleGroups>(muscleGroup);
+            var muscle = Enum.Parse<MuscleGroups>(muscleGroup, ignoreCase: true);
             aimGroups.Add(muscle);
         }
         

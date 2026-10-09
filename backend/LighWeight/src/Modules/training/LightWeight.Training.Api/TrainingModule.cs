@@ -18,6 +18,7 @@ using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
+using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
 using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
@@ -33,6 +34,7 @@ public static class TrainingModule
         group.MapPost("/mesocycle", CreateMesocycle).RequireAuthorization();
         group.MapPost("/microcycle", CreateMicrocycle).RequireAuthorization();
         group.MapPost("/program", CreateProgram).RequireAuthorization();
+        group.MapGet("/programs", GetUserPrograms).RequireAuthorization();
         group.MapPost("/training-template", CreateTrainingTemplate).RequireAuthorization();
         group.MapPost("/template-session", CreateTemplateSession).RequireAuthorization();
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
@@ -272,6 +274,20 @@ public static class TrainingModule
             new GetUserTrainingTemplatesQuery(Guid.Parse(userId)),ct
         );
         return TypedResults.Ok(templates);
+    }
+    private static async Task<IResult> GetUserPrograms
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var programs = await mediator.QueryAsync<GetUserProgramsQuery,List<GetUserProgramsResponse>>(
+            new GetUserProgramsQuery(Guid.Parse(userId)),ct
+        );
+        return TypedResults.Ok(programs);
     }
     private static async Task<IResult> DeleteTemplateSet(
         IMediator mediator,

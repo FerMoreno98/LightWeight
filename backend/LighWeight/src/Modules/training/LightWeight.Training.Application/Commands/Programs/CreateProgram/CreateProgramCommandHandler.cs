@@ -23,7 +23,7 @@ public sealed class CreateProgramCommandHandler : ICommandHandler<CreateProgramC
         List<MuscleGroups> aimMuscleGroups = new List<MuscleGroups>();
         foreach(var muscleGroup in command.AimMuscleGroups)
         {
-            aimMuscleGroups.Add(Enum.Parse<MuscleGroups>(muscleGroup));
+            aimMuscleGroups.Add(Enum.Parse<MuscleGroups>(muscleGroup, ignoreCase: true));
         }
         Program program = Program.Create
         (

@@ -17,7 +17,7 @@
   <!-- Menu lateral deslizable -->
   <nav [class.-translate-x-full]="!menuOpen"
        class="fixed top-0 left-0 h-full w-72 bg-slate-800 border-r border-slate-700 z-50 transform transition-transform duration-300 md:hidden flex flex-col pt-16 px-4 gap-1">
-    <a href="#" class="px-3 py-2 rounded-lg hover:bg-slate-700 transition">Inicio</a>
+    <a routerLink="/home" (click)="closeMenus()" class="px-3 py-2 rounded-lg hover:bg-slate-700 transition">Inicio</a>
 
     <!-- Entrenamiento con subopciones -->
     <div>
@@ -31,20 +31,20 @@
       </button>
       <div [class.hidden]="!trainingMenuOpen"
            class="ml-3 border-l border-slate-700 pl-3 mt-1 flex flex-col gap-1">
-        <a href="#" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Crear plantilla</a>
-        <a href="#" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Modificar plantilla</a>
-        <a href="#" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Mesociclos</a>
-        <a href="/training/macrocycle" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Macrociclos</a>
-        <a href="#" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Microciclos</a>
+        <a routerLink="/training/trainingtemplate" (click)="closeMenus()" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Crear plantilla</a>
+        <a routerLink="/training/trainingtemplates" (click)="closeMenus()" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Modificar plantilla</a>
+        <span class="px-3 py-2 rounded-lg text-slate-300 transition opacity-50 cursor-not-allowed" title="Próximamente">Mesociclos</span>
+        <a routerLink="/training/macrocycle" (click)="closeMenus()" class="px-3 py-2 rounded-lg text-slate-300 hover:bg-slate-700 transition">Macrociclos</a>
+        <span class="px-3 py-2 rounded-lg text-slate-300 transition opacity-50 cursor-not-allowed" title="Próximamente">Microciclos</span>
       </div>
     </div>
   </nav>
 
   <!-- Barra superior (escritorio) -->
   <header class="hidden md:flex items-center justify-between px-8 py-4 border-b border-slate-800">
-    <a href="#" class="text-xl font-bold">LightWeight</a>
+    <a routerLink="/home" (click)="closeMenus()" class="text-xl font-bold">LightWeight</a>
     <div class="flex items-center gap-6 relative">
-      <a href="#" class="text-slate-300 hover:text-white transition">Inicio</a>
+      <a routerLink="/home" (click)="closeMenus()" class="text-slate-300 hover:text-white transition">Inicio</a>
       <div class="relative">
         <button (click)="toggleDesktopMenu()" class="flex items-center gap-1 text-slate-300 hover:text-white transition">
           Entrenamiento
@@ -54,11 +54,11 @@
         </button>
         <div [class.hidden]="!desktopMenuOpen"
              class="absolute right-0 mt-2 w-56 rounded-lg bg-slate-800 border border-slate-700 shadow-lg py-1 z-40">
-          <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Crear plantilla</a>
-          <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Modificar plantilla</a>
-          <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Mesociclos</a>
-          <a href="/training/macrocycle" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Macrociclos</a>
-          <a href="#" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Microciclos</a>
+          <a routerLink="/training/trainingtemplate" (click)="closeMenus()" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Crear plantilla</a>
+          <a routerLink="/training/trainingtemplates" (click)="closeMenus()" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Modificar plantilla</a>
+          <span class="block px-4 py-2 text-sm text-slate-300  transition opacity-50 cursor-not-allowed" title="Próximamente">Mesociclos</span>
+          <a routerLink="/training/macrocycle" (click)="closeMenus()" class="block px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition">Macrociclos</a>
+          <span class="block px-4 py-2 text-sm text-slate-300  transition opacity-50 cursor-not-allowed" title="Próximamente">Microciclos</span>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Exceptions;
+using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
@@ -236,5 +237,53 @@ public class ProgramAndCyclesTests
             () => commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id,1),default)
         );
         await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateProgramCommand_WithMuscleGroupNamesAsReturnedByTheApi_ParsesThemIgnoringCase()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
+        CreateProgramCommandHandler commandHandler = new CreateProgramCommandHandler(_programRepository,_UOW);
+        // Act
+        await commandHandler.HandleAsync(new CreateProgramCommand
+        (
+            Guid.CreateVersion7(),
+            "ValidName",
+            "Linear",
+            new List<string> { "Calves" }
+        ),default);
+        // Assert
+        await _programRepository.Received(1).AddAsync
+        (
+            Arg.Is<Program>(p => p.AimMuscleGroups.Single() == MuscleGroups.calves),
+            Arg.Any<CancellationToken>()
+        );
+    }
+
+    [Fact]
+    public async Task GetUserProgramsQuery_ReturnsTheProgramsOfTheUserWithTheirActiveTemplatesCount()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        Program program = Program.Create(userId, Periodization.Ondulating, "Hipertrofia", new List<MuscleGroups> { MuscleGroups.Back });
+        TrainingTemplate template1 = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template2 = TrainingTemplate.Create(VolumeLandmarks.MAV,TrainingDistribution.FullBody,7,2);
+        program.AddTrainingTemplate(template1);
+        program.AddTrainingTemplate(template2);
+        program.DeleteTrainingTemplate(template2.Id, DateTime.UtcNow);
+        _programRepository.GetAllProgramsOfAUserAsync(userId).Returns(new List<Program> { program });
+        GetUserProgramsQueryHandler queryHandler = new GetUserProgramsQueryHandler(_programRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetUserProgramsQuery(userId),default);
+        // Assert
+        var response = Assert.Single(result);
+        Assert.Equal(program.Id, response.Id);
+        Assert.Equal("Hipertrofia", response.Name);
+        Assert.Equal("Ondulating", response.Periodization);
+        Assert.Equal(new[] { "Back" }, response.AimMuscleGroups);
+        Assert.Equal(1, response.TrainingTemplatesCount);
     }
 }

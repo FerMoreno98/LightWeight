@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="flex flex-col gap-4">
       <div class="flex flex-col gap-2">
         <label for="stage" class="text-sm font-medium text-slate-300">Fase de entrenamiento</label>
         <select id="stage" name="stage" required ngModel
@@ -30,17 +30,6 @@
           <option value="Bulk">Volumen (Bulk)</option>
           <option value="Cut">Definicion (Cut)</option>
           <option value="Maintenance">Mantenimiento (Maintenance)</option>
-        </select>
-      </div>
-      <div class="flex flex-col gap-2">
-        <label for="periodization" class="text-sm font-medium text-slate-300">Periodizacion</label>
-        <select id="periodization" name="periodization" required ngModel
-                class="bg-slate-900 border border-slate-600 rounded-lg px-4 py-2.5 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition">
-          <option value="" disabled selected>Selecciona una periodizacion</option>
-          <option value="Linear">Lineal (Linear)</option>
-          <option value="Ondulating">Ondulante (Ondulating)</option>
-          <option value="block">Bloques (Block)</option>
-          <option value="MikeIsraetel">Mike Israetel</option>
         </select>
       </div>
     </div>

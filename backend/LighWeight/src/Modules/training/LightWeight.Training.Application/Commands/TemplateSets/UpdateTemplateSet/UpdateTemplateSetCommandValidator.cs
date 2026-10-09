@@ -1,4 +1,5 @@
 using FluentValidation;
+using LightWeight.Training.Domain.Enum;
 
 namespace LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 
@@ -27,5 +28,8 @@ public class UpdateTemplateSetCommandValidator : AbstractValidator<UpdateTemplat
         RuleFor(x => x)
             .Must(x => (x.IsDropSet ? 1 : 0) + (x.IsCluster ? 1 : 0) + (x.IsMyoRep ? 1 : 0) <= 1)
             .WithMessage("There can't be 2 or more advance techniques at the same set");
+
+        RuleForEach(x => x.AimMuscleGroups)
+            .IsEnumName(typeof(MuscleGroups), caseSensitive: false);
     }
 }
