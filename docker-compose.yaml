@@ -4,13 +4,17 @@ services:
       context: ./backend/LighWeight
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
+      - "5196:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__defaultConnection=Host=db;Port=5432;Username=postgres;Database=lightweight;Password=postgres
       - Cors__AllowedOrigins__0=http://localhost:4200
       - Smtp__Host=mailpit
       - Smtp__Port=1025
+      - Jwt__Secret=${JWT_SECRET:?Define JWT_SECRET en el archivo .env (ver .env.example)}
+      - Jwt__Issuer=LightWeight.Api
+      - Jwt__Audience=LightWeight
+      - Jwt__AccessTokenExpirationMinutes=15
     depends_on:
       db:
         condition: service_healthy

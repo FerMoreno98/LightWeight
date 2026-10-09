@@ -1,0 +1,12 @@
+# Configuracion local con secretos: nunca debe acabar dentro de la imagen
+**/appsettings.Development.json
+**/appsettings.*.local.json
+**/.env
+
+# Artefactos de build y del IDE
+**/bin/
+**/obj/
+**/TestResults/
+**/.vs/
+**/.idea/
+**/*.user
