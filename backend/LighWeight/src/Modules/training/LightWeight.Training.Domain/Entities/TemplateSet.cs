@@ -96,4 +96,19 @@ public sealed class TemplateSet : Entity<Guid>
         IsDeleted = true;
         DeletedAt = now;
     }
+
+    /// <summary>Creates a copy of this set with a new id</summary>
+    /// <param name="superSetMap">
+    /// Original superset group id -> new group id. The copy must not share the original group id,
+    /// otherwise the copied sets would be linked to the original ones
+    /// </param>
+    internal TemplateSet Duplicate(Dictionary<Guid, Guid> superSetMap)
+    {
+        Guid? superSetGroupId = SuperSetGroupId is Guid g
+            ? superSetMap.TryGetValue(g, out var mapped) ? mapped : superSetMap[g] = Guid.CreateVersion7()
+            : null;
+        // Value objects are immutable and can be shared; the muscle group list is mutable, so it is copied
+        return Create(ExerciseId, RepetitionRange, ExpectedRPE,
+                        new List<MuscleGroups>(AimMuscleGroups), AdvanceTrainingTechniques, superSetGroupId);
+    }
 }

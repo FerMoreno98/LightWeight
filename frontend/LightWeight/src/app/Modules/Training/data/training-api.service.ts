@@ -196,6 +196,9 @@ export class TrainingApiService {
     DeleteTrainingTemplate(TrainingTemplateId : string) : Observable<void>{
         return this.http.delete<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}`);
     }
+    DuplicateTrainingTemplate(TrainingTemplateId : string) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/training-template/${TrainingTemplateId}/duplicate`, {});
+    }
     UpdateTemplateSet
     (
         templateSessionId:string | null,

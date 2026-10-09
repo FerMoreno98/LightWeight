@@ -356,6 +356,27 @@ export class TrainingStore{
             this._isLoading.set(false);
         }
     }
+    /** Duplicates a template with its sessions and sets, then reloads templates and programs
+     *  (the copy's volume and the program's template count are computed by the backend) */
+    async DuplicateTrainingTemplate(TrainingTemplateId : string) : Promise<string | null>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const result = await firstValueFrom(this.api.DuplicateTrainingTemplate(TrainingTemplateId));
+            const [templates, programs] = await Promise.all([
+                firstValueFrom(this.api.GetUserTrainingTemplates()),
+                firstValueFrom(this.api.GetUserPrograms()),
+            ]);
+            this._trainingTemplates.set(templates);
+            this._programs.set(programs);
+            return result.id;
+        }catch{
+            this._error.set("No se ha podido duplicar la plantilla");
+            return null;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
     async UpdateTemplateSet
     (
         templateSessionId:string | null,

@@ -1,5 +1,6 @@
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 using LightWeight.Training.Domain.Aggregates;
@@ -150,6 +151,69 @@ public class TrainingTemplateTests
             () => commandHandler.HandleAsync(new DeleteTrainingTemplateCommand(template.Id,Guid.CreateVersion7()),default)
         );
         Assert.False(template.IsDeleted);
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DuplicateTrainingTemplateCommand_WhenHappyPath_AddsTheCopyToTheProgramAndSaves()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        template.AddSessionTemplate(TemplateSession.Create("ValidName"));
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        DuplicateTrainingTemplateCommandHandler commandHandler =
+            new DuplicateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        Guid copyId = await commandHandler.HandleAsync(new DuplicateTrainingTemplateCommand(template.Id,userId),default);
+        // Assert
+        Assert.NotEqual(template.Id, copyId);
+        TrainingTemplate copy = Assert.Single(program.trainingTemplates, t => t.Id == copyId);
+        Assert.Single(copy.TemplateSessions);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DuplicateTrainingTemplateCommand_TemplateNotFound_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        _programRepository.GetByTrainingTemplateIdAsync(Arg.Any<Guid>()).Returns((Program?)null);
+        DuplicateTrainingTemplateCommandHandler commandHandler =
+            new DuplicateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
+        (
+            () => commandHandler.HandleAsync(new DuplicateTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7()),default)
+        );
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DuplicateTrainingTemplateCommand_UserIdDoesNotCorrespondWithProgramUserId_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(Guid.CreateVersion7());
+        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        DuplicateTrainingTemplateCommandHandler commandHandler =
+            new DuplicateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new DuplicateTrainingTemplateCommand(template.Id,Guid.CreateVersion7()),default)
+        );
+        Assert.Single(program.trainingTemplates);
         await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 

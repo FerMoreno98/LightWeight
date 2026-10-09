@@ -80,4 +80,16 @@ public sealed class TemplateSession : Entity<Guid>
         foreach (var set in _templateExercises)
             set.MarkAsDeleted(now);
     }
+
+    /// <summary>Creates a copy of this session and its active sets with new ids</summary>
+    internal TemplateSession Duplicate()
+    {
+        var copy = Create(Name);
+        // Original superset group id -> new group id, shared by all the sets of this session
+        // so the sets that formed a superset keep forming one in the copy
+        var superSetMap = new Dictionary<Guid, Guid>();
+        foreach (var set in TemplateExercises)
+            copy.AddSet(set.Duplicate(superSetMap));
+        return copy;
+    }
 }

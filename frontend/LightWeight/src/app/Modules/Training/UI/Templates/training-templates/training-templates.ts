@@ -107,4 +107,17 @@ export class TrainingTemplates {
   async deleteTemplate(template: TrainingTemplate) {
     await this.store.DeleteTrainingTemplate(template.id);
   }
+
+  /** Id of the template being duplicated, to disable its button and avoid double copies */
+  duplicatingId = signal<string | null>(null);
+
+  async duplicateTemplate(template: TrainingTemplate) {
+    if (this.duplicatingId()) return;
+    this.duplicatingId.set(template.id);
+    try {
+      await this.store.DuplicateTrainingTemplate(template.id);
+    } finally {
+      this.duplicatingId.set(null);
+    }
+  }
 }

@@ -60,4 +60,21 @@ public sealed class Program : AggregateRoot<Guid>
         ?? throw new TrainingTemplateNotFoundDomainException();
         trainingTemplate.MarkAsDeleted(now);
     }
+
+    /// <summary>
+    /// Duplicates an active template of this program with its whole hierarchy (sessions and sets).
+    /// The copy gets new ids and is placed at the end of the program
+    /// </summary>
+    /// <param name="trainingTemplateId">Template to duplicate</param>
+    /// <returns>The new template, already added to the program</returns>
+    public TrainingTemplate DuplicateTrainingTemplate(Guid trainingTemplateId)
+    {
+        TrainingTemplate original = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
+            ?? throw new TrainingTemplateNotFoundDomainException();
+        // The program owns the ordering of its templates, so it decides where the copy goes
+        int nextOrder = trainingTemplates.Max(t => t.Order) + 1;
+        TrainingTemplate copy = original.Duplicate(nextOrder);
+        _trainingTemplates.Add(copy);
+        return copy;
+    }
 }

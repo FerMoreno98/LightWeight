@@ -101,6 +101,26 @@
                 <div class="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
+                    (click)="$event.stopPropagation(); duplicateTemplate(template)"
+                    [disabled]="duplicatingId() !== null"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-emerald-950/50 hover:text-emerald-400 disabled:cursor-wait disabled:opacity-50"
+                    aria-label="Duplicar plantilla"
+                    title="Duplicar plantilla"
+                  >
+                    @if (duplicatingId() === template.id) {
+                      <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                      </svg>
+                    } @else {
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="8" y="8" width="12" height="12" rx="2" stroke-linejoin="round" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                      </svg>
+                    }
+                  </button>
+                  <button
+                    type="button"
                     (click)="$event.stopPropagation(); deleteTemplate(template)"
                     class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400"
                     aria-label="Borrar plantilla"

@@ -22,6 +22,7 @@ using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
 using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 
 public static class TrainingModule
@@ -47,6 +48,7 @@ public static class TrainingModule
         group.MapDelete("/training-set/{templateSetId:guid}", DeleteTemplateSet).RequireAuthorization();
         group.MapDelete("/training-session/{templateSessionId:guid}",DeleteTemplateSession).RequireAuthorization();
         group.MapDelete("/training-template/{trainingTemplateId:guid}",DeleteTrainingTemplate).RequireAuthorization();
+        group.MapPost("/training-template/{trainingTemplateId:guid}/duplicate",DuplicateTrainingTemplate).RequireAuthorization();
         group.MapPut("/template-set",UpdateTemplateSet).RequireAuthorization();
 
         return app;
@@ -325,6 +327,20 @@ public static class TrainingModule
             ?? throw new UnauthorizedAccessException();
         await mediator.SendAsync(new DeleteTrainingTemplateCommand(TrainingTemplateId,Guid.Parse(userId)),ct);
         return TypedResults.Ok();
+    }
+    private static async Task<IResult> DuplicateTrainingTemplate(
+        IMediator mediator,
+        Guid trainingTemplateId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<DuplicateTrainingTemplateCommand, Guid>(
+            new DuplicateTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(new { id });
     }
     private static async Task<IResult> UpdateTemplateSet
     (

@@ -108,4 +108,14 @@ public sealed class TrainingTemplate : Entity<Guid>
         foreach (var session in _templateSessions)
             session.MarkAsDeleted(now);
     }
+
+    /// <summary>Creates a deep copy of this template with new ids. Soft deleted sessions are not copied</summary>
+    /// <param name="order">Position of the copy inside the program (decided by the Program)</param>
+    internal TrainingTemplate Duplicate(int order)
+    {
+        var copy = Create(VolumeLandmark, TrainingDistribution, DurationInDays, order);
+        foreach (var session in TemplateSessions)
+            copy.AddSessionTemplate(session.Duplicate());
+        return copy;
+    }
 }
