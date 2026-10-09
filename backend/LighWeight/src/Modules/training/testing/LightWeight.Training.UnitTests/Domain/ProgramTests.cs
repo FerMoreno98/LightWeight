@@ -86,15 +86,106 @@ public class ProgramTests
         );
         TrainingTemplate template = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.FullBody,
-            7,
-            1
+            7
         );
         // Act
         program.AddTrainingTemplate(template);
         // Assert
         Assert.Single(program.trainingTemplates);
         Assert.Contains(template, program.trainingTemplates);
+    }
+
+    private static Program CreateValidProgram()
+    {
+        return Program.Create(Guid.CreateVersion7(), Periodization.Linear, "ValidProgramName", new List<MuscleGroups>());
+    }
+
+    private static TrainingTemplate CreateValidTemplate(string name = "ValidTemplateName")
+    {
+        return TrainingTemplate.Create(name, VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+    }
+
+    [Fact]
+    public void AddTrainingTemplate_AssignsConsecutiveOrders()
+    {
+        // Arrange
+        Program program = CreateValidProgram();
+        TrainingTemplate first = CreateValidTemplate();
+        TrainingTemplate second = CreateValidTemplate();
+        TrainingTemplate third = CreateValidTemplate();
+        // Act
+        program.AddTrainingTemplate(first);
+        program.AddTrainingTemplate(second);
+        program.AddTrainingTemplate(third);
+        // Assert
+        Assert.Equal(1, first.Order);
+        Assert.Equal(2, second.Order);
+        Assert.Equal(3, third.Order);
+    }
+
+    [Fact]
+    public void AddTrainingTemplate_AfterDeletingOne_NeverRepeatsTheOrderOfAnActiveTemplate()
+    {
+        // Arrange
+        Program program = CreateValidProgram();
+        TrainingTemplate first = CreateValidTemplate();
+        TrainingTemplate second = CreateValidTemplate();
+        TrainingTemplate third = CreateValidTemplate();
+        program.AddTrainingTemplate(first);
+        program.AddTrainingTemplate(second);
+        program.AddTrainingTemplate(third);
+        program.DeleteTrainingTemplate(second.Id, DateTime.UtcNow);
+        TrainingTemplate fourth = CreateValidTemplate();
+        // Act
+        program.AddTrainingTemplate(fourth);
+        // Assert
+        Assert.Equal(4, fourth.Order);
+        Assert.Equal(program.trainingTemplates.Count, program.trainingTemplates.Select(t => t.Order).Distinct().Count());
+    }
+
+    [Fact]
+    public void RenameTrainingTemplate_WithExistingTemplate_ChangesItsName()
+    {
+        // Arrange
+        Program program = CreateValidProgram();
+        TrainingTemplate template = CreateValidTemplate("Old name");
+        program.AddTrainingTemplate(template);
+        // Act
+        program.RenameTrainingTemplate(template.Id, "New name");
+        // Assert
+        Assert.Equal("New name", template.Name);
+    }
+
+    [Fact]
+    public void RenameTrainingTemplate_WithNonExistingTemplate_ThrowsDomainException()
+    {
+        // Arrange
+        Program program = CreateValidProgram();
+        // Act
+        // Assert
+        Assert.Throws<TrainingTemplateNotFoundDomainException>
+        (
+            () => program.RenameTrainingTemplate(Guid.CreateVersion7(), "New name")
+        );
+    }
+
+    [Fact]
+    public void RenameTrainingTemplate_WithSoftDeletedTemplate_ThrowsDomainException()
+    {
+        // Arrange
+        Program program = CreateValidProgram();
+        TrainingTemplate template = CreateValidTemplate("Old name");
+        program.AddTrainingTemplate(template);
+        program.DeleteTrainingTemplate(template.Id, DateTime.UtcNow);
+        // Act
+        // Assert
+        Assert.Throws<TrainingTemplateNotFoundDomainException>
+        (
+            () => program.RenameTrainingTemplate(template.Id, "New name")
+        );
+        Assert.Equal("Old name", template.Name);
     }
 }

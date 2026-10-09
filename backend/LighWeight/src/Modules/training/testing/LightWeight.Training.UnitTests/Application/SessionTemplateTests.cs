@@ -25,10 +25,10 @@ public class SessionTemplateTests
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MAV,
             TrainingDistribution.FullBody,
-            7,
-            1
+            7
         );
         program.AddTrainingTemplate(trainingTemplate);
         return (program, trainingTemplate);

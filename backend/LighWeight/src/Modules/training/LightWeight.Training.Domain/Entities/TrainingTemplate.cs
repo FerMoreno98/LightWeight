@@ -6,6 +6,13 @@ namespace LightWeight.Training.Domain.Entities;
 
 public sealed class TrainingTemplate : Entity<Guid>
 {
+    /// <summary>Max length of the name (matches the database column)</summary>
+    public const int NameMaxLength = 200;
+    /// <summary>Suffix added to the name of a duplicated template</summary>
+    public const string CopySuffix = " (copia)";
+
+    /// <summary>Name chosen by the user to tell templates apart (e.g. "Hipertrofia base", "Deload"). It does not need to be unique</summary>
+    public string Name { get; private set; }
     /// <summary>Weekly distribution pattern this template follows</summary>
     public TrainingDistribution TrainingDistribution{get;private set;} 
     /// <summary>
@@ -14,6 +21,7 @@ public sealed class TrainingTemplate : Entity<Guid>
     public VolumeLandmarks VolumeLandmark{get;private set;}
     private List<TemplateSession> _templateSessions = new();
     public int DurationInDays{get; private set;}
+    /// <summary>Position inside the program, only used for sorting. Assigned by the Program when the template is added</summary>
     public int Order{get; private set;}
     /// <summary>Soft delete flag: deleted templates are kept so microcycles can still reference them</summary>
     public bool IsDeleted { get; private set; }
@@ -24,32 +32,38 @@ public sealed class TrainingTemplate : Entity<Guid>
     private TrainingTemplate
     (
         Guid Id,
+        string name,
         VolumeLandmarks volumeLandmark,
         TrainingDistribution trainingDistribution,
-        int durationInDays,
-        int order
+        int durationInDays
     ) : base(Id)
     {
+        Name = name;
         VolumeLandmark = volumeLandmark;
         TrainingDistribution = trainingDistribution;
         DurationInDays = durationInDays;
-        Order = order;
     }
 
     /// <summary>Sessions defined in this template (soft deleted sessions are excluded)</summary>
     public IReadOnlyCollection<TemplateSession> TemplateSessions => _templateSessions.Where(s => !s.IsDeleted).ToList().AsReadOnly();
 
-    /// <summary>Creates a new training template</summary>
-    /// <param name="userId">Owner ID</param>
+    /// <summary>Creates a new training template. Its order is assigned when it is added to a Program</summary>
+    /// <param name="name">Name of the template</param>
+    /// <param name="volumeLandmark">Volume landmark the template targets</param>
     /// <param name="trainingDistribution">Weekly distribution pattern</param>
+    /// <param name="durationInDays">Duration of the template in days</param>
     public static TrainingTemplate Create
     (
+        string name,
         VolumeLandmarks volumeLandmark,
         TrainingDistribution trainingDistribution,
-        int durationInDays,
-        int order
+        int durationInDays
     )
     {
+        if(string.IsNullOrWhiteSpace(name))
+        {
+            throw new NameEmptyDomainException();
+        }
         if(!System.Enum.IsDefined(volumeLandmark))
         {
             throw new InvalidVolumeLandmarkDomainException();
@@ -59,9 +73,26 @@ public sealed class TrainingTemplate : Entity<Guid>
             throw new InvalidTrainingDistributionDomainException();
         }
 
-        return new TrainingTemplate(Guid.CreateVersion7(),volumeLandmark,trainingDistribution, durationInDays,order);
+        return new TrainingTemplate(Guid.CreateVersion7(),name.Trim(),volumeLandmark,trainingDistribution, durationInDays);
     }
-    
+
+    /// <summary>Changes the name of the template</summary>
+    /// <param name="name">New name</param>
+    public void Rename(string name)
+    {
+        if(string.IsNullOrWhiteSpace(name))
+        {
+            throw new NameEmptyDomainException();
+        }
+        Name = name.Trim();
+    }
+
+    /// <summary>Sets the position of the template inside its program. Only the Program decides it</summary>
+    internal void SetOrder(int order)
+    {
+        Order = order;
+    }
+
     public void AddSessionTemplate(TemplateSession session)
     {
         _templateSessions.Add(session);
@@ -109,13 +140,23 @@ public sealed class TrainingTemplate : Entity<Guid>
             session.MarkAsDeleted(now);
     }
 
-    /// <summary>Creates a deep copy of this template with new ids. Soft deleted sessions are not copied</summary>
-    /// <param name="order">Position of the copy inside the program (decided by the Program)</param>
-    internal TrainingTemplate Duplicate(int order)
+    /// <summary>
+    /// Creates a deep copy of this template with new ids, named "{Name} (copia)".
+    /// Soft deleted sessions are not copied. Its order is assigned when it is added to the Program
+    /// </summary>
+    internal TrainingTemplate Duplicate()
     {
-        var copy = Create(VolumeLandmark, TrainingDistribution, DurationInDays, order);
+        var copy = Create(CopyName(), VolumeLandmark, TrainingDistribution, DurationInDays);
         foreach (var session in TemplateSessions)
             copy.AddSessionTemplate(session.Duplicate());
         return copy;
+    }
+
+    /// <summary>Name of the copy; the original name is shortened if needed so the suffix always fits</summary>
+    private string CopyName()
+    {
+        int maxBaseLength = NameMaxLength - CopySuffix.Length;
+        string baseName = Name.Length > maxBaseLength ? Name[..maxBaseLength].TrimEnd() : Name;
+        return baseName + CopySuffix;
     }
 }

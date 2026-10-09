@@ -20,10 +20,10 @@ export class CreateTrainingTemplate {
   programs = this.store.programs;
 
   programId = '';
+  name = '';
   volumeLandmark = '';
   trainingDistribution = '';
   durationInDays: number | null = 7;
-  order: number | null = 1;
 
   async ngOnInit(){
     await this.store.GetUserPrograms();
@@ -33,22 +33,15 @@ export class CreateTrainingTemplate {
     } else if (this.programs().length === 1){
       this.programId = this.programs()[0].id;
     }
-    this.onProgramChange();
-  }
-
-  /** Suggests the next position inside the selected program */
-  onProgramChange(){
-    const program = this.programs().find(p => p.id === this.programId);
-    this.order = program ? program.trainingTemplatesCount + 1 : 1;
   }
 
   async onSubmit(){
     const id = await this.store.CreateTrainingTemplate(
       this.programId,
+      this.name.trim(),
       this.volumeLandmark,
       this.trainingDistribution,
-      this.durationInDays!,
-      this.order!
+      this.durationInDays!
     )
 
     if (id){

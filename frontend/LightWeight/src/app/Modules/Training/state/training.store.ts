@@ -150,10 +150,10 @@ export class TrainingStore{
     async CreateTrainingTemplate
     (
         programId : string,
+        name : string,
         volumeLandmark: string,
         trainingDistribution: string,
-        durationInDays : number,
-        order : number
+        durationInDays : number
     ) : Promise<string | null>{
         this._isLoading.set(true);
         this._error.set(null);
@@ -161,10 +161,10 @@ export class TrainingStore{
             const result = await firstValueFrom(this.api.CreateTrainingTemplate
                 (
                     programId,
+                    name,
                     volumeLandmark,
                     trainingDistribution,
-                    durationInDays,
-                    order
+                    durationInDays
                 ));
             return result.id;
         }catch{
@@ -375,6 +375,18 @@ export class TrainingStore{
             return null;
         }finally{
             this._isLoading.set(false);
+        }
+    }
+    /** Renames a template and updates it in the local list (no reload needed) */
+    async RenameTrainingTemplate(TrainingTemplateId : string, name : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.RenameTrainingTemplate(TrainingTemplateId, name));
+            this._trainingTemplates.update(tt => tt.map(t => t.id === TrainingTemplateId ? { ...t, name } : t));
+            return true;
+        }catch{
+            this._error.set("No se ha podido renombrar la plantilla");
+            return false;
         }
     }
     async UpdateTemplateSet

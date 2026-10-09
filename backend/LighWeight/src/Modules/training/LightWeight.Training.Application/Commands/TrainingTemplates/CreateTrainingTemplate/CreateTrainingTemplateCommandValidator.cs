@@ -1,4 +1,5 @@
 using FluentValidation;
+using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
 
 namespace LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
@@ -13,6 +14,10 @@ public sealed class CreateTrainingTemplateCommandValidator : AbstractValidator<C
         RuleFor(x => x.UserId)
             .NotEmpty();
 
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(TrainingTemplate.NameMaxLength);
+
         RuleFor(x => x.VolumeLandmark)
             .NotEmpty()
             .IsEnumName(typeof(VolumeLandmarks));
@@ -23,9 +28,6 @@ public sealed class CreateTrainingTemplateCommandValidator : AbstractValidator<C
 
         RuleFor(x => x.DurationInDays)
             .GreaterThan(0);
-
-        RuleFor(x => x.Order)
-            .GreaterThanOrEqualTo(0);
     }
 }
 

@@ -1,6 +1,7 @@
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 using LightWeight.Training.Domain.Aggregates;
@@ -27,15 +28,15 @@ public class TrainingTemplateTests
     }
 
     [Theory]
-    [InlineData("MV","FullBody",7,1)]
-    [InlineData("MAV","UpperLower",5,2)]
-    [InlineData("MRV","PushPullLegs",10,3)]
+    [InlineData("Hipertrofia base","MV","FullBody",7)]
+    [InlineData("Deload","MAV","UpperLower",5)]
+    [InlineData("Bloque 3","MRV","PushPullLegs",10)]
     public async Task CreateTrainingTemplateCommand_WithValidData_AddsTheTemplateToTheProgram
     (
+        string Name,
         string VolumeLandmark,
         string TrainingDistribution,
-        int DurationInDays,
-        int Order
+        int DurationInDays
     )
     {
         // Arrange
@@ -53,10 +54,10 @@ public class TrainingTemplateTests
         (
             program.Id,
             UserId,
+            Name,
             VolumeLandmark,
             TrainingDistribution,
-            DurationInDays,
-            Order
+            DurationInDays
         );
         // Act
         Guid TemplateId = await commandHandler.HandleAsync(command,default);
@@ -64,8 +65,9 @@ public class TrainingTemplateTests
         Assert.NotEqual(Guid.Empty,TemplateId);
         TrainingTemplate template = Assert.Single(program.trainingTemplates);
         Assert.Equal(TemplateId, template.Id);
+        Assert.Equal(Name, template.Name);
         Assert.Equal(DurationInDays, template.DurationInDays);
-        Assert.Equal(Order, template.Order);
+        Assert.Equal(1, template.Order);
         await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -83,7 +85,7 @@ public class TrainingTemplateTests
         // Assert
         await Assert.ThrowsAsync<ProgramNotFoundApplicationException>
         (
-            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(fakeProgramId,Guid.CreateVersion7(),"MV","FullBody",7,1),default)
+            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(fakeProgramId,Guid.CreateVersion7(),"ValidTemplateName","MV","FullBody",7),default)
         );
         await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
@@ -102,7 +104,7 @@ public class TrainingTemplateTests
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
         (
-            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(program.Id,Guid.CreateVersion7(),"MV","FullBody",7,1),default)
+            () => commandHandler.HandleAsync(new CreateTrainingTemplateCommand(program.Id,Guid.CreateVersion7(),"ValidTemplateName","MV","FullBody",7),default)
         );
         Assert.Empty(program.trainingTemplates);
         await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -116,7 +118,7 @@ public class TrainingTemplateTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         TemplateSession session = TemplateSession.Create("ValidName");
         template.AddSessionTemplate(session);
         program.AddTrainingTemplate(template);
@@ -139,7 +141,7 @@ public class TrainingTemplateTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(Guid.CreateVersion7());
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         program.AddTrainingTemplate(template);
         _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
         DeleteTrainingTemplateCommandHandler commandHandler =
@@ -162,7 +164,7 @@ public class TrainingTemplateTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         template.AddSessionTemplate(TemplateSession.Create("ValidName"));
         program.AddTrainingTemplate(template);
         _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
@@ -202,7 +204,7 @@ public class TrainingTemplateTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(Guid.CreateVersion7());
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         program.AddTrainingTemplate(template);
         _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
         DuplicateTrainingTemplateCommandHandler commandHandler =
@@ -225,10 +227,10 @@ public class TrainingTemplateTests
         Program program = CreateProgram(userId);
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MAV,
             TrainingDistribution.FullBody,
-            7,
-            1
+            7
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -310,5 +312,102 @@ public class TrainingTemplateTests
         Assert.Equal(6, response.TotalVolume["Biceps"]);
         Assert.Equal(3, response.TotalVolume["Back"]);
         Assert.Equal(3, response.TotalVolume["Chest"]);
+    }
+
+    [Fact]
+    public async Task RenameTrainingTemplateCommand_WhenHappyPath_RenamesTheTemplateAndSaves()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create("Old name",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        RenameTrainingTemplateCommandHandler commandHandler =
+            new RenameTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        await commandHandler.HandleAsync(new RenameTrainingTemplateCommand(template.Id,userId,"New name"),default);
+        // Assert
+        Assert.Equal("New name", template.Name);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RenameTrainingTemplateCommand_TemplateNotFound_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        _programRepository.GetByTrainingTemplateIdAsync(Arg.Any<Guid>()).Returns((Program?)null);
+        RenameTrainingTemplateCommandHandler commandHandler =
+            new RenameTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
+        (
+            () => commandHandler.HandleAsync(new RenameTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),"New name"),default)
+        );
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RenameTrainingTemplateCommand_UserIdDoesNotCorrespondWithProgramUserId_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(Guid.CreateVersion7());
+        TrainingTemplate template = TrainingTemplate.Create("Old name",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        RenameTrainingTemplateCommandHandler commandHandler =
+            new RenameTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new RenameTrainingTemplateCommand(template.Id,Guid.CreateVersion7(),"New name"),default)
+        );
+        Assert.Equal("Old name", template.Name);
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("Deload", true)]
+    [InlineData("", false)]
+    [InlineData("   ", false)]
+    public void RenameTrainingTemplateCommandValidator_ValidatesTheName(string name, bool isValid)
+    {
+        // Arrange
+        var validator = new RenameTrainingTemplateCommandValidator();
+        // Act
+        var result = validator.Validate(new RenameTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),name));
+        // Assert
+        Assert.Equal(isValid, result.IsValid);
+    }
+
+    [Fact]
+    public void RenameTrainingTemplateCommandValidator_WithTooLongName_IsNotValid()
+    {
+        // Arrange
+        var validator = new RenameTrainingTemplateCommandValidator();
+        string name = new string('a', TrainingTemplate.NameMaxLength + 1);
+        // Act
+        var result = validator.Validate(new RenameTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),name));
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void CreateTrainingTemplateCommandValidator_WithEmptyName_IsNotValid()
+    {
+        // Arrange
+        var validator = new CreateTrainingTemplateCommandValidator();
+        // Act
+        var result = validator.Validate(new CreateTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),"","MEV","FullBody",7));
+        // Assert
+        Assert.False(result.IsValid);
     }
 }

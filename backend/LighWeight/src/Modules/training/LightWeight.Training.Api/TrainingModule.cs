@@ -23,6 +23,7 @@ using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
 using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 
 public static class TrainingModule
@@ -49,6 +50,7 @@ public static class TrainingModule
         group.MapDelete("/training-session/{templateSessionId:guid}",DeleteTemplateSession).RequireAuthorization();
         group.MapDelete("/training-template/{trainingTemplateId:guid}",DeleteTrainingTemplate).RequireAuthorization();
         group.MapPost("/training-template/{trainingTemplateId:guid}/duplicate",DuplicateTrainingTemplate).RequireAuthorization();
+        group.MapPatch("/training-template/{trainingTemplateId:guid}/name",RenameTrainingTemplate).RequireAuthorization();
         group.MapPut("/template-set",UpdateTemplateSet).RequireAuthorization();
 
         return app;
@@ -147,10 +149,10 @@ public static class TrainingModule
         var id = await mediator.SendAsync<CreateTrainingTemplateCommand, Guid>(new CreateTrainingTemplateCommand(
             request.ProgramId,
             Guid.Parse(userId),
+            request.Name,
             request.VolumeLandmark,
             request.TrainingDistribution,
-            request.DurationInDays,
-            request.Order
+            request.DurationInDays
         ), ct);
         return TypedResults.Ok(new { id });
     }
@@ -341,6 +343,21 @@ public static class TrainingModule
             new DuplicateTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId)), ct
         );
         return TypedResults.Ok(new { id });
+    }
+    private static async Task<IResult> RenameTrainingTemplate(
+        IMediator mediator,
+        Guid trainingTemplateId,
+        RenameTrainingTemplateRequest request,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(
+            new RenameTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId), request.Name), ct
+        );
+        return TypedResults.NoContent();
     }
     private static async Task<IResult> UpdateTemplateSet
     (

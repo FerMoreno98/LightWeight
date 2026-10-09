@@ -15,6 +15,7 @@ using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingS
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetCurrentMacrocycle;
 using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
@@ -57,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DeleteTemplateSessionCommand>,DeleteTemplateSessionCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteTrainingTemplateCommand>,DeleteTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<DuplicateTrainingTemplateCommand, Guid>,DuplicateTrainingTemplateCommandHandler>();
+        services.AddScoped<ICommandHandler<RenameTrainingTemplateCommand>,RenameTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTemplateSetCommand>,UpdateTemplateSetCommandHandler>();
         return services;
     }

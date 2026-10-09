@@ -9,32 +9,86 @@ namespace LightWeight.Training.UnitTests.Domain;
 public class TrainingTemplateTests
 {
     [Theory]
-    [InlineData(VolumeLandmarks.MV, TrainingDistribution.FullBody, 7, 1)]
-    [InlineData(VolumeLandmarks.MAV, TrainingDistribution.PushPullLegs, 5, 2)]
-    [InlineData(VolumeLandmarks.MEV, TrainingDistribution.Phat, 10, 3)]
+    [InlineData("Hipertrofia base", VolumeLandmarks.MV, TrainingDistribution.FullBody, 7)]
+    [InlineData("Deload", VolumeLandmarks.MAV, TrainingDistribution.PushPullLegs, 5)]
+    [InlineData("Bloque 3", VolumeLandmarks.MEV, TrainingDistribution.Phat, 10)]
     public void Create_WithValidData_ReturnATrainingTemplate
     (
+        string name,
         VolumeLandmarks volumeLandmark,
         TrainingDistribution distribution,
-        int durationInDays,
-        int order
+        int durationInDays
     )
     {
         // Arrange
         // Act
         TrainingTemplate template = TrainingTemplate.Create
         (
+            name,
             volumeLandmark,
             distribution,
-            durationInDays,
-            order
+            durationInDays
         );
         // Assert
+        Assert.Equal(name,template.Name);
         Assert.Equal(volumeLandmark,template.VolumeLandmark);
         Assert.Equal(distribution,template.TrainingDistribution);
         Assert.Equal(durationInDays,template.DurationInDays);
-        Assert.Equal(order,template.Order);
         Assert.False(template.IsDeleted);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Create_WithEmptyName_ThrowsDomainException(string? name)
+    {
+        // Arrange
+        // Act
+        // Assert
+        Assert.Throws<NameEmptyDomainException>(
+        ()=> TrainingTemplate.Create
+        (
+            name!,
+            VolumeLandmarks.MEV,
+            TrainingDistribution.FullBody,
+            7
+        )
+        );
+    }
+
+    [Fact]
+    public void Create_TrimsTheName()
+    {
+        // Arrange
+        // Act
+        TrainingTemplate template = TrainingTemplate.Create("  Deload  ", VolumeLandmarks.MV, TrainingDistribution.FullBody, 7);
+        // Assert
+        Assert.Equal("Deload", template.Name);
+    }
+
+    [Fact]
+    public void Rename_WithValidName_ChangesTheName()
+    {
+        // Arrange
+        TrainingTemplate template = TrainingTemplate.Create("Old name", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        // Act
+        template.Rename(" New name ");
+        // Assert
+        Assert.Equal("New name", template.Name);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Rename_WithEmptyName_ThrowsDomainExceptionAndKeepsTheName(string name)
+    {
+        // Arrange
+        TrainingTemplate template = TrainingTemplate.Create("Old name", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        // Act
+        // Assert
+        Assert.Throws<NameEmptyDomainException>(() => template.Rename(name));
+        Assert.Equal("Old name", template.Name);
     }
 
     [Theory]
@@ -51,10 +105,10 @@ public class TrainingTemplateTests
         Assert.Throws<InvalidVolumeLandmarkDomainException>(
         ()=> TrainingTemplate.Create
         (
+            "ValidTemplateName",
             volumeLandmark,
             distribution,
-            7,
-            1
+            7
         )
         );
     }
@@ -73,10 +127,10 @@ public class TrainingTemplateTests
         Assert.Throws<InvalidTrainingDistributionDomainException>(
         ()=> TrainingTemplate.Create
         (
+            "ValidTemplateName",
             volumeLandmark,
             distribution,
-            7,
-            1
+            7
         )
         );
     }
@@ -97,10 +151,10 @@ public class TrainingTemplateTests
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.Phat,
-            7,
-            1
+            7
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -154,10 +208,10 @@ public class TrainingTemplateTests
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.Phat,
-            7,
-            1
+            7
         );
         TemplateSession templateSession = TemplateSession.Create
         (
@@ -197,10 +251,10 @@ public class TrainingTemplateTests
         // Arrange
         TrainingTemplate template = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.Phat,
-            7,
-            1
+            7
         );
 
         Dictionary<MuscleGroups,int> ret = template.GetNumberOfSeriesPerGroup();
@@ -214,10 +268,10 @@ public class TrainingTemplateTests
         // Arrange
         TrainingTemplate template = TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.Phat,
-            7,
-            1
+            7
         );
         TemplateSession templateSession = TemplateSession.Create
         (

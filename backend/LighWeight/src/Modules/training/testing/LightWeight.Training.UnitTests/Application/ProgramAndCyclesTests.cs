@@ -170,7 +170,7 @@ public class ProgramAndCyclesTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         program.AddTrainingTemplate(template);
         Mesocycle mesocycle = Mesocycle.Create(Guid.CreateVersion7(),userId,8,null,null,DateTime.UtcNow,DateTime.UtcNow.AddDays(28),program.Id);
         _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
@@ -222,7 +222,7 @@ public class ProgramAndCyclesTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
         program.AddTrainingTemplate(template);
         program.DeleteTrainingTemplate(template.Id, DateTime.UtcNow);
         Mesocycle mesocycle = Mesocycle.Create(Guid.CreateVersion7(),userId,8,null,null,DateTime.UtcNow,DateTime.UtcNow.AddDays(28),program.Id);
@@ -269,8 +269,8 @@ public class ProgramAndCyclesTests
         var userId = Guid.CreateVersion7();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         Program program = Program.Create(userId, Periodization.Ondulating, "Hipertrofia", new List<MuscleGroups> { MuscleGroups.Back });
-        TrainingTemplate template1 = TrainingTemplate.Create(VolumeLandmarks.MEV,TrainingDistribution.FullBody,7,1);
-        TrainingTemplate template2 = TrainingTemplate.Create(VolumeLandmarks.MAV,TrainingDistribution.FullBody,7,2);
+        TrainingTemplate template1 = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        TrainingTemplate template2 = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MAV,TrainingDistribution.FullBody,7);
         program.AddTrainingTemplate(template1);
         program.AddTrainingTemplate(template2);
         program.DeleteTrainingTemplate(template2.Id, DateTime.UtcNow);

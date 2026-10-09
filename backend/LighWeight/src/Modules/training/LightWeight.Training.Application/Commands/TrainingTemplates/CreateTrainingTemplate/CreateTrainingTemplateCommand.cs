@@ -6,9 +6,9 @@ public sealed record CreateTrainingTemplateCommand
 (
     Guid ProgramId,
     Guid UserId,
+    string Name,
     string VolumeLandmark,
     string TrainingDistribution,
-    int DurationInDays,
-    int Order
+    int DurationInDays
 ) : ICommand<Guid>;
 

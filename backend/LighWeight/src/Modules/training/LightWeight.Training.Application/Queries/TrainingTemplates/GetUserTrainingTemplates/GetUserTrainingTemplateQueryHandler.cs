@@ -27,6 +27,7 @@ public sealed class GetUserTrainingTemplatesQueryHandler : IQueryHandler<GetUser
             var mapped = dictTotalVolumen.ToDictionary(dtv => Converters.MapMuscleGroup(dtv.Key), dtv => dtv.Value);
             var element = new GetUserTrainingTemplatesResponse(
                 template.Id,
+                template.Name,
                 program.Id,
                 program.Name,
                 template.Order,

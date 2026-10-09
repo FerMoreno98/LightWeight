@@ -34,6 +34,7 @@ export type TrainingDistribution =
     | 'PushPullLegs' | 'UpperLower' | 'Weider' | 'Phat' | 'FullBody' | 'Other';
 export interface TrainingTemplate{
     id : string,
+    name : string,
     programId : string,
     programName : string,
     order : number,
@@ -118,18 +119,18 @@ export class TrainingApiService {
     CreateTrainingTemplate
     (
         programId : string,
+        name : string,
         volumeLandmark: string,
         trainingDistribution: string,
-        durationInDays : number,
-        order : number
+        durationInDays : number
     ) : Observable<{id: string}>{
         return this.http.post<{id: string}>(`${this.baseUrl}/training-template`,
             {
                 programId,
+                name,
                 volumeLandmark,
                 trainingDistribution,
-                durationInDays,
-                order
+                durationInDays
             });
     }
     CreateTemplateSession
@@ -198,6 +199,9 @@ export class TrainingApiService {
     }
     DuplicateTrainingTemplate(TrainingTemplateId : string) : Observable<{id: string}>{
         return this.http.post<{id: string}>(`${this.baseUrl}/training-template/${TrainingTemplateId}/duplicate`, {});
+    }
+    RenameTrainingTemplate(TrainingTemplateId : string, name : string) : Observable<void>{
+        return this.http.patch<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}/name`, { name });
     }
     UpdateTemplateSet
     (

@@ -12,6 +12,7 @@ public class TrainingTemplateConfiguration : IEntityTypeConfiguration<TrainingTe
         builder.ToTable("training_TrainingTemplates");
         builder.HasKey(t => t.Id);
         builder.Property(t => t.Id).HasColumnName("Id").ValueGeneratedNever();
+        builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(TrainingTemplate.NameMaxLength).IsRequired();
         builder.Property(v => v.VolumeLandmark)
             .HasColumnName("VolumeLandmark")
             .HasMaxLength(50)

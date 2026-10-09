@@ -26,10 +26,10 @@ public class SoftDeleteTests
     {
         return TrainingTemplate.Create
         (
+            "ValidTemplateName",
             VolumeLandmarks.MEV,
             TrainingDistribution.FullBody,
-            7,
-            1
+            7
         );
     }
 

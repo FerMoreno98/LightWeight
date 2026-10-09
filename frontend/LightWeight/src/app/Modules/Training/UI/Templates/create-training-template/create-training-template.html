@@ -23,7 +23,6 @@
           <select
             id="programId"
             [(ngModel)]="programId"
-            (ngModelChange)="onProgramChange()"
             name="programId"
             required
             class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
@@ -33,6 +32,20 @@
               <option [value]="program.id">{{ program.name }}</option>
             }
           </select>
+        </div>
+
+        <div>
+          <label for="name" class="block text-sm font-medium text-slate-300">Nombre</label>
+          <input
+            id="name"
+            type="text"
+            [(ngModel)]="name"
+            name="name"
+            required
+            maxlength="200"
+            placeholder="Ej: Hipertrofia base, Deload..."
+            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          />
         </div>
 
         <div>
@@ -71,36 +84,22 @@
           </select>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label for="durationInDays" class="block text-sm font-medium text-slate-300">Duración (días)</label>
-            <input
-              id="durationInDays"
-              type="number"
-              [(ngModel)]="durationInDays"
-              name="durationInDays"
-              required
-              min="1"
-              class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-            />
-          </div>
-          <div>
-            <label for="order" class="block text-sm font-medium text-slate-300">Orden en el programa</label>
-            <input
-              id="order"
-              type="number"
-              [(ngModel)]="order"
-              name="order"
-              required
-              min="0"
-              class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
-            />
-          </div>
+        <div>
+          <label for="durationInDays" class="block text-sm font-medium text-slate-300">Duración (días)</label>
+          <input
+            id="durationInDays"
+            type="number"
+            [(ngModel)]="durationInDays"
+            name="durationInDays"
+            required
+            min="1"
+            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+          />
         </div>
 
         <button
           type="submit"
-          [disabled]="isLoading() || templateForm.invalid || !durationInDays || durationInDays < 1 || order === null || order < 0"
+          [disabled]="isLoading() || templateForm.invalid || !name.trim() || !durationInDays || durationInDays < 1"
           class="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {{ isLoading() ? 'Creando...' : 'Crear plantilla' }}

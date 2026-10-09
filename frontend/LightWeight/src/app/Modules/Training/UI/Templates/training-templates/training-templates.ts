@@ -1,4 +1,5 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { MuscleGroup, Periodization, Program, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
@@ -46,7 +47,7 @@ export interface ProgramWithTemplates {
 @Component({
   selector: 'app-training-templates',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, FormsModule],
   templateUrl: './training-templates.html',
   styleUrl: './training-templates.css',
 })
@@ -106,6 +107,38 @@ export class TrainingTemplates {
 
   async deleteTemplate(template: TrainingTemplate) {
     await this.store.DeleteTrainingTemplate(template.id);
+  }
+
+  /** Id of the template whose name is being edited (only one at a time) */
+  editingNameId = signal<string | null>(null);
+  editedName = '';
+  private nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
+
+  constructor() {
+    // Focus and select the name as soon as the input appears
+    effect(() => {
+      const input = this.nameInput()?.nativeElement;
+      input?.focus();
+      input?.select();
+    });
+  }
+
+  startRename(template: TrainingTemplate) {
+    this.editingNameId.set(template.id);
+    this.editedName = template.name;
+  }
+
+  cancelRename() {
+    this.editingNameId.set(null);
+  }
+
+  async saveRename(template: TrainingTemplate) {
+    // Blur also fires after Enter/Escape: ignore it if the edit was already closed
+    if (this.editingNameId() !== template.id) return;
+    const name = this.editedName.trim();
+    this.editingNameId.set(null);
+    if (!name || name === template.name) return;
+    await this.store.RenameTrainingTemplate(template.id, name);
   }
 
   /** Id of the template being duplicated, to disable its button and avoid double copies */

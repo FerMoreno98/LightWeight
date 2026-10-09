@@ -31,10 +31,10 @@ public sealed class CreateTrainingTemplateCommandHandler : ICommandHandler<Creat
         var distribution = Enum.Parse<TrainingDistribution>(command.TrainingDistribution);
         TrainingTemplate template = TrainingTemplate.Create
         (
+            command.Name,
             landmark,
             distribution,
-            command.DurationInDays,
-            command.Order
+            command.DurationInDays
         );
         program.AddTrainingTemplate(template);
         await _UOW.SaveChangesAsync(ct);

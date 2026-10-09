@@ -39,7 +39,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate original = TrainingTemplate.Create(VolumeLandmarks.MAV, TrainingDistribution.UpperLower, 7, 1);
+        TrainingTemplate original = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MAV, TrainingDistribution.UpperLower, 7);
         TemplateSession session = TemplateSession.Create("Upper A");
         TemplateSet set = TemplateSet.Create
         (
@@ -79,7 +79,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate original = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
+        TrainingTemplate original = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
         TemplateSession session = TemplateSession.Create("FullBody A");
         TemplateSet set = CreateTemplateSet();
         session.AddSet(set);
@@ -98,8 +98,8 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate first = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
-        TrainingTemplate second = TrainingTemplate.Create(VolumeLandmarks.MAV, TrainingDistribution.FullBody, 7, 2);
+        TrainingTemplate first = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        TrainingTemplate second = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MAV, TrainingDistribution.FullBody, 7);
         program.AddTrainingTemplate(first);
         program.AddTrainingTemplate(second);
         // Act
@@ -114,7 +114,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate original = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
+        TrainingTemplate original = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
         TemplateSession activeSession = TemplateSession.Create("Active");
         TemplateSession deletedSession = TemplateSession.Create("Deleted");
         TemplateSet activeSet = CreateTemplateSet();
@@ -141,7 +141,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate original = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
+        TrainingTemplate original = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
         TemplateSession session = TemplateSession.Create("Session");
         Guid superSetA = Guid.CreateVersion7();
         Guid superSetB = Guid.CreateVersion7();
@@ -171,7 +171,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate original = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
+        TrainingTemplate original = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
         TemplateSession session = TemplateSession.Create("Session");
         TemplateSet set = CreateTemplateSet(muscleGroup: MuscleGroups.Back);
         session.AddSet(set);
@@ -202,7 +202,7 @@ public class DuplicateTrainingTemplateTests
     {
         // Arrange
         Program program = CreateProgram();
-        TrainingTemplate template = TrainingTemplate.Create(VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7, 1);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
         program.AddTrainingTemplate(template);
         program.DeleteTrainingTemplate(template.Id, Now);
         // Act
@@ -211,5 +211,49 @@ public class DuplicateTrainingTemplateTests
         (
             () => program.DuplicateTrainingTemplate(template.Id)
         );
+    }
+
+    [Fact]
+    public void DuplicateTrainingTemplate_NamesTheCopyAfterTheOriginal()
+    {
+        // Arrange
+        Program program = CreateProgram();
+        TrainingTemplate original = TrainingTemplate.Create("Hipertrofia base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        program.AddTrainingTemplate(original);
+        // Act
+        TrainingTemplate copy = program.DuplicateTrainingTemplate(original.Id);
+        // Assert
+        Assert.Equal("Hipertrofia base (copia)", copy.Name);
+        Assert.Equal("Hipertrofia base", original.Name);
+    }
+
+    [Fact]
+    public void DuplicateTrainingTemplate_WithAMaxLengthName_ShortensItSoTheSuffixFits()
+    {
+        // Arrange
+        Program program = CreateProgram();
+        string longName = new string('a', TrainingTemplate.NameMaxLength);
+        TrainingTemplate original = TrainingTemplate.Create(longName, VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        program.AddTrainingTemplate(original);
+        // Act
+        TrainingTemplate copy = program.DuplicateTrainingTemplate(original.Id);
+        // Assert
+        Assert.Equal(TrainingTemplate.NameMaxLength, copy.Name.Length);
+        Assert.EndsWith(TrainingTemplate.CopySuffix, copy.Name);
+    }
+
+    [Fact]
+    public void DuplicateTrainingTemplate_TwiceTheSameTemplate_GivesEachCopyItsOwnOrder()
+    {
+        // Arrange
+        Program program = CreateProgram();
+        TrainingTemplate original = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        program.AddTrainingTemplate(original);
+        // Act
+        TrainingTemplate firstCopy = program.DuplicateTrainingTemplate(original.Id);
+        TrainingTemplate secondCopy = program.DuplicateTrainingTemplate(original.Id);
+        // Assert
+        Assert.Equal(new[] { 1, 2, 3 }, program.trainingTemplates.Select(t => t.Order).OrderBy(o => o));
+        Assert.NotEqual(firstCopy.Id, secondCopy.Id);
     }
 }

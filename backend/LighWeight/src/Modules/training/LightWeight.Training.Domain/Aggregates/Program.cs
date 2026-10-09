@@ -46,8 +46,13 @@ public sealed class Program : AggregateRoot<Guid>
         return new Program(Guid.CreateVersion7(),UserId,name,periodization,muscleGroups);
     }
 
+    /// <summary>Adds a template at the end of the program</summary>
+    /// <param name="trainingTemplate">Template to add</param>
     public void AddTrainingTemplate(TrainingTemplate trainingTemplate)
     {
+        // The order is only used for sorting, so the template always goes after the active ones
+        int nextOrder = trainingTemplates.Count == 0 ? 1 : trainingTemplates.Max(t => t.Order) + 1;
+        trainingTemplate.SetOrder(nextOrder);
         _trainingTemplates.Add(trainingTemplate);
     }
 
@@ -63,7 +68,7 @@ public sealed class Program : AggregateRoot<Guid>
 
     /// <summary>
     /// Duplicates an active template of this program with its whole hierarchy (sessions and sets).
-    /// The copy gets new ids and is placed at the end of the program
+    /// The copy gets new ids, is named "{name} (copia)" and is placed at the end of the program
     /// </summary>
     /// <param name="trainingTemplateId">Template to duplicate</param>
     /// <returns>The new template, already added to the program</returns>
@@ -71,10 +76,18 @@ public sealed class Program : AggregateRoot<Guid>
     {
         TrainingTemplate original = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
             ?? throw new TrainingTemplateNotFoundDomainException();
-        // The program owns the ordering of its templates, so it decides where the copy goes
-        int nextOrder = trainingTemplates.Max(t => t.Order) + 1;
-        TrainingTemplate copy = original.Duplicate(nextOrder);
-        _trainingTemplates.Add(copy);
+        TrainingTemplate copy = original.Duplicate();
+        AddTrainingTemplate(copy);
         return copy;
+    }
+
+    /// <summary>Renames an active template of this program</summary>
+    /// <param name="trainingTemplateId">Template to rename</param>
+    /// <param name="name">New name</param>
+    public void RenameTrainingTemplate(Guid trainingTemplateId, string name)
+    {
+        TrainingTemplate trainingTemplate = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
+            ?? throw new TrainingTemplateNotFoundDomainException();
+        trainingTemplate.Rename(name);
     }
 }
