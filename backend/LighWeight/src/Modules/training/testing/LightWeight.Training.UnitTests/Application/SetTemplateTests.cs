@@ -1,3 +1,4 @@
+using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
 using LightWeight.Training.Application.Exceptions;
@@ -338,5 +339,68 @@ public class SetTemplateTests
         var result = validator.Validate(command);
         // Assert
         Assert.Equal(isValid, result.IsValid);
+    }
+
+    // ---------------------------------------------------------------- GetSetsFromSessionTemplate
+
+    [Fact]
+    public async Task GetSetsFromSessionTemplateQuery_ReturnsTheSetsWithTheExerciseNames()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        IExerciseRepository _exerciseRepository = Substitute.For<IExerciseRepository>();
+        (Program program, TemplateSession session) = CreateProgramWithSession(userId);
+        TrainingTemplate template = program.trainingTemplates.Single();
+        Exercise bench = Exercise.Create("Press banca", true, new List<MuscleGroups> { MuscleGroups.Chest });
+        session.AddSet(TemplateSet.Create(bench.Id, RepetitionRange.Create(8, 6), 8.5m, new List<MuscleGroups> { MuscleGroups.Chest }));
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        _exerciseRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Exercise> { bench });
+        var queryHandler = new GetSetsFromSessionTemplateQueryHandler(_programRepository, _exerciseRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetSetsFromSessionTemplateQuery(session.Id, template.Id, userId), default);
+        // Assert
+        var set = Assert.Single(result);
+        Assert.Equal(bench.Id, set.ExerciseId);
+        Assert.Equal("Press banca", set.ExerciseName);
+        Assert.Equal(6, set.RepetitionRangeMin);
+        Assert.Equal(8, set.RepetitionRangeMax);
+        Assert.Equal(8.5m, set.ExpectedRPE);
+    }
+
+    [Fact]
+    public async Task GetSetsFromSessionTemplateQuery_WithAMissingExercise_ReturnsAnEmptyName()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        IExerciseRepository _exerciseRepository = Substitute.For<IExerciseRepository>();
+        (Program program, TemplateSession session) = CreateProgramWithSession(userId);
+        TrainingTemplate template = program.trainingTemplates.Single();
+        session.AddSet(TemplateSet.Create(Guid.CreateVersion7(), RepetitionRange.Create(8, 6), 8, new List<MuscleGroups>()));
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        _exerciseRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Exercise>());
+        var queryHandler = new GetSetsFromSessionTemplateQueryHandler(_programRepository, _exerciseRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetSetsFromSessionTemplateQuery(session.Id, template.Id, userId), default);
+        // Assert
+        Assert.Equal(string.Empty, Assert.Single(result).ExerciseName);
+    }
+
+    [Fact]
+    public async Task GetSetsFromSessionTemplateQuery_OfAnotherUser_ThrowsUnauthorized()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TemplateSession session) = CreateProgramWithSession(Guid.CreateVersion7());
+        TrainingTemplate template = program.trainingTemplates.Single();
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        var queryHandler = new GetSetsFromSessionTemplateQueryHandler(_programRepository, Substitute.For<IExerciseRepository>());
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => queryHandler.HandleAsync(new GetSetsFromSessionTemplateQuery(session.Id, template.Id, Guid.CreateVersion7()), default)
+        );
     }
 }

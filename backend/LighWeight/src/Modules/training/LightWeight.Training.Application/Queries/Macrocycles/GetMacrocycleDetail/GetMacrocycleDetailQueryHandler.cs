@@ -8,15 +8,11 @@ namespace LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDeta
 public sealed class GetMacrocycleDetailQueryHandler : IQueryHandler<GetMacrocycleDetailQuery, GetMacrocycleDetailResponse>
 {
     private readonly IMacrocycleRepository _macrocycleRepository;
-    private readonly IMesocycleRepository _mesocycleRepository;
-    private readonly IMicrocycleRepository _microcycleRepository;
     private readonly IProgramRepository _programRepository;
 
-    public GetMacrocycleDetailQueryHandler(IMacrocycleRepository macrocycleRepository, IMesocycleRepository mesocycleRepository, IMicrocycleRepository microcycleRepository, IProgramRepository programRepository)
+    public GetMacrocycleDetailQueryHandler(IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository)
     {
         _macrocycleRepository = macrocycleRepository;
-        _mesocycleRepository = mesocycleRepository;
-        _microcycleRepository = microcycleRepository;
         _programRepository = programRepository;
     }
 
@@ -28,27 +24,8 @@ public sealed class GetMacrocycleDetailQueryHandler : IQueryHandler<GetMacrocycl
         {
             throw new UnauthorizedAccessException();
         }
-        List<Mesocycle> mesocycles = await _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id);
         Dictionary<Guid, string> programNames = (await _programRepository.GetAllProgramsOfAUserAsync(query.UserId))
             .ToDictionary(p => p.Id, p => p.Name);
-
-        var mesocycleResponses = new List<MacrocycleMesocycleResponse>();
-        foreach(var mesocycle in mesocycles.OrderBy(m => m.StartedAt))
-        {
-            List<Microcycle> microcycles = await _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id);
-            mesocycleResponses.Add(new MacrocycleMesocycleResponse
-            (
-                mesocycle.Id,
-                mesocycle.ProgramId,
-                programNames.GetValueOrDefault(mesocycle.ProgramId, string.Empty),
-                mesocycle.StartedAt,
-                mesocycle.FinishedAt,
-                mesocycle.MotivationLevel,
-                mesocycle.Injuries,
-                mesocycle.Comments,
-                microcycles.Count
-            ));
-        }
 
         return new GetMacrocycleDetailResponse
         (
@@ -57,7 +34,21 @@ public sealed class GetMacrocycleDetailQueryHandler : IQueryHandler<GetMacrocycl
             macrocycle.Comments,
             macrocycle.StartedAt,
             macrocycle.FinishedAt,
-            mesocycleResponses
+            macrocycle.Mesocycles
+                .OrderBy(m => m.StartedAt)
+                .Select(mesocycle => new MacrocycleMesocycleResponse
+                (
+                    mesocycle.Id,
+                    mesocycle.ProgramId,
+                    programNames.GetValueOrDefault(mesocycle.ProgramId, string.Empty),
+                    mesocycle.StartedAt,
+                    mesocycle.FinishedAt,
+                    mesocycle.MotivationLevel,
+                    mesocycle.Injuries,
+                    mesocycle.Comments,
+                    mesocycle.Microcycles.Count
+                ))
+                .ToList()
         );
     }
 }

@@ -7,6 +7,9 @@ using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
 using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
 using LightWeight.Training.Application.Queries.Mesocycles.GetMesocycleDetail;
+using LightWeight.Training.Application.Queries.Microcycles.GetCurrentMicrocycle;
+using LightWeight.Training.Application.Queries.SessionTemplates.GetTemplateSessionsFromTrainingTemplate;
+using LightWeight.Training.Application.Commands.Microcycles.FinishMicrocycle;
 using LightWeight.shared.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -19,7 +22,6 @@ using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
-// using LightWeight.Training.Application.Queries.SessionTemplates.GetSessionFromTrainingTemplate;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Queries.SessionTemplates.GetNumberOfSeriesPerGroupPerSession;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
@@ -45,6 +47,8 @@ public static class TrainingModule
         group.MapGet("/mesocycle/{mesocycleId:guid}", GetMesocycleDetail).RequireAuthorization();
         group.MapPost("/mesocycle/{mesocycleId:guid}/finish", FinishMesocycle).RequireAuthorization();
         group.MapPost("/microcycle", CreateMicrocycle).RequireAuthorization();
+        group.MapGet("/microcycle/current", GetCurrentMicrocycle).RequireAuthorization();
+        group.MapPost("/microcycle/{microcycleId:guid}/finish", FinishMicrocycle).RequireAuthorization();
         group.MapPost("/program", CreateProgram).RequireAuthorization();
         group.MapGet("/programs", GetUserPrograms).RequireAuthorization();
         group.MapPost("/training-template", CreateTrainingTemplate).RequireAuthorization();
@@ -52,7 +56,7 @@ public static class TrainingModule
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
         group.MapPost("/training-session", CreateTrainingSession).RequireAuthorization();
         group.MapGet("/exercises", GetAllExercises).RequireAuthorization();
-        // group.MapGet("/training-template/{templateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
+        group.MapGet("/training-template/{trainingTemplateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
         group.MapGet("/training-template/{trainingTemplateId:guid}/{sessionTemplateId:guid}/sets",GetSetsOfASessionTemplate).RequireAuthorization();
         group.MapGet("/training-session/{trainingTemplateId:guid}/seriespermusclegrouppersession",GetNumberOfSeriesPerMuscleGroupPerSession).RequireAuthorization();
         group.MapGet("/training-template/trainingTemplates", GetUserTrainingTemplates).RequireAuthorization();
@@ -191,6 +195,35 @@ public static class TrainingModule
         ), ct);
         return TypedResults.Ok(new { id });
     }
+    private static async Task<IResult> GetCurrentMicrocycle
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var current = await mediator.QueryAsync<GetCurrentMicrocycleQuery, GetCurrentMicrocycleResponse>(
+            new GetCurrentMicrocycleQuery(Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(current);
+    }
+
+    private static async Task<IResult> FinishMicrocycle
+    (
+        IMediator mediator,
+        Guid microcycleId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new FinishMicrocycleCommand(microcycleId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
+    }
+
     private static async Task<IResult> CreateProgram
     (
         CreateProgramRequest request,
@@ -302,28 +335,36 @@ public static class TrainingModule
             new GetAllExercisesQuery(), ct);
         return TypedResults.Ok(exercises);
     }
-    // private static async Task<IResult> GetSessionsOfATrainingTemplate(
-    //     Guid templateId,
-    //     IMediator mediator,
-    //     CancellationToken ct)
-    // {
-    //     var sessions = await mediator.QueryAsync<GetSessionsFromTrainingTemplateQuery, List<GetSessionsFromTrainingTemplateResponse>>
-    //     (
-    //         new GetSessionsFromTrainingTemplateQuery(templateId), ct
-    //     );
-    //     return TypedResults.Ok(sessions);
-    // }
+    private static async Task<IResult> GetSessionsOfATrainingTemplate
+    (
+        Guid trainingTemplateId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var sessions = await mediator.QueryAsync<GetTemplateSessionsFromTrainingTemplateQuery, List<GetTemplateSessionsFromTrainingTemplateResponse>>
+        (
+            new GetTemplateSessionsFromTrainingTemplateQuery(trainingTemplateId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(sessions);
+    }
     private static async Task<IResult> GetSetsOfASessionTemplate
     (
         Guid sessionTemplateId,
         Guid trainingTemplateId,
         IMediator mediator,
+        HttpContext httpContext,
         CancellationToken ct
     )
     {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
         var sets = await mediator.QueryAsync<GetSetsFromSessionTemplateQuery,List<GetSetsFromSessionTemplateResponse>>
         (
-           new GetSetsFromSessionTemplateQuery(sessionTemplateId,trainingTemplateId),ct
+           new GetSetsFromSessionTemplateQuery(sessionTemplateId,trainingTemplateId,Guid.Parse(userId)),ct
         );
         return TypedResults.Ok(sets);
     }

@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 
 namespace LightWeight.Training.Infrastructure.Configurations;
@@ -20,13 +19,14 @@ public class MicrocycleConfiguration : IEntityTypeConfiguration<Microcycle>
         builder.HasIndex(m => new { m.MesocycleId, m.WeekNumber })
             .HasDatabaseName("Ux_Microcycle_WeekNumber")
             .IsUnique();
-        builder.Ignore(m => m.DomainEvents);
-
-        builder.HasOne<Mesocycle>()
-            .WithMany()
-            .HasForeignKey(m => m.MesocycleId)
-            .HasPrincipalKey(m => m.Id)
-            .OnDelete(DeleteBehavior.Cascade);
+        // A mesocycle has at most one active (not finished) week
+        builder.HasIndex(m => m.MesocycleId)
+            .HasDatabaseName("Ux_Microcycle_ActivePerMesocycle")
+            .IsUnique()
+            .HasFilter("\"FinishedAt\" IS NULL");
+        builder.Property(m => m.StartedAt).HasColumnName("StartedAt").IsRequired();
+        builder.Property(m => m.FinishedAt).HasColumnName("FinishedAt");
+        builder.Ignore(m => m.IsFinished);
 
         // Templates are soft deleted, a hard delete must never remove the history
         builder.HasOne<TrainingTemplate>()

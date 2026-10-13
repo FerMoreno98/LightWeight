@@ -6,37 +6,26 @@ This module handles strength and bodybuilding training planning and logging. It 
 
 ## 2. Aggregates and entities
 
-### `Macrocycle` (AggregateRoot)
-- **Properties**: `UserId`, `StartAt`, `EndAt?`, `Stage` (TrainingStage: Bulk/Cut/Maintenance), `Periodization` (Linear/Ondulating/block), `Comments?`
-- **Invariants**:
-  - Belongs to a single user (`UserId`)
-  - Can only be finished once (`EndAt` is set via `Finish()` and should not change afterwards)
-  - `Stage` determines whether the user is bulking, cutting, or maintaining
-  - `Periodization` defines the load progression scheme (linear, ondulating, block)
-- **Child entities**: None
-- **Domain events it emits**: None yet
-- **References to other modules**: None (only references `UserId` from the Auth module's JWT)
+### `Macrocycle` (AggregateRoot of the cycle hierarchy)
+- **Properties**: `UserId`, `StartedAt`, `FinishedAt?` (null while active), `Stage` (TrainingStage: Bulk/Cut/Maintenance), `Comments?`
+- **Child entities**: `Mesocycle` → `Microcycle`. The whole hierarchy is one aggregate: mesocycles and weeks are only created and changed through the macrocycle
+- **Invariants** (cycles are sequential, there are no planned dates):
+  - A user has at most one active macrocycle (checked in `Macrocycle.Create` with the active one loaded by the handler + partial unique index `Ux_Macrocycle_ActivePerUser`)
+  - A macrocycle has at most one active mesocycle, and a mesocycle at most one active week (`ActiveMesocycleAlreadyExists` / `ActiveMicrocycleAlreadyExists` + partial unique indexes)
+  - A finished cycle is closed: no children can be added and it cannot be finished again
+  - Week numbers are assigned by the mesocycle (max + 1)
+- **Behaviour methods**: `PlanMesocycle`, `PlanMicrocycle(mesocycleId, templateId, now)`, `FinishMesocycle`, `FinishMicrocycle`, `Finish` (cascades to the active mesocycle and its active week with the same date). Read helpers: `ActiveMesocycle`, `ActiveMicrocycle`
 - **DB table**: `training_Macrocycles`
 
-### `Mesocycle` (AggregateRoot)
-- **Properties**: `MacrocycleId`, `AimMuscleGroups` (List\<MuscleGroups\>), `MotivationLevel` (1-10), `Injuries?`, `Comments?`, `StartAt`, `EndAt`
-- **Invariants**:
-  - References a parent `MacrocycleId`
-  - `StartAt` must be before `EndAt`
-  - `MotivationLevel` is a subjective user rating (1-10)
-- **Child entities**: None
-- **Domain events it emits**: None yet
-- **DB table**: `training_Mesocycles` (FK → Macrocycle, `_aimMuscleGroups` stored as `jsonb`)
+### `Mesocycle` (Entity, child of `Macrocycle`)
+- **Properties**: `MacrocycleId`, `UserId`, `ProgramId`, `MotivationLevel` (1-10), `Injuries?`, `Comments?`, `StartedAt`, `FinishedAt?`
+- Follows a `Program`: its weeks must use templates of that program (checked by the application handler, since `Program` is another aggregate)
+- **DB table**: `training_Mesocycles` (FK → Macrocycle cascade, FK → Program restrict)
 
-### `Microcycle` (AggregateRoot)
-- **Properties**: `MesocycleId`, `DurationInDays`, `TrainingDistribution` (PushPullLegs/UpperLower/Weider/Phat/FullBody/Other)
-- **Invariants**:
-  - References a parent `MesocycleId`
-  - `DurationInDays` is typically 7 but can vary
-  - `TrainingDistribution` defines the weekly split (Push/Pull/Legs, Upper/Lower, etc.)
-- **Child entities**: None
-- **Domain events it emits**: None yet
-- **DB table**: `training_Microcycles` (FK → Mesocycle)
+### `Microcycle` (Entity, child of `Mesocycle`)
+- **Properties**: `MesocycleId`, `UserId`, `TrainingTemplateId`, `WeekNumber`, `StartedAt`, `FinishedAt?`
+- The active week of the active mesocycle of the active macrocycle is the "current week" shown in the home (`GET /microcycle/current`)
+- **DB table**: `training_Microcycles` (FK → Mesocycle cascade, FK → TrainingTemplate restrict, unique `(MesocycleId, WeekNumber)`)
 
 ### `TrainingSession` (AggregateRoot)
 - **Properties**: `MicrocycleId`, `Name`, `StartAt`, `Duration` (TimeSpan), `Comments?`, `MotivationLevel` (1-10), `SleepLevel` (1-10), `DOMSLevel` (1-10)
@@ -136,7 +125,7 @@ This module handles strength and bodybuilding training planning and logging. It 
 
 - **Migrations**: located in `Infrastructure/Migrations/`, naming convention `{yyyyMMddHHmm}_{Description}.cs` (soft delete columns added in `202607291213_AddSoftDeleteToTemplates`)
 - **Program restructure** (`202607291214_RestructureTrainingAroundProgram`): creates `training_Programs` (one Program per pre-existing template, reusing its Id), moves `UserId`/`Name` out of `training_TrainingTemplates` (now `ProgramId`, `DurationInDays`, `Order`), drops `Macrocycles.Periodization`, `Mesocycles.AimMuscleGroups` and `Microcycles.DurationInDays/TrainingDistribution`, adds `Mesocycles.ProgramId`, `Microcycles.TrainingTemplateId/WeekNumber`, `TrainingSessions.TemplateSessionId`, `Sets.TemplateSetId`, and converts `TemplateSets.ExpectedRIR` into `ExpectedRPE` (`10 - RIR`). FKs pointing to templates are `NO ACTION` (templates are only soft deleted). It fails on purpose if there are mesocycles/microcycles, because they cannot be mapped to a program/template automatically
-- **Repositories**: `IProgramRepository` / `ProgramRepository` is the only entry point to the template hierarchy (always loads the whole aggregate with split queries)
+- **Repositories**: `IProgramRepository` / `ProgramRepository` is the only entry point to the template hierarchy, and `IMacrocycleRepository` / `MacrocycleRepository` the only one to the cycle hierarchy (`GetByMesocycleIdAsync`, `GetByMicrocycleIdAsync`...). Both always load the whole aggregate with split queries
 - **EF Core configurations**: located in `Infrastructure/Configurations/`, implementing `IEntityTypeConfiguration<T>`
 
 ## 5. Folder structure

@@ -3,9 +3,11 @@ using LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
+using LightWeight.Training.Application.Commands.Microcycles.FinishMicrocycle;
 using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
 using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
 using LightWeight.Training.Application.Queries.Mesocycles.GetMesocycleDetail;
+using LightWeight.Training.Application.Queries.Microcycles.GetCurrentMicrocycle;
 using LightWeight.Training.Domain.Exceptions;
 using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Exceptions;
@@ -32,14 +34,17 @@ public class ProgramAndCyclesTests
         );
     }
 
+    private static (Program, TrainingTemplate) CreateProgramWithTemplate(Guid userId)
+    {
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        return (program, template);
+    }
+
     private static Macrocycle CreateActiveMacrocycle(Guid userId)
     {
         return Macrocycle.Create(userId, TrainingStage.Bulk, null, DateTime.UtcNow, null);
-    }
-
-    private static Mesocycle CreateActiveMesocycle(Guid userId, Guid programId)
-    {
-        return CreateActiveMacrocycle(userId).PlanMesocycle(new List<Mesocycle>(), programId, 8, null, null, DateTime.UtcNow);
     }
 
     [Fact]
@@ -114,25 +119,23 @@ public class ProgramAndCyclesTests
     }
 
     [Fact]
-    public async Task FinishMacrocycleCommand_FinishesTheMacrocycleAndItsActiveMesocycle()
+    public async Task FinishMacrocycleCommand_FinishesTheMacrocycleItsActiveMesocycleAndWeek()
     {
         // Arrange
         var userId = Guid.CreateVersion7();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Macrocycle macrocycle = CreateActiveMacrocycle(userId);
-        Mesocycle mesocycle = macrocycle.PlanMesocycle(new List<Mesocycle>(), Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), DateTime.UtcNow);
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
-        _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id).Returns(new List<Mesocycle> { mesocycle });
-        FinishMacrocycleCommandHandler commandHandler =
-            new FinishMacrocycleCommandHandler(_macrocycleRepository,_mesocycleRepository,_UOW);
+        FinishMacrocycleCommandHandler commandHandler = new FinishMacrocycleCommandHandler(_macrocycleRepository,_UOW);
         // Act
         await commandHandler.HandleAsync(new FinishMacrocycleCommand(macrocycle.Id,userId),default);
         // Assert
         Assert.True(macrocycle.IsFinished);
-        Assert.True(mesocycle.IsFinished);
         Assert.Equal(macrocycle.FinishedAt, mesocycle.FinishedAt);
+        Assert.Equal(macrocycle.FinishedAt, week.FinishedAt);
         await _UOW.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -141,12 +144,10 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
-        FinishMacrocycleCommandHandler commandHandler =
-            new FinishMacrocycleCommandHandler(_macrocycleRepository,_mesocycleRepository,_UOW);
+        FinishMacrocycleCommandHandler commandHandler = new FinishMacrocycleCommandHandler(_macrocycleRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
@@ -162,28 +163,24 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         _macrocycleRepository.GetByIdAsync(Arg.Any<Guid>()).Returns((Macrocycle?)null);
-        FinishMacrocycleCommandHandler commandHandler =
-            new FinishMacrocycleCommandHandler(_macrocycleRepository,_mesocycleRepository,_UOW);
+        FinishMacrocycleCommandHandler commandHandler = new FinishMacrocycleCommandHandler(_macrocycleRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<MacrocycleNotFoundException>
         (
             () => commandHandler.HandleAsync(new FinishMacrocycleCommand(Guid.CreateVersion7(),Guid.CreateVersion7()),default)
         );
-        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     // ---------------------------------------------------------------- Mesocycles
 
     [Fact]
-    public async Task CreateMesocycleCommand_WithValidData_AddsTheMesocycleLinkedToTheProgram()
+    public async Task CreateMesocycleCommand_WithValidData_AddsTheMesocycleToTheMacrocycle()
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
@@ -191,17 +188,16 @@ public class ProgramAndCyclesTests
         Program program = CreateProgram(userId);
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id).Returns(new List<Mesocycle>());
         CreateMesocycleCommandHandler commandHandler =
-            new CreateMesocycleCommandHandler(_mesocycleRepository,_macrocycleRepository,_programRepository,_UOW);
+            new CreateMesocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         Guid id = await commandHandler.HandleAsync(new CreateMesocycleCommand(macrocycle.Id,userId,program.Id,8,"Hombro",null),default);
         // Assert
-        await _mesocycleRepository.Received(1).AddAsync
-        (
-            Arg.Is<Mesocycle>(m => m.Id == id && m.ProgramId == program.Id && m.MacrocycleId == macrocycle.Id && !m.IsFinished),
-            Arg.Any<CancellationToken>()
-        );
+        Mesocycle mesocycle = Assert.Single(macrocycle.Mesocycles);
+        Assert.Equal(id, mesocycle.Id);
+        Assert.Equal(program.Id, mesocycle.ProgramId);
+        Assert.Equal("Hombro", mesocycle.Injuries);
+        Assert.False(mesocycle.IsFinished);
         await _UOW.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -210,18 +206,16 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Macrocycle macrocycle = CreateActiveMacrocycle(userId);
         Program program = CreateProgram(userId);
-        Mesocycle active = macrocycle.PlanMesocycle(new List<Mesocycle>(), program.Id, 8, null, null, DateTime.UtcNow);
+        macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id).Returns(new List<Mesocycle> { active });
         CreateMesocycleCommandHandler commandHandler =
-            new CreateMesocycleCommandHandler(_mesocycleRepository,_macrocycleRepository,_programRepository,_UOW);
+            new CreateMesocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<ActiveMesocycleAlreadyExistsDomainException>
@@ -236,29 +230,26 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
         CreateMesocycleCommandHandler commandHandler =
-            new CreateMesocycleCommandHandler(_mesocycleRepository,_macrocycleRepository,_programRepository,_UOW);
+            new CreateMesocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
         (
             () => commandHandler.HandleAsync(new CreateMesocycleCommand(macrocycle.Id,userId,Guid.CreateVersion7(),8,null,null),default)
         );
-        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CreateMesocycleCommand_ProgramOfAnotherUser_ThrowApplicationException()
+    public async Task CreateMesocycleCommand_ProgramOfAnotherUser_ThrowsUnauthorized()
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
@@ -267,14 +258,14 @@ public class ProgramAndCyclesTests
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         CreateMesocycleCommandHandler commandHandler =
-            new CreateMesocycleCommandHandler(_mesocycleRepository,_macrocycleRepository,_programRepository,_UOW);
+            new CreateMesocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
         (
             () => commandHandler.HandleAsync(new CreateMesocycleCommand(macrocycle.Id,userId,program.Id,8,null,null),default)
         );
-        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        Assert.Empty(macrocycle.Mesocycles);
     }
 
     [Fact]
@@ -282,39 +273,40 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        var fakeProgramId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Macrocycle macrocycle = CreateActiveMacrocycle(userId);
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
-        _programRepository.GetByIdAsync(fakeProgramId).Returns((Program?) null);
+        _programRepository.GetByIdAsync(Arg.Any<Guid>()).Returns((Program?)null);
         CreateMesocycleCommandHandler commandHandler =
-            new CreateMesocycleCommandHandler(_mesocycleRepository,_macrocycleRepository,_programRepository,_UOW);
+            new CreateMesocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<ProgramNotFoundApplicationException>
         (
-            () => commandHandler.HandleAsync(new CreateMesocycleCommand(macrocycle.Id,userId,fakeProgramId,8,null,null),default)
+            () => commandHandler.HandleAsync(new CreateMesocycleCommand(macrocycle.Id,userId,Guid.CreateVersion7(),8,null,null),default)
         );
-        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task FinishMesocycleCommand_FinishesTheMesocycleAndSaves()
+    public async Task FinishMesocycleCommand_FinishesTheMesocycleAndItsActiveWeek()
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, Guid.CreateVersion7());
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
-        FinishMesocycleCommandHandler commandHandler = new FinishMesocycleCommandHandler(_mesocycleRepository,_UOW);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
+        FinishMesocycleCommandHandler commandHandler = new FinishMesocycleCommandHandler(_macrocycleRepository,_UOW);
         // Act
         await commandHandler.HandleAsync(new FinishMesocycleCommand(mesocycle.Id,userId),default);
         // Assert
         Assert.True(mesocycle.IsFinished);
+        Assert.True(week.IsFinished);
+        Assert.False(macrocycle.IsFinished);
         await _UOW.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -322,11 +314,12 @@ public class ProgramAndCyclesTests
     public async Task FinishMesocycleCommand_OfAnotherUser_ThrowsUnauthorized()
     {
         // Arrange
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Mesocycle mesocycle = CreateActiveMesocycle(Guid.CreateVersion7(), Guid.CreateVersion7());
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
-        FinishMesocycleCommandHandler commandHandler = new FinishMesocycleCommandHandler(_mesocycleRepository,_UOW);
+        Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
+        FinishMesocycleCommandHandler commandHandler = new FinishMesocycleCommandHandler(_macrocycleRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
@@ -334,7 +327,22 @@ public class ProgramAndCyclesTests
             () => commandHandler.HandleAsync(new FinishMesocycleCommand(mesocycle.Id,Guid.CreateVersion7()),default)
         );
         Assert.False(mesocycle.IsFinished);
-        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task FinishMesocycleCommand_NotFound_ThrowsApplicationException()
+    {
+        // Arrange
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        _macrocycleRepository.GetByMesocycleIdAsync(Arg.Any<Guid>()).Returns((Macrocycle?)null);
+        FinishMesocycleCommandHandler commandHandler =
+            new FinishMesocycleCommandHandler(_macrocycleRepository,Substitute.For<ITrainingUnitOfWork>());
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<MesocycleNotFoundException>
+        (
+            () => commandHandler.HandleAsync(new FinishMesocycleCommand(Guid.CreateVersion7(),Guid.CreateVersion7()),default)
+        );
     }
 
     // ---------------------------------------------------------------- Microcycles
@@ -344,58 +352,74 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
-        program.AddTrainingTemplate(template);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(new List<Microcycle>());
         CreateMicrocycleCommandHandler commandHandler =
-            new CreateMicrocycleCommandHandler(_mesocycleRepository,_microcycleRepository,_programRepository,_UOW);
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         Guid id = await commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id),default);
         // Assert
-        await _microcycleRepository.Received(1).AddAsync
-        (
-            Arg.Is<Microcycle>(m => m.Id == id && m.TrainingTemplateId == template.Id && m.WeekNumber == 1),
-            Arg.Any<CancellationToken>()
-        );
+        Microcycle week = Assert.Single(mesocycle.Microcycles);
+        Assert.Equal(id, week.Id);
+        Assert.Equal(template.Id, week.TrainingTemplateId);
+        Assert.Equal(1, week.WeekNumber);
         await _UOW.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task CreateMicrocycleCommand_WithPreviousWeeks_NumbersTheNextWeek()
+    public async Task CreateMicrocycleCommand_AfterFinishingThePreviousWeeks_NumbersTheNextWeek()
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
-        program.AddTrainingTemplate(template);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        Microcycle week1 = mesocycle.PlanMicrocycle(new List<Microcycle>(), template.Id);
-        Microcycle week2 = mesocycle.PlanMicrocycle(new List<Microcycle> { week1 }, template.Id);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        Microcycle week1 = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        macrocycle.FinishMicrocycle(week1.Id, DateTime.UtcNow);
+        Microcycle week2 = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        macrocycle.FinishMicrocycle(week2.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(new List<Microcycle> { week1, week2 });
         CreateMicrocycleCommandHandler commandHandler =
-            new CreateMicrocycleCommandHandler(_mesocycleRepository,_microcycleRepository,_programRepository,_UOW);
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
-        await commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id),default);
+        Guid id = await commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id),default);
         // Assert
-        await _microcycleRepository.Received(1).AddAsync
+        Assert.Equal(3, mesocycle.Microcycles.Single(m => m.Id == id).WeekNumber);
+    }
+
+    [Fact]
+    public async Task CreateMicrocycleCommand_WithAnActiveWeek_ThrowsDomainExceptionAndDoesNotSave()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        CreateMicrocycleCommandHandler commandHandler =
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<ActiveMicrocycleAlreadyExistsDomainException>
         (
-            Arg.Is<Microcycle>(m => m.WeekNumber == 3),
-            Arg.Any<CancellationToken>()
+            () => commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id),default)
         );
+        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -403,20 +427,17 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
-        program.AddTrainingTemplate(template);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        mesocycle.Finish(DateTime.UtcNow);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        macrocycle.FinishMesocycle(mesocycle.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(new List<Microcycle>());
         CreateMicrocycleCommandHandler commandHandler =
-            new CreateMicrocycleCommandHandler(_mesocycleRepository,_microcycleRepository,_programRepository,_UOW);
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<MesocycleFinishedDomainException>
@@ -431,16 +452,16 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         Program program = CreateProgram(userId);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         CreateMicrocycleCommandHandler commandHandler =
-            new CreateMicrocycleCommandHandler(_mesocycleRepository,_microcycleRepository,_programRepository,_UOW);
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
@@ -455,19 +476,17 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
-        Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
-        program.AddTrainingTemplate(template);
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
         program.DeleteTrainingTemplate(template.Id, DateTime.UtcNow);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         CreateMicrocycleCommandHandler commandHandler =
-            new CreateMicrocycleCommandHandler(_mesocycleRepository,_microcycleRepository,_programRepository,_UOW);
+            new CreateMicrocycleCommandHandler(_macrocycleRepository,_programRepository,_UOW);
         // Act
         // Assert
         await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
@@ -475,6 +494,63 @@ public class ProgramAndCyclesTests
             () => commandHandler.HandleAsync(new CreateMicrocycleCommand(mesocycle.Id,userId,template.Id),default)
         );
         await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task FinishMicrocycleCommand_FinishesOnlyTheWeekAndSaves()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), DateTime.UtcNow);
+        _macrocycleRepository.GetByMicrocycleIdAsync(week.Id).Returns(macrocycle);
+        FinishMicrocycleCommandHandler commandHandler = new FinishMicrocycleCommandHandler(_macrocycleRepository,_UOW);
+        // Act
+        await commandHandler.HandleAsync(new FinishMicrocycleCommand(week.Id,userId),default);
+        // Assert
+        Assert.True(week.IsFinished);
+        Assert.False(mesocycle.IsFinished);
+        await _UOW.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task FinishMicrocycleCommand_OfAnotherUser_ThrowsUnauthorized()
+    {
+        // Arrange
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
+        Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), DateTime.UtcNow);
+        _macrocycleRepository.GetByMicrocycleIdAsync(week.Id).Returns(macrocycle);
+        FinishMicrocycleCommandHandler commandHandler = new FinishMicrocycleCommandHandler(_macrocycleRepository,_UOW);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new FinishMicrocycleCommand(week.Id,Guid.CreateVersion7()),default)
+        );
+        Assert.False(week.IsFinished);
+        await _UOW.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task FinishMicrocycleCommand_NotFound_ThrowsApplicationException()
+    {
+        // Arrange
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        _macrocycleRepository.GetByMicrocycleIdAsync(Arg.Any<Guid>()).Returns((Macrocycle?)null);
+        FinishMicrocycleCommandHandler commandHandler =
+            new FinishMicrocycleCommandHandler(_macrocycleRepository,Substitute.For<ITrainingUnitOfWork>());
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<MicrocycleNotFoundException>
+        (
+            () => commandHandler.HandleAsync(new FinishMicrocycleCommand(Guid.CreateVersion7(),Guid.CreateVersion7()),default)
+        );
     }
 
     // ---------------------------------------------------------------- Cycle queries
@@ -485,18 +561,16 @@ public class ProgramAndCyclesTests
         // Arrange
         var userId = Guid.CreateVersion7();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
         Macrocycle oldest = Macrocycle.Create(userId, TrainingStage.Bulk, null, new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc), null);
-        oldest.Finish(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc), new List<Mesocycle>());
+        oldest.Finish(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc));
         Macrocycle older = Macrocycle.Create(userId, TrainingStage.Cut, null, new DateTime(2025, 6, 2, 0, 0, 0, DateTimeKind.Utc), null);
-        Mesocycle olderMesocycle1 = older.PlanMesocycle(new List<Mesocycle>(), Guid.CreateVersion7(), 8, null, null, new DateTime(2025, 6, 2, 0, 0, 0, DateTimeKind.Utc));
-        olderMesocycle1.Finish(new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc));
-        Mesocycle olderMesocycle2 = older.PlanMesocycle(new List<Mesocycle> { olderMesocycle1 }, Guid.CreateVersion7(), 8, null, null, new DateTime(2025, 7, 2, 0, 0, 0, DateTimeKind.Utc));
-        older.Finish(new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc), new List<Mesocycle> { olderMesocycle1, olderMesocycle2 });
+        Mesocycle olderMesocycle1 = older.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, new DateTime(2025, 6, 2, 0, 0, 0, DateTimeKind.Utc));
+        older.FinishMesocycle(olderMesocycle1.Id, new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc));
+        older.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, new DateTime(2025, 7, 2, 0, 0, 0, DateTimeKind.Utc));
+        older.Finish(new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc));
         Macrocycle active = Macrocycle.Create(userId, TrainingStage.Maintenance, "Actual", new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), null);
         _macrocycleRepository.GetAllOfAUserAsync(userId).Returns(new List<Macrocycle> { oldest, active, older });
-        _mesocycleRepository.GetAllOfAUserAsync(userId).Returns(new List<Mesocycle> { olderMesocycle1, olderMesocycle2 });
-        GetUserMacrocyclesQueryHandler queryHandler = new GetUserMacrocyclesQueryHandler(_macrocycleRepository,_mesocycleRepository);
+        GetUserMacrocyclesQueryHandler queryHandler = new GetUserMacrocyclesQueryHandler(_macrocycleRepository);
         // Act
         var result = await queryHandler.HandleAsync(new GetUserMacrocyclesQuery(userId),default);
         // Assert
@@ -513,24 +587,17 @@ public class ProgramAndCyclesTests
         // Arrange
         var userId = Guid.CreateVersion7();
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
-        Program program = CreateProgram(userId);
-        TrainingTemplate template = TrainingTemplate.Create("ValidTemplateName",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
-        program.AddTrainingTemplate(template);
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
         Macrocycle macrocycle = CreateActiveMacrocycle(userId);
-        Mesocycle first = macrocycle.PlanMesocycle(new List<Mesocycle>(), program.Id, 7, "Rodilla", null, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
-        Microcycle week1 = first.PlanMicrocycle(new List<Microcycle>(), template.Id);
-        first.Finish(new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc));
-        Mesocycle second = macrocycle.PlanMesocycle(new List<Mesocycle> { first }, program.Id, 9, null, null, new DateTime(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc));
+        Mesocycle first = macrocycle.PlanMesocycle(program.Id, 7, "Rodilla", null, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        macrocycle.PlanMicrocycle(first.Id, template.Id, new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        macrocycle.FinishMesocycle(first.Id, new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc));
+        Mesocycle second = macrocycle.PlanMesocycle(program.Id, 9, null, null, new DateTime(2026, 2, 2, 0, 0, 0, DateTimeKind.Utc));
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
-        _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id).Returns(new List<Mesocycle> { second, first });
-        _microcycleRepository.GetByMesocycleIdAsync(first.Id).Returns(new List<Microcycle> { week1 });
-        _microcycleRepository.GetByMesocycleIdAsync(second.Id).Returns(new List<Microcycle>());
         _programRepository.GetAllProgramsOfAUserAsync(userId).Returns(new List<Program> { program });
         GetMacrocycleDetailQueryHandler queryHandler =
-            new GetMacrocycleDetailQueryHandler(_macrocycleRepository,_mesocycleRepository,_microcycleRepository,_programRepository);
+            new GetMacrocycleDetailQueryHandler(_macrocycleRepository,_programRepository);
         // Act
         var result = await queryHandler.HandleAsync(new GetMacrocycleDetailQuery(macrocycle.Id,userId),default);
         // Assert
@@ -551,13 +618,8 @@ public class ProgramAndCyclesTests
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
         _macrocycleRepository.GetByIdAsync(macrocycle.Id).Returns(macrocycle);
-        GetMacrocycleDetailQueryHandler queryHandler = new GetMacrocycleDetailQueryHandler
-        (
-            _macrocycleRepository,
-            Substitute.For<IMesocycleRepository>(),
-            Substitute.For<IMicrocycleRepository>(),
-            Substitute.For<IProgramRepository>()
-        );
+        GetMacrocycleDetailQueryHandler queryHandler =
+            new GetMacrocycleDetailQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
@@ -572,13 +634,8 @@ public class ProgramAndCyclesTests
         // Arrange
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         _macrocycleRepository.GetByIdAsync(Arg.Any<Guid>()).Returns((Macrocycle?)null);
-        GetMacrocycleDetailQueryHandler queryHandler = new GetMacrocycleDetailQueryHandler
-        (
-            _macrocycleRepository,
-            Substitute.For<IMesocycleRepository>(),
-            Substitute.For<IMicrocycleRepository>(),
-            Substitute.For<IProgramRepository>()
-        );
+        GetMacrocycleDetailQueryHandler queryHandler =
+            new GetMacrocycleDetailQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
         // Act
         // Assert
         await Assert.ThrowsAsync<MacrocycleNotFoundException>
@@ -592,8 +649,7 @@ public class ProgramAndCyclesTests
     {
         // Arrange
         var userId = Guid.CreateVersion7();
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        IMicrocycleRepository _microcycleRepository = Substitute.For<IMicrocycleRepository>();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         Program program = CreateProgram(userId);
         TrainingTemplate baseTemplate = TrainingTemplate.Create("Base",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
@@ -602,26 +658,31 @@ public class ProgramAndCyclesTests
         program.AddTrainingTemplate(baseTemplate);
         program.AddTrainingTemplate(deload);
         program.AddTrainingTemplate(removed);
-        Mesocycle mesocycle = CreateActiveMesocycle(userId, program.Id);
-        Microcycle week1 = mesocycle.PlanMicrocycle(new List<Microcycle>(), baseTemplate.Id);
-        Microcycle week2 = mesocycle.PlanMicrocycle(new List<Microcycle> { week1 }, removed.Id);
-        Microcycle week3 = mesocycle.PlanMicrocycle(new List<Microcycle> { week1, week2 }, deload.Id);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        foreach(var template in new[] { baseTemplate, removed })
+        {
+            Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+            macrocycle.FinishMicrocycle(week.Id, DateTime.UtcNow);
+        }
+        macrocycle.PlanMicrocycle(mesocycle.Id, deload.Id, DateTime.UtcNow);
         program.DeleteTrainingTemplate(removed.Id, DateTime.UtcNow);
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
-        _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(new List<Microcycle> { week3, week1, week2 });
         GetMesocycleDetailQueryHandler queryHandler =
-            new GetMesocycleDetailQueryHandler(_mesocycleRepository,_microcycleRepository,_programRepository);
+            new GetMesocycleDetailQueryHandler(_macrocycleRepository,_programRepository);
         // Act
         var result = await queryHandler.HandleAsync(new GetMesocycleDetailQuery(mesocycle.Id,userId),default);
         // Assert
         Assert.Equal("ValidProgramName", result.ProgramName);
-        Assert.Equal(mesocycle.MacrocycleId, result.MacrocycleId);
+        Assert.Equal(macrocycle.Id, result.MacrocycleId);
         Assert.Equal(new[] { 1, 2, 3 }, result.Microcycles.Select(m => m.WeekNumber));
         Assert.Equal("Base", result.Microcycles[0].TemplateName);
         Assert.Equal(7, result.Microcycles[0].DurationInDays);
+        Assert.NotNull(result.Microcycles[0].FinishedAt);
         Assert.Null(result.Microcycles[1].TemplateName);
         Assert.Equal("Deload", result.Microcycles[2].TemplateName);
+        Assert.Null(result.Microcycles[2].FinishedAt);
         Assert.Equal(new[] { "Base", "Deload" }, result.AvailableTemplates.Select(t => t.Name));
     }
 
@@ -629,21 +690,137 @@ public class ProgramAndCyclesTests
     public async Task GetMesocycleDetailQuery_OfAnotherUser_ThrowsUnauthorized()
     {
         // Arrange
-        IMesocycleRepository _mesocycleRepository = Substitute.For<IMesocycleRepository>();
-        Mesocycle mesocycle = CreateActiveMesocycle(Guid.CreateVersion7(), Guid.CreateVersion7());
-        _mesocycleRepository.GetByIdAsync(mesocycle.Id).Returns(mesocycle);
-        GetMesocycleDetailQueryHandler queryHandler = new GetMesocycleDetailQueryHandler
-        (
-            _mesocycleRepository,
-            Substitute.For<IMicrocycleRepository>(),
-            Substitute.For<IProgramRepository>()
-        );
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        Macrocycle macrocycle = CreateActiveMacrocycle(Guid.CreateVersion7());
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        _macrocycleRepository.GetByMesocycleIdAsync(mesocycle.Id).Returns(macrocycle);
+        GetMesocycleDetailQueryHandler queryHandler =
+            new GetMesocycleDetailQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
         // Act
         // Assert
         await Assert.ThrowsAsync<UnauthorizedAccessException>
         (
             () => queryHandler.HandleAsync(new GetMesocycleDetailQuery(mesocycle.Id,Guid.CreateVersion7()),default)
         );
+    }
+
+    // ---------------------------------------------------------------- Current microcycle
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithoutActiveMacrocycle_ReturnsNoActiveMacrocycle()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns((Macrocycle?)null);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(CurrentMicrocycleStatus.NoActiveMacrocycle, result.Status);
+        Assert.Null(result.MacrocycleId);
+        Assert.Null(result.Microcycle);
+    }
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithoutActiveMesocycle_ReturnsNoActiveMesocycle()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle finished = macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, DateTime.UtcNow);
+        macrocycle.FinishMesocycle(finished.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(CurrentMicrocycleStatus.NoActiveMesocycle, result.Status);
+        Assert.Equal(macrocycle.Id, result.MacrocycleId);
+        Assert.Null(result.MesocycleId);
+    }
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithoutActiveWeek_ReturnsPendingPlanningWithTheNextWeek()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        Microcycle week1 = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        macrocycle.FinishMicrocycle(week1.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(CurrentMicrocycleStatus.PendingPlanning, result.Status);
+        Assert.Equal(mesocycle.Id, result.MesocycleId);
+        Assert.Equal(program.Id, result.ProgramId);
+        Assert.Equal("ValidProgramName", result.ProgramName);
+        Assert.Equal(2, result.NextWeekNumber);
+        Assert.Null(result.Microcycle);
+    }
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithAnActiveWeek_ReturnsItWithItsTemplate()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(CurrentMicrocycleStatus.InProgress, result.Status);
+        Assert.Null(result.NextWeekNumber);
+        Assert.NotNull(result.Microcycle);
+        Assert.Equal(week.Id, result.Microcycle.Id);
+        Assert.Equal(1, result.Microcycle.WeekNumber);
+        Assert.Equal(template.Id, result.Microcycle.TrainingTemplateId);
+        Assert.Equal("ValidTemplateName", result.Microcycle.TemplateName);
+        Assert.Equal(7, result.Microcycle.DurationInDays);
+    }
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithADeletedTemplate_ReturnsTheWeekWithoutTemplateName()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        program.DeleteTrainingTemplate(template.Id, DateTime.UtcNow);
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(CurrentMicrocycleStatus.InProgress, result.Status);
+        Assert.NotNull(result.Microcycle);
+        Assert.Null(result.Microcycle.TemplateName);
+        Assert.Null(result.Microcycle.DurationInDays);
     }
 
     [Fact]

@@ -66,16 +66,30 @@
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-lg font-semibold text-white">Semanas</h2>
           @if (!isFinished()) {
-            <button
-              type="button"
-              (click)="showAddWeek()"
-              class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
-            >
-              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
-              </svg>
-              Añadir semana {{ nextWeek() }}
-            </button>
+            @if (activeWeek(); as week) {
+              <button
+                type="button"
+                (click)="askFinishWeek()"
+                [disabled]="isFinishingWeek()"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-50"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+                </svg>
+                {{ isFinishingWeek() ? 'Finalizando...' : 'Finalizar semana ' + week.weekNumber }}
+              </button>
+            } @else {
+              <button
+                type="button"
+                (click)="showAddWeek()"
+                class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+              >
+                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+                </svg>
+                Añadir semana {{ nextWeek() }}
+              </button>
+            }
           }
         </div>
 
@@ -90,17 +104,28 @@
           <ol class="flex flex-col divide-y divide-slate-700/60 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/80">
             @for (microcycle of mesocycle()!.microcycles; track microcycle.id) {
               <li class="flex items-center gap-4 px-5 py-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-800/60 bg-emerald-950/40 text-sm font-semibold text-emerald-300">
+                <span
+                  class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
+                  [class]="microcycle.finishedAt
+                    ? 'border-slate-700 bg-slate-900 text-slate-400'
+                    : 'border-emerald-800/60 bg-emerald-950/40 text-emerald-300'"
+                >
                   {{ microcycle.weekNumber }}
                 </span>
-                <div class="min-w-0">
+                <div class="min-w-0 flex-1">
                   <p class="text-sm font-medium text-white">Semana {{ microcycle.weekNumber }}</p>
                   @if (microcycle.templateName) {
                     <p class="truncate text-xs text-slate-400">{{ microcycle.templateName }} · {{ microcycle.durationInDays }} días</p>
                   } @else {
                     <p class="text-xs italic text-slate-500">Plantilla eliminada</p>
                   }
+                  <p class="mt-0.5 text-xs text-slate-500">{{ weekPeriod(microcycle) }}</p>
                 </div>
+                @if (microcycle.finishedAt) {
+                  <span class="shrink-0 rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-400">Finalizada</span>
+                } @else {
+                  <span class="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">En curso</span>
+                }
               </li>
             }
           </ol>
@@ -174,9 +199,20 @@
 <app-confirm-dialog
   [open]="isConfirmingFinish()"
   title="¿Finalizar el mesociclo?"
-  message="Ya no podrás añadirle semanas, pero podrás empezar el siguiente mesociclo del macrociclo. Esta acción no se puede deshacer."
+  [message]="(activeWeek() ? 'También se finalizará la semana en curso. ' : '') + 'Ya no podrás añadirle semanas, pero podrás empezar el siguiente mesociclo del macrociclo. Esta acción no se puede deshacer.'"
   [confirmLabel]="isFinishing() ? 'Finalizando...' : 'Finalizar mesociclo'"
   [busy]="isFinishing()"
   (confirmed)="finishMesocycle()"
   (cancelled)="cancelFinishMesocycle()"
+/>
+
+<app-confirm-dialog
+  [open]="isConfirmingFinishWeek()"
+  [title]="'¿Finalizar la semana ' + (activeWeek()?.weekNumber ?? '') + '?'"
+  message="Después podrás planificar la siguiente semana eligiendo su plantilla. Esta acción no se puede deshacer."
+  [confirmLabel]="isFinishingWeek() ? 'Finalizando...' : 'Finalizar semana'"
+  [danger]="false"
+  [busy]="isFinishingWeek()"
+  (confirmed)="finishWeek()"
+  (cancelled)="cancelFinishWeek()"
 />

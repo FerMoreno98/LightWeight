@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 
 namespace LightWeight.Training.Infrastructure.Configurations;
 
@@ -26,13 +27,17 @@ public class MesocycleConfiguration : IEntityTypeConfiguration<Mesocycle>
         builder.Property(m => m.StartedAt).HasColumnName("StartedAt").IsRequired();
         builder.Property(m => m.FinishedAt).HasColumnName("FinishedAt");
         builder.Ignore(m => m.IsFinished);
-        builder.Ignore(m => m.DomainEvents);
+        builder.Ignore(m => m.ActiveMicrocycle);
 
-        builder.HasOne<Macrocycle>()
-            .WithMany()
-            .HasForeignKey(m => m.MacrocycleId)
+        builder.HasMany(m => m.Microcycles)
+            .WithOne()
+            .HasForeignKey(m => m.MesocycleId)
+            .IsRequired()
             .HasPrincipalKey(m => m.Id)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(m => m.Microcycles)
+            .HasField("_microcycles")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // A program followed by a mesocycle cannot be removed
         builder.HasOne<Program>()

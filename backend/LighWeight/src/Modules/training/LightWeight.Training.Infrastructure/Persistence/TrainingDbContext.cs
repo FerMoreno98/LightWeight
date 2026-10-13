@@ -1,6 +1,7 @@
 namespace LightWeight.Training.Infrastructure.Persistence;
 
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
 

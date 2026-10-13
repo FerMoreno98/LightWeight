@@ -34,7 +34,7 @@ export class MacrocycleDetail {
   isConfirmingFinish = signal(false);
 
   finishMessage = computed(() => this.activeMesocycle()
-    ? 'También se finalizará el mesociclo en curso. Después podrás empezar un macrociclo nuevo. Esta acción no se puede deshacer.'
+    ? 'También se finalizarán el mesociclo y la semana en curso. Después podrás empezar un macrociclo nuevo. Esta acción no se puede deshacer.'
     : 'Después podrás empezar un macrociclo nuevo. Esta acción no se puede deshacer.');
 
   // Mesocycle form

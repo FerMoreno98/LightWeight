@@ -9,30 +9,28 @@ namespace LightWeight.Training.Application.Queries.Mesocycles.GetMesocycleDetail
 
 public sealed class GetMesocycleDetailQueryHandler : IQueryHandler<GetMesocycleDetailQuery, GetMesocycleDetailResponse>
 {
-    private readonly IMesocycleRepository _mesocycleRepository;
-    private readonly IMicrocycleRepository _microcycleRepository;
+    private readonly IMacrocycleRepository _macrocycleRepository;
     private readonly IProgramRepository _programRepository;
 
-    public GetMesocycleDetailQueryHandler(IMesocycleRepository mesocycleRepository, IMicrocycleRepository microcycleRepository, IProgramRepository programRepository)
+    public GetMesocycleDetailQueryHandler(IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository)
     {
-        _mesocycleRepository = mesocycleRepository;
-        _microcycleRepository = microcycleRepository;
+        _macrocycleRepository = macrocycleRepository;
         _programRepository = programRepository;
     }
 
     public async Task<GetMesocycleDetailResponse> HandleAsync(GetMesocycleDetailQuery query, CancellationToken ct = default)
     {
-        Mesocycle mesocycle = await _mesocycleRepository.GetByIdAsync(query.MesocycleId)
+        Macrocycle macrocycle = await _macrocycleRepository.GetByMesocycleIdAsync(query.MesocycleId)
             ?? throw new MesocycleNotFoundException();
-        if(mesocycle.UserId != query.UserId)
+        if(macrocycle.UserId != query.UserId)
         {
             throw new UnauthorizedAccessException();
         }
+        Mesocycle mesocycle = macrocycle.Mesocycles.Single(m => m.Id == query.MesocycleId);
         Program program = await _programRepository.GetByIdAsync(mesocycle.ProgramId)
             ?? throw new ProgramNotFoundApplicationException();
         // Soft deleted templates are not loaded, so a week may point to a template that is no longer there
         Dictionary<Guid, TrainingTemplate> templates = program.trainingTemplates.ToDictionary(t => t.Id);
-        List<Microcycle> microcycles = await _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id);
 
         return new GetMesocycleDetailResponse
         (
@@ -45,12 +43,12 @@ public sealed class GetMesocycleDetailQueryHandler : IQueryHandler<GetMesocycleD
             mesocycle.MotivationLevel,
             mesocycle.Injuries,
             mesocycle.Comments,
-            microcycles
+            mesocycle.Microcycles
                 .OrderBy(m => m.WeekNumber)
                 .Select(m =>
                 {
                     TrainingTemplate? template = templates.GetValueOrDefault(m.TrainingTemplateId);
-                    return new MesocycleMicrocycleResponse(m.Id, m.WeekNumber, m.TrainingTemplateId, template?.Name, template?.DurationInDays);
+                    return new MesocycleMicrocycleResponse(m.Id, m.WeekNumber, m.TrainingTemplateId, template?.Name, template?.DurationInDays, m.StartedAt, m.FinishedAt);
                 })
                 .ToList(),
             program.trainingTemplates

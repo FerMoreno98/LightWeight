@@ -27,7 +27,9 @@ public sealed record MesocycleMicrocycleResponse
     int WeekNumber,
     Guid TrainingTemplateId,
     string? TemplateName,
-    int? DurationInDays
+    int? DurationInDays,
+    DateTime StartedAt,
+    DateTime? FinishedAt
 );
 
 public sealed record MesocycleTemplateResponse

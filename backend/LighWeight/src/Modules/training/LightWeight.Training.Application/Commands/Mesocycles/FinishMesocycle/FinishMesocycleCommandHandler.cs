@@ -8,24 +8,25 @@ namespace LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 
 public sealed class FinishMesocycleCommandHandler : ICommandHandler<FinishMesocycleCommand>
 {
-    private readonly IMesocycleRepository _mesocycleRepository;
+    private readonly IMacrocycleRepository _macrocycleRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public FinishMesocycleCommandHandler(IMesocycleRepository mesocycleRepository, ITrainingUnitOfWork uOW)
+    public FinishMesocycleCommandHandler(IMacrocycleRepository macrocycleRepository, ITrainingUnitOfWork uOW)
     {
-        _mesocycleRepository = mesocycleRepository;
+        _macrocycleRepository = macrocycleRepository;
         _UOW = uOW;
     }
 
     public async Task HandleAsync(FinishMesocycleCommand command, CancellationToken ct = default)
     {
-        Mesocycle mesocycle = await _mesocycleRepository.GetByIdAsync(command.MesocycleId)
+        Macrocycle macrocycle = await _macrocycleRepository.GetByMesocycleIdAsync(command.MesocycleId)
             ?? throw new MesocycleNotFoundException();
-        if(mesocycle.UserId != command.UserId)
+        if(macrocycle.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();
         }
-        mesocycle.Finish(DateTime.UtcNow);
+        // The mesocycle also finishes its active week
+        macrocycle.FinishMesocycle(command.MesocycleId, DateTime.UtcNow);
         await _UOW.SaveChangesAsync(ct);
     }
 }

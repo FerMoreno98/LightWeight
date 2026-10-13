@@ -19,6 +19,10 @@ export const TrainingRoutes: Routes = [
         loadComponent: () => import('./UI/mesocycles/mesocycle-detail/mesocycle-detail').then(m => m.MesocycleDetail)
     },
     {
+        path: 'session/:templateid/:sessionid',
+        loadComponent: () => import('./UI/sessions/session-plan/session-plan').then(m => m.SessionPlan)
+    },
+    {
         path:'createprogram',
         loadComponent: () => import('./UI/Programs/create-program/create-program').then(p => p.CreateProgram)
     },

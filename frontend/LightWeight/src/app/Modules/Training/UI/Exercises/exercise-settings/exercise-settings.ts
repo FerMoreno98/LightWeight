@@ -59,9 +59,9 @@ export class ExerciseSettings {
         this.min = set.repetitionRangeMin;
         this.max = set.repetitionRangeMax;
         this.expectedRPE = set.expectedRPE;
-        this.isDropset = set.advanceTrainingTechniques === 'DropSet';
-        this.isCluster = set.advanceTrainingTechniques === 'Cluster';
-        this.isMyoRep = set.advanceTrainingTechniques === 'MyoRep';
+        this.isDropset = set.technique === 'DropSet';
+        this.isCluster = set.technique === 'Cluster';
+        this.isMyoRep = set.technique === 'MyoRep';
         this.emphasizedMuscleGroups = set.aimMuscleGroups
           .map(muscle => MUSCLE_GROUP_NAMES.indexOf(muscle))
           .filter(index => index !== -1);

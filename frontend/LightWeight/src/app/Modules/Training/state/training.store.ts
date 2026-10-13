@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle } from "../data/training-api.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
@@ -17,6 +17,7 @@ export class TrainingStore{
     private _macrocycles = signal<MacrocycleSummary[]>([]);
     private _macrocycleDetail = signal<MacrocycleDetail | null>(null);
     private _mesocycleDetail = signal<MesocycleDetail | null>(null);
+    private _currentMicrocycle = signal<CurrentMicrocycle | null>(null);
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
@@ -29,6 +30,7 @@ export class TrainingStore{
     macrocycles = this._macrocycles.asReadonly();
     macrocycleDetail = this._macrocycleDetail.asReadonly();
     mesocycleDetail = this._mesocycleDetail.asReadonly();
+    currentMicrocycle = this._currentMicrocycle.asReadonly();
 
     async CreateMacrocycle
     (
@@ -160,6 +162,33 @@ export class TrainingStore{
             return false;
         }
         return this.GetMesocycleDetail(mesocycleId);
+    }
+
+    /** Loads the week the user is training now (or which step is missing) */
+    async GetCurrentMicrocycle() : Promise<boolean>{
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            this._currentMicrocycle.set(await firstValueFrom(this.api.GetCurrentMicrocycle()));
+            return true;
+        }catch{
+            this._error.set('No se ha podido cargar la semana actual');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
+
+    /** Finishes a week. The caller reloads the view it comes from (home or mesocycle detail) */
+    async FinishMicrocycle(microcycleId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.FinishMicrocycle(microcycleId));
+            return true;
+        }catch{
+            this._error.set('No se ha podido finalizar la semana');
+            return false;
+        }
     }
 
     async CreateProgram
@@ -305,20 +334,22 @@ export class TrainingStore{
             this._isLoading.set(false);
         }
     }
-    // async GetSessionsFromATrainingTemplate(TrainingTemplateId : string) : Promise<boolean>{
-    //     this._isLoading.set(true);
-    //     this._error.set(null);
-    //     try{
-    //         const sessions = await firstValueFrom(this.api.GetSessionsOfATrainingTemplate(TrainingTemplateId));
-    //         this._sessions.set(sessions);
-    //         return true;
-    //     }catch{
-    //         this._error.set('No se han podido cargar las sesiones');
-    //         return false;
-    //     }finally{
-    //         this._isLoading.set(false);
-    //     }
-    // }
+    /** Loads the sessions of a template. The previous list is cleared so another template is never shown */
+    async GetSessionsFromATrainingTemplate(TrainingTemplateId : string) : Promise<boolean>{
+        this._sessions.set([]);
+        this._isLoading.set(true);
+        this._error.set(null);
+        try{
+            const sessions = await firstValueFrom(this.api.GetSessionsOfATrainingTemplate(TrainingTemplateId));
+            this._sessions.set(sessions);
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar las sesiones');
+            return false;
+        }finally{
+            this._isLoading.set(false);
+        }
+    }
     async GetSetsFromASessionTemplate(TrainingTemplateId : string, SessionTemplateId : string ) : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);

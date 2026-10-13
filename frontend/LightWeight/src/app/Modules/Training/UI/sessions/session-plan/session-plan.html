@@ -1,0 +1,81 @@
+<div class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-3xl">
+
+    <a
+      routerLink="/home"
+      class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+    >
+      <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Volver a la semana
+    </a>
+
+    <h1 class="text-2xl font-bold text-white">{{ session()?.name ?? 'Sesión' }}</h1>
+    @if (session(); as session) {
+      <p class="mt-1 mb-8 text-sm text-slate-400">
+        {{ session.exercisesCount }} {{ session.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
+        · {{ session.setsCount }} {{ session.setsCount === 1 ? 'serie' : 'series' }}
+      </p>
+    } @else {
+      <div class="mb-8"></div>
+    }
+
+    @if (error()) {
+      <div class="mb-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error() }}</div>
+    }
+
+    @if (isLoading()) {
+      <div class="flex flex-col gap-4">
+        @for (skeleton of [1, 2, 3]; track skeleton) {
+          <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-5">
+            <div class="h-5 w-1/2 rounded bg-slate-700"></div>
+            <div class="mt-4 h-10 w-full rounded bg-slate-700/60"></div>
+          </div>
+        }
+      </div>
+    } @else if (blocks().length === 0) {
+      <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-14 text-center">
+        <p class="text-sm font-medium text-slate-300">Esta sesión todavía no tiene series</p>
+      </div>
+    } @else {
+      <ol class="fade-slide-in flex flex-col gap-4">
+        @for (block of blocks(); track $index; let exerciseIndex = $index) {
+          <li class="rounded-2xl border border-slate-700 bg-slate-800/80 p-5">
+            <div class="flex items-center gap-3">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-950/60 text-xs font-semibold text-emerald-300">
+                {{ exerciseIndex + 1 }}
+              </span>
+              <h2 class="text-base font-semibold text-white">{{ block.exerciseName }}</h2>
+            </div>
+
+            <div class="mt-3 overflow-hidden rounded-xl border border-slate-700/60">
+              <div class="grid grid-cols-[2.5rem_1fr_1fr] gap-2 bg-slate-900/60 px-3 py-2 text-[10px] font-medium uppercase tracking-wide text-slate-500 sm:grid-cols-[2.5rem_1fr_1fr_1.5fr]">
+                <span>Serie</span>
+                <span>Reps</span>
+                <span>RPE</span>
+                <span class="hidden sm:block">Técnica</span>
+              </div>
+              @for (set of block.sets; track set.id; let setIndex = $index) {
+                <div class="grid grid-cols-[2.5rem_1fr_1fr] items-center gap-2 border-t border-slate-700/60 px-3 py-2.5 text-sm sm:grid-cols-[2.5rem_1fr_1fr_1.5fr]">
+                  <span class="text-slate-400">{{ setIndex + 1 }}</span>
+                  <span class="font-semibold text-white">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</span>
+                  <span class="font-semibold text-white">{{ set.expectedRPE }}</span>
+                  <span class="col-span-3 flex flex-wrap gap-1.5 sm:col-span-1">
+                    @if (techniqueLabel(set); as technique) {
+                      <span class="rounded-full border border-amber-800/60 bg-amber-950/40 px-2 py-0.5 text-xs text-amber-300">{{ technique }}</span>
+                    }
+                    @if (set.superSetGroupId) {
+                      <span class="rounded-full border border-sky-800/60 bg-sky-950/40 px-2 py-0.5 text-xs text-sky-300">Superserie</span>
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </li>
+        }
+      </ol>
+    }
+
+  </div>
+</div>

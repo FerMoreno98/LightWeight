@@ -1,25 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
-import { MesocycleTemplate, TrainingDistribution, VolumeLandmark } from '../../../data/training-api.service';
-import { formatCyclePeriod } from '../../shared/cycle-format';
+import { MesocycleMicrocycle, MesocycleTemplate } from '../../../data/training-api.service';
+import { TRAINING_DISTRIBUTION_LABELS, VOLUME_LANDMARK_LABELS, formatCyclePeriod } from '../../shared/cycle-format';
 import { ConfirmDialog } from '../../../../../Shared/confirm-dialog/confirm-dialog';
-
-const VOLUME_LANDMARK_LABELS: Record<VolumeLandmark, string> = {
-  MV: 'MV — Maintenance Volume',
-  MEV: 'MEV — Minimum Effective Volume',
-  MAV: 'MAV — Maximum Adaptive Volume',
-  MRV: 'MRV — Maximum Recoverable Volume',
-};
-
-const TRAINING_DISTRIBUTION_LABELS: Record<TrainingDistribution, string> = {
-  PushPullLegs: 'Push Pull Legs',
-  UpperLower: 'Upper Lower',
-  Weider: 'Weider',
-  Phat: 'PHAT',
-  FullBody: 'Full Body',
-  Other: 'Otra',
-};
 
 @Component({
   selector: 'app-mesocycle-detail',
@@ -39,10 +23,14 @@ export class MesocycleDetail {
 
   isFinished = computed(() => !!this.mesocycle()?.finishedAt);
   nextWeek = computed(() => (this.mesocycle()?.microcycles.at(-1)?.weekNumber ?? 0) + 1);
+  /** The week in progress: a new one can only be added once it is finished */
+  activeWeek = computed(() => this.mesocycle()?.microcycles.find(m => !m.finishedAt) ?? null);
 
   isAdding = false;
   isFinishing = signal(false);
   isConfirmingFinish = signal(false);
+  isFinishingWeek = signal(false);
+  isConfirmingFinishWeek = signal(false);
   /** Template being added as the next week, to disable the cards and avoid adding it twice */
   addingTemplateId = signal<string | null>(null);
 
@@ -54,6 +42,10 @@ export class MesocycleDetail {
   period(): string {
     const mesocycle = this.mesocycle();
     return mesocycle ? formatCyclePeriod(mesocycle.startedAt, mesocycle.finishedAt) : '';
+  }
+
+  weekPeriod(week: MesocycleMicrocycle): string {
+    return formatCyclePeriod(week.startedAt, week.finishedAt);
   }
 
   volumeLandmarkLabel(template: MesocycleTemplate): string {
@@ -98,6 +90,28 @@ export class MesocycleDetail {
     } finally {
       this.isFinishing.set(false);
       this.isConfirmingFinish.set(false);
+    }
+  }
+
+  askFinishWeek() {
+    this.isConfirmingFinishWeek.set(true);
+  }
+
+  cancelFinishWeek() {
+    this.isConfirmingFinishWeek.set(false);
+  }
+
+  async finishWeek() {
+    const week = this.activeWeek();
+    if (!week) return;
+    this.isFinishingWeek.set(true);
+    try {
+      if (await this.store.FinishMicrocycle(week.id)) {
+        await this.store.GetMesocycleDetail(this.mesocycleId);
+      }
+    } finally {
+      this.isFinishingWeek.set(false);
+      this.isConfirmingFinishWeek.set(false);
     }
   }
 }

@@ -1,3 +1,4 @@
+using LightWeight.Training.Application.Queries.SessionTemplates.GetTemplateSessionsFromTrainingTemplate;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateSession;
 using LightWeight.Training.Application.Exceptions;
@@ -251,5 +252,69 @@ public class SessionTemplateTests
         Assert.All(result, r => Assert.Equal(6, r.Series["Biceps"]));
         Assert.All(result, r => Assert.Equal(3, r.Series["Back"]));
         Assert.All(result, r => Assert.Equal(3, r.Series["Chest"]));
+    }
+
+    // ---------------------------------------------------------------- GetTemplateSessionsFromTrainingTemplate
+
+    [Fact]
+    public async Task GetTemplateSessionsQuery_ReturnsTheActiveSessionsInCreationOrderWithTheirCounts()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        TemplateSession push = TemplateSession.Create("Push");
+        TemplateSession pull = TemplateSession.Create("Pull");
+        TemplateSession removed = TemplateSession.Create("Removed");
+        template.AddSessionTemplate(push);
+        template.AddSessionTemplate(pull);
+        template.AddSessionTemplate(removed);
+        var bench = Guid.CreateVersion7();
+        var press = Guid.CreateVersion7();
+        push.AddSet(TemplateSet.Create(bench, RepetitionRange.Create(8, 6), 8, new List<MuscleGroups> { MuscleGroups.Chest }));
+        push.AddSet(TemplateSet.Create(bench, RepetitionRange.Create(8, 6), 8, new List<MuscleGroups> { MuscleGroups.Chest }));
+        push.AddSet(TemplateSet.Create(press, RepetitionRange.Create(10, 8), 8, new List<MuscleGroups> { MuscleGroups.Chest }));
+        template.DeleteSessionTemplate(removed.Id, DateTime.UtcNow);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        var queryHandler = new GetTemplateSessionsFromTrainingTemplateQueryHandler(_programRepository);
+        // Act
+        var result = await queryHandler.HandleAsync(new GetTemplateSessionsFromTrainingTemplateQuery(template.Id, userId), default);
+        // Assert
+        Assert.Equal(new[] { "Push", "Pull" }, result.Select(s => s.Name));
+        Assert.Equal(push.Id, result[0].Id);
+        Assert.Equal(3, result[0].SetsCount);
+        Assert.Equal(2, result[0].ExercisesCount);
+        Assert.Equal(0, result[1].SetsCount);
+    }
+
+    [Fact]
+    public async Task GetTemplateSessionsQuery_OfAnotherUser_ThrowsUnauthorized()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(Guid.CreateVersion7());
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        var queryHandler = new GetTemplateSessionsFromTrainingTemplateQueryHandler(_programRepository);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => queryHandler.HandleAsync(new GetTemplateSessionsFromTrainingTemplateQuery(template.Id, Guid.CreateVersion7()), default)
+        );
+    }
+
+    [Fact]
+    public async Task GetTemplateSessionsQuery_NotFound_ThrowsApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        _programRepository.GetByTrainingTemplateIdAsync(Arg.Any<Guid>()).Returns((Program?)null);
+        var queryHandler = new GetTemplateSessionsFromTrainingTemplateQueryHandler(_programRepository);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
+        (
+            () => queryHandler.HandleAsync(new GetTemplateSessionsFromTrainingTemplateQuery(Guid.CreateVersion7(), Guid.CreateVersion7()), default)
+        );
     }
 }

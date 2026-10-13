@@ -28,3 +28,31 @@ public sealed class MesocycleFinishedDomainException : TrainingDomainException
 
     }
 }
+public sealed class ActiveMicrocycleAlreadyExistsDomainException : TrainingDomainException
+{
+    public ActiveMicrocycleAlreadyExistsDomainException() : base("The mesocycle already has an active week, finish it before planning the next one")
+    {
+
+    }
+}
+public sealed class MicrocycleFinishedDomainException : TrainingDomainException
+{
+    public MicrocycleFinishedDomainException() : base("The week is already finished")
+    {
+
+    }
+}
+public sealed class MesocycleNotFoundDomainException : TrainingDomainException
+{
+    public MesocycleNotFoundDomainException() : base("The mesocycle does not belong to this macrocycle")
+    {
+
+    }
+}
+public sealed class MicrocycleNotFoundDomainException : TrainingDomainException
+{
+    public MicrocycleNotFoundDomainException() : base("The week does not belong to this macrocycle")
+    {
+
+    }
+}

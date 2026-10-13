@@ -29,5 +29,17 @@ public class MacrocycleConfiguration : IEntityTypeConfiguration<Macrocycle>
             .HasConversion(s => s.ToString(), s => Enum.Parse<TrainingStage>(s));
         builder.Property(m => m.Comments).HasColumnName("Comments");
         builder.Ignore(m => m.DomainEvents);
+        builder.Ignore(m => m.ActiveMesocycle);
+        builder.Ignore(m => m.ActiveMicrocycle);
+
+        builder.HasMany(m => m.Mesocycles)
+            .WithOne()
+            .HasForeignKey(m => m.MacrocycleId)
+            .IsRequired()
+            .HasPrincipalKey(m => m.Id)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(m => m.Mesocycles)
+            .HasField("_mesocycles")
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

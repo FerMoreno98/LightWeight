@@ -1,9 +1,31 @@
-import { TrainingStage } from '../../data/training-api.service';
+import { AdvancedTechnique, TrainingDistribution, TrainingStage, VolumeLandmark } from '../../data/training-api.service';
 
 export const TRAINING_STAGE_LABELS: Record<TrainingStage, string> = {
   Bulk: 'Volumen',
   Cut: 'Definición',
   Maintenance: 'Mantenimiento',
+};
+
+export const VOLUME_LANDMARK_LABELS: Record<VolumeLandmark, string> = {
+  MV: 'MV — Maintenance Volume',
+  MEV: 'MEV — Minimum Effective Volume',
+  MAV: 'MAV — Maximum Adaptive Volume',
+  MRV: 'MRV — Maximum Recoverable Volume',
+};
+
+export const TRAINING_DISTRIBUTION_LABELS: Record<TrainingDistribution, string> = {
+  PushPullLegs: 'Push Pull Legs',
+  UpperLower: 'Upper Lower',
+  Weider: 'Weider',
+  Phat: 'PHAT',
+  FullBody: 'Full Body',
+  Other: 'Otra',
+};
+
+export const TECHNIQUE_LABELS: Record<AdvancedTechnique, string> = {
+  DropSet: 'Drop set',
+  Cluster: 'Cluster',
+  MyoRep: 'Myo-reps',
 };
 
 const DATE_FORMAT = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });

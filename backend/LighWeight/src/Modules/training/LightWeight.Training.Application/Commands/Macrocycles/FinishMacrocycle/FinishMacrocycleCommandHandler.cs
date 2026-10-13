@@ -9,13 +9,11 @@ namespace LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle
 public sealed class FinishMacrocycleCommandHandler : ICommandHandler<FinishMacrocycleCommand>
 {
     private readonly IMacrocycleRepository _macrocycleRepository;
-    private readonly IMesocycleRepository _mesocycleRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public FinishMacrocycleCommandHandler(IMacrocycleRepository macrocycleRepository, IMesocycleRepository mesocycleRepository, ITrainingUnitOfWork uOW)
+    public FinishMacrocycleCommandHandler(IMacrocycleRepository macrocycleRepository, ITrainingUnitOfWork uOW)
     {
         _macrocycleRepository = macrocycleRepository;
-        _mesocycleRepository = mesocycleRepository;
         _UOW = uOW;
     }
 
@@ -27,9 +25,8 @@ public sealed class FinishMacrocycleCommandHandler : ICommandHandler<FinishMacro
         {
             throw new UnauthorizedAccessException();
         }
-        List<Mesocycle> mesocycles = await _mesocycleRepository.GetByMacrocycleIdAsync(macrocycle.Id);
-        // The macrocycle and its active mesocycle are finished in the same SaveChanges
-        macrocycle.Finish(DateTime.UtcNow, mesocycles);
+        // The macrocycle also finishes its active mesocycle and active week
+        macrocycle.Finish(DateTime.UtcNow);
         await _UOW.SaveChangesAsync(ct);
     }
 }

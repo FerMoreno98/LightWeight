@@ -1,10 +1,10 @@
 import { Component } from '@angular/core';
-import { Navbar } from "../../../../Shared/navbar/navbar";
+import { CurrentWeek } from '../../../Training/UI/current-week/current-week';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
-  imports: [],
+  imports: [CurrentWeek],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',
 })

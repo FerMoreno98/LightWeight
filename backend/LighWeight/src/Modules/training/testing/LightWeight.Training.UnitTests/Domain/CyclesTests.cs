@@ -1,4 +1,5 @@
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Exceptions;
 
@@ -15,7 +16,7 @@ public class CyclesTests
 
     private static Mesocycle PlanFirstMesocycle(Macrocycle macrocycle)
     {
-        return macrocycle.PlanMesocycle(new List<Mesocycle>(), Guid.CreateVersion7(), 8, null, null, Now);
+        return macrocycle.PlanMesocycle(Guid.CreateVersion7(), 8, null, null, Now);
     }
 
     // ---------------------------------------------------------------- Macrocycle.Create
@@ -34,6 +35,7 @@ public class CyclesTests
         Assert.Equal(Now, macrocycle.StartedAt);
         Assert.Null(macrocycle.FinishedAt);
         Assert.False(macrocycle.IsFinished);
+        Assert.Empty(macrocycle.Mesocycles);
     }
 
     [Fact]
@@ -54,7 +56,7 @@ public class CyclesTests
     {
         // Arrange
         Macrocycle previous = CreateActiveMacrocycle();
-        previous.Finish(Now, new List<Mesocycle>());
+        previous.Finish(Now);
         // Act
         Macrocycle macrocycle = Macrocycle.Create(previous.UserId, TrainingStage.Maintenance, null, Now.AddDays(1), previous);
         // Assert
@@ -64,9 +66,6 @@ public class CyclesTests
     [Fact]
     public void CreateMacrocycle_WithEmptyUserId_ThrowsDomainException()
     {
-        // Arrange
-        // Act
-        // Assert
         Assert.Throws<UserIdEmptyDomainException>
         (
             () => Macrocycle.Create(Guid.Empty, TrainingStage.Bulk, null, Now, null)
@@ -76,18 +75,20 @@ public class CyclesTests
     // ---------------------------------------------------------------- PlanMesocycle
 
     [Fact]
-    public void PlanMesocycle_FirstMesocycle_StartsItNowLinkedToTheMacrocycleAndProgram()
+    public void PlanMesocycle_FirstMesocycle_IsAddedToTheMacrocycle()
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
         var programId = Guid.CreateVersion7();
         // Act
-        Mesocycle mesocycle = macrocycle.PlanMesocycle(new List<Mesocycle>(), programId, 9, "Hombro", "Notas", Now);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(programId, 7, "Hombro", "Notas", Now);
         // Assert
+        Assert.Single(macrocycle.Mesocycles);
+        Assert.Same(mesocycle, macrocycle.ActiveMesocycle);
         Assert.Equal(macrocycle.Id, mesocycle.MacrocycleId);
         Assert.Equal(macrocycle.UserId, mesocycle.UserId);
         Assert.Equal(programId, mesocycle.ProgramId);
-        Assert.Equal(9, mesocycle.MotivationLevel);
+        Assert.Equal(7, mesocycle.MotivationLevel);
         Assert.Equal("Hombro", mesocycle.Injuries);
         Assert.Equal(Now, mesocycle.StartedAt);
         Assert.False(mesocycle.IsFinished);
@@ -98,60 +99,69 @@ public class CyclesTests
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
-        Mesocycle active = PlanFirstMesocycle(macrocycle);
+        PlanFirstMesocycle(macrocycle);
         // Act
         // Assert
-        Assert.Throws<ActiveMesocycleAlreadyExistsDomainException>
-        (
-            () => macrocycle.PlanMesocycle(new List<Mesocycle> { active }, Guid.CreateVersion7(), 8, null, null, Now)
-        );
+        Assert.Throws<ActiveMesocycleAlreadyExistsDomainException>(() => PlanFirstMesocycle(macrocycle));
     }
 
     [Fact]
-    public void PlanMesocycle_AfterFinishingThePreviousOne_StartsTheNextOne()
+    public void PlanMesocycle_AfterFinishingTheActiveOne_StartsANewOne()
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
-        Mesocycle previous = PlanFirstMesocycle(macrocycle);
-        previous.Finish(Now.AddDays(28));
+        Mesocycle first = PlanFirstMesocycle(macrocycle);
+        macrocycle.FinishMesocycle(first.Id, Now.AddDays(30));
         // Act
-        Mesocycle next = macrocycle.PlanMesocycle(new List<Mesocycle> { previous }, Guid.CreateVersion7(), 8, null, null, Now.AddDays(29));
+        Mesocycle second = PlanFirstMesocycle(macrocycle);
         // Assert
-        Assert.False(next.IsFinished);
-        Assert.NotEqual(previous.Id, next.Id);
+        Assert.Equal(2, macrocycle.Mesocycles.Count);
+        Assert.Same(second, macrocycle.ActiveMesocycle);
     }
 
     [Fact]
-    public void PlanMesocycle_InAFinishedMacrocycle_ThrowsDomainException()
+    public void PlanMesocycle_OnAFinishedMacrocycle_ThrowsDomainException()
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
-        macrocycle.Finish(Now, new List<Mesocycle>());
+        macrocycle.Finish(Now);
         // Act
         // Assert
-        Assert.Throws<MacrocycleFinishedDomainException>
-        (
-            () => macrocycle.PlanMesocycle(new List<Mesocycle>(), Guid.CreateVersion7(), 8, null, null, Now)
-        );
+        Assert.Throws<MacrocycleFinishedDomainException>(() => PlanFirstMesocycle(macrocycle));
     }
 
     // ---------------------------------------------------------------- Finish
 
     [Fact]
-    public void FinishMacrocycle_FinishesItsActiveMesocycleWithTheSameDate()
+    public void FinishMacrocycle_FinishesItsActiveMesocycleAndWeekWithTheSameDate()
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
-        Mesocycle finished = PlanFirstMesocycle(macrocycle);
-        finished.Finish(Now.AddDays(28));
-        Mesocycle active = macrocycle.PlanMesocycle(new List<Mesocycle> { finished }, Guid.CreateVersion7(), 8, null, null, Now.AddDays(29));
-        DateTime end = Now.AddDays(60);
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        DateTime finishedAt = Now.AddDays(90);
         // Act
-        macrocycle.Finish(end, new List<Mesocycle> { finished, active });
+        macrocycle.Finish(finishedAt);
         // Assert
-        Assert.Equal(end, macrocycle.FinishedAt);
-        Assert.Equal(end, active.FinishedAt);
-        Assert.Equal(Now.AddDays(28), finished.FinishedAt);
+        Assert.Equal(finishedAt, macrocycle.FinishedAt);
+        Assert.Equal(finishedAt, mesocycle.FinishedAt);
+        Assert.Equal(finishedAt, week.FinishedAt);
+        Assert.Null(macrocycle.ActiveMesocycle);
+        Assert.Null(macrocycle.ActiveMicrocycle);
+    }
+
+    [Fact]
+    public void FinishMacrocycle_KeepsTheDateOfMesocyclesAlreadyFinished()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle first = PlanFirstMesocycle(macrocycle);
+        DateTime firstFinishedAt = Now.AddDays(30);
+        macrocycle.FinishMesocycle(first.Id, firstFinishedAt);
+        // Act
+        macrocycle.Finish(Now.AddDays(90));
+        // Assert
+        Assert.Equal(firstFinishedAt, first.FinishedAt);
     }
 
     [Fact]
@@ -159,23 +169,48 @@ public class CyclesTests
     {
         // Arrange
         Macrocycle macrocycle = CreateActiveMacrocycle();
-        macrocycle.Finish(Now, new List<Mesocycle>());
+        macrocycle.Finish(Now);
         // Act
         // Assert
-        Assert.Throws<MacrocycleFinishedDomainException>(() => macrocycle.Finish(Now.AddDays(1), new List<Mesocycle>()));
-        Assert.Equal(Now, macrocycle.FinishedAt);
+        Assert.Throws<MacrocycleFinishedDomainException>(() => macrocycle.Finish(Now));
+    }
+
+    [Fact]
+    public void FinishMesocycle_FinishesItsActiveWeekWithTheSameDate()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        DateTime finishedAt = Now.AddDays(30);
+        // Act
+        macrocycle.FinishMesocycle(mesocycle.Id, finishedAt);
+        // Assert
+        Assert.Equal(finishedAt, mesocycle.FinishedAt);
+        Assert.Equal(finishedAt, week.FinishedAt);
+        Assert.False(macrocycle.IsFinished);
     }
 
     [Fact]
     public void FinishMesocycle_Twice_ThrowsDomainException()
     {
         // Arrange
-        Mesocycle mesocycle = PlanFirstMesocycle(CreateActiveMacrocycle());
-        mesocycle.Finish(Now);
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        macrocycle.FinishMesocycle(mesocycle.Id, Now);
         // Act
         // Assert
-        Assert.Throws<MesocycleFinishedDomainException>(() => mesocycle.Finish(Now.AddDays(1)));
-        Assert.Equal(Now, mesocycle.FinishedAt);
+        Assert.Throws<MesocycleFinishedDomainException>(() => macrocycle.FinishMesocycle(mesocycle.Id, Now));
+    }
+
+    [Fact]
+    public void FinishMesocycle_FromAnotherMacrocycle_ThrowsDomainException()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        // Act
+        // Assert
+        Assert.Throws<MesocycleNotFoundDomainException>(() => macrocycle.FinishMesocycle(Guid.CreateVersion7(), Now));
     }
 
     // ---------------------------------------------------------------- PlanMicrocycle
@@ -184,42 +219,119 @@ public class CyclesTests
     public void PlanMicrocycle_FirstWeek_IsWeekOne()
     {
         // Arrange
-        Mesocycle mesocycle = PlanFirstMesocycle(CreateActiveMacrocycle());
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
         var templateId = Guid.CreateVersion7();
         // Act
-        Microcycle microcycle = mesocycle.PlanMicrocycle(new List<Microcycle>(), templateId);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, templateId, Now);
         // Assert
-        Assert.Equal(1, microcycle.WeekNumber);
-        Assert.Equal(mesocycle.Id, microcycle.MesocycleId);
-        Assert.Equal(mesocycle.UserId, microcycle.UserId);
-        Assert.Equal(templateId, microcycle.TrainingTemplateId);
+        Assert.Equal(1, week.WeekNumber);
+        Assert.Equal(templateId, week.TrainingTemplateId);
+        Assert.Equal(mesocycle.Id, week.MesocycleId);
+        Assert.Equal(macrocycle.UserId, week.UserId);
+        Assert.Equal(Now, week.StartedAt);
+        Assert.False(week.IsFinished);
+        Assert.Same(week, macrocycle.ActiveMicrocycle);
     }
 
     [Fact]
-    public void PlanMicrocycle_WithPreviousWeeks_IsTheWeekAfterTheLastOne()
+    public void PlanMicrocycle_AfterFinishingTheActiveWeek_IsTheNextWeek()
     {
         // Arrange
-        Mesocycle mesocycle = PlanFirstMesocycle(CreateActiveMacrocycle());
-        Microcycle week1 = mesocycle.PlanMicrocycle(new List<Microcycle>(), Guid.CreateVersion7());
-        Microcycle week2 = mesocycle.PlanMicrocycle(new List<Microcycle> { week1 }, Guid.CreateVersion7());
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle first = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        macrocycle.FinishMicrocycle(first.Id, Now.AddDays(7));
         // Act
-        Microcycle week3 = mesocycle.PlanMicrocycle(new List<Microcycle> { week2, week1 }, Guid.CreateVersion7());
+        Microcycle second = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now.AddDays(7));
         // Assert
-        Assert.Equal(2, week2.WeekNumber);
-        Assert.Equal(3, week3.WeekNumber);
+        Assert.Equal(2, second.WeekNumber);
+        Assert.Equal(2, mesocycle.Microcycles.Count);
+        Assert.Same(second, macrocycle.ActiveMicrocycle);
     }
 
     [Fact]
-    public void PlanMicrocycle_InAFinishedMesocycle_ThrowsDomainException()
+    public void PlanMicrocycle_WithAnActiveWeek_ThrowsDomainException()
     {
         // Arrange
-        Mesocycle mesocycle = PlanFirstMesocycle(CreateActiveMacrocycle());
-        mesocycle.Finish(Now);
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        // Act
+        // Assert
+        Assert.Throws<ActiveMicrocycleAlreadyExistsDomainException>
+        (
+            () => macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now)
+        );
+    }
+
+    [Fact]
+    public void PlanMicrocycle_OnAFinishedMesocycle_ThrowsDomainException()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        macrocycle.FinishMesocycle(mesocycle.Id, Now);
         // Act
         // Assert
         Assert.Throws<MesocycleFinishedDomainException>
         (
-            () => mesocycle.PlanMicrocycle(new List<Microcycle>(), Guid.CreateVersion7())
+            () => macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now)
         );
+    }
+
+    [Fact]
+    public void PlanMicrocycle_OnAMesocycleOfAnotherMacrocycle_ThrowsDomainException()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        // Act
+        // Assert
+        Assert.Throws<MesocycleNotFoundDomainException>
+        (
+            () => macrocycle.PlanMicrocycle(Guid.CreateVersion7(), Guid.CreateVersion7(), Now)
+        );
+    }
+
+    // ---------------------------------------------------------------- FinishMicrocycle
+
+    [Fact]
+    public void FinishMicrocycle_FinishesOnlyTheWeek()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        DateTime finishedAt = Now.AddDays(7);
+        // Act
+        macrocycle.FinishMicrocycle(week.Id, finishedAt);
+        // Assert
+        Assert.Equal(finishedAt, week.FinishedAt);
+        Assert.Null(macrocycle.ActiveMicrocycle);
+        Assert.False(mesocycle.IsFinished);
+    }
+
+    [Fact]
+    public void FinishMicrocycle_Twice_ThrowsDomainException()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        macrocycle.FinishMicrocycle(week.Id, Now);
+        // Act
+        // Assert
+        Assert.Throws<MicrocycleFinishedDomainException>(() => macrocycle.FinishMicrocycle(week.Id, Now));
+    }
+
+    [Fact]
+    public void FinishMicrocycle_FromAnotherMacrocycle_ThrowsDomainException()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        PlanFirstMesocycle(macrocycle);
+        // Act
+        // Assert
+        Assert.Throws<MicrocycleNotFoundDomainException>(() => macrocycle.FinishMicrocycle(Guid.CreateVersion7(), Now));
     }
 }

@@ -1,6 +1,7 @@
 using LightWeight.shared.Mediator;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 
@@ -8,28 +9,27 @@ namespace LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle
 
 public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicrocycleCommand, Guid>
 {
-    private readonly IMesocycleRepository _mesocycleRepository;
-    private readonly IMicrocycleRepository _microcycleRepository;
+    private readonly IMacrocycleRepository _macrocycleRepository;
     private readonly IProgramRepository _programRepository;
     private readonly ITrainingUnitOfWork _UOW;
 
-    public CreateMicrocycleCommandHandler(IMesocycleRepository mesocycleRepository, IMicrocycleRepository microcycleRepository, IProgramRepository programRepository, ITrainingUnitOfWork uOW)
+    public CreateMicrocycleCommandHandler(IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository, ITrainingUnitOfWork uOW)
     {
-        _mesocycleRepository = mesocycleRepository;
-        _microcycleRepository = microcycleRepository;
+        _macrocycleRepository = macrocycleRepository;
         _programRepository = programRepository;
         _UOW = uOW;
     }
 
     public async Task<Guid> HandleAsync(CreateMicrocycleCommand command, CancellationToken ct = default)
     {
-        Mesocycle mesocycle = await _mesocycleRepository.GetByIdAsync(command.MesocycleId)
+        Macrocycle macrocycle = await _macrocycleRepository.GetByMesocycleIdAsync(command.MesocycleId)
             ?? throw new MesocycleNotFoundException();
 
-        if(mesocycle.UserId != command.UserId)
+        if(macrocycle.UserId != command.UserId)
         {
             throw new UnauthorizedAccessException();
         }
+        Mesocycle mesocycle = macrocycle.Mesocycles.Single(m => m.Id == command.MesocycleId);
         // The template must belong to the program the mesocycle follows
         Program program = await _programRepository.GetByIdAsync(mesocycle.ProgramId)
             ?? throw new ProgramNotFoundApplicationException();
@@ -37,10 +37,8 @@ public sealed class CreateMicrocycleCommandHandler : ICommandHandler<CreateMicro
         {
             throw new TrainingTemplateNotFoundApplicationException();
         }
-        // The mesocycle checks it is still active and numbers the new week
-        List<Microcycle> microcycles = await _microcycleRepository.GetByMesocycleIdAsync(mesocycle.Id);
-        Microcycle microcycle = mesocycle.PlanMicrocycle(microcycles, command.TrainingTemplateId);
-        await _microcycleRepository.AddAsync(microcycle,ct);
+        // The mesocycle checks it is still active, has no active week and numbers the new one
+        Microcycle microcycle = macrocycle.PlanMicrocycle(command.MesocycleId, command.TrainingTemplateId, DateTime.UtcNow);
         await _UOW.SaveChangesAsync(ct);
         return microcycle.Id;
     }

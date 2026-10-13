@@ -23,4 +23,12 @@ public class ExerciseRepository : IExerciseRepository
         return await _dbContext.Exercises
                         .SingleOrDefaultAsync(e => e.Id == ExerciseId);
     }
+
+    public async Task<List<Exercise>> GetByIdsAsync(IEnumerable<Guid> ExerciseIds)
+    {
+        List<Guid> ids = ExerciseIds.Distinct().ToList();
+        return await _dbContext.Exercises
+                        .Where(e => ids.Contains(e.Id))
+                        .ToListAsync();
+    }
 }

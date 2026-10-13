@@ -9,9 +9,12 @@ export interface Exercise {
     isBilateral: boolean;
     aimMuscleGroups: number[];
 }
+/** A session of a template, with the size of its plan */
 export interface Session{
     id : string,
-    name : string
+    name : string,
+    setsCount : number,
+    exercisesCount : number
 }
 export type MuscleGroup =
     | 'Shoulder' | 'Back' | 'Chest' | 'Biceps' | 'Triceps'
@@ -43,13 +46,17 @@ export interface TrainingTemplate{
     trainingDistribution : TrainingDistribution,
     totalVolume : Partial<Record<MuscleGroup, number>>
 }
+export type AdvancedTechnique = 'DropSet' | 'Cluster' | 'MyoRep';
 export interface Set{
     id : string,
     exerciseId : string,
+    /** Empty when the exercise no longer exists */
+    exerciseName : string,
     repetitionRangeMin : number,
     repetitionRangeMax : number,
     expectedRPE : number,
-    advanceTrainingTechniques : string,
+    /** Advanced technique of the set, null when it is a normal set */
+    technique : AdvancedTechnique | null,
     superSetGroupId : string | null,
     aimMuscleGroups : MuscleGroup[]
 }
@@ -88,7 +95,10 @@ export interface MesocycleMicrocycle{
     trainingTemplateId : string,
     /** null when the template has been deleted */
     templateName : string | null,
-    durationInDays : number | null
+    durationInDays : number | null,
+    startedAt : string,
+    /** null while the week is in progress */
+    finishedAt : string | null
 }
 export interface MesocycleTemplate{
     id : string,
@@ -110,6 +120,28 @@ export interface MesocycleDetail{
     comments : string | null,
     microcycles : MesocycleMicrocycle[],
     availableTemplates : MesocycleTemplate[]
+}
+
+export type CurrentMicrocycleStatus = 'NoActiveMacrocycle' | 'NoActiveMesocycle' | 'PendingPlanning' | 'InProgress';
+/** The week the user is training now, or which step of the hierarchy is missing */
+export interface CurrentMicrocycle{
+    status : CurrentMicrocycleStatus,
+    macrocycleId : string | null,
+    mesocycleId : string | null,
+    programId : string | null,
+    programName : string | null,
+    /** Only with PendingPlanning */
+    nextWeekNumber : number | null,
+    /** Only with InProgress */
+    microcycle : {
+        id : string,
+        weekNumber : number,
+        startedAt : string,
+        trainingTemplateId : string,
+        /** null when the template has been deleted */
+        templateName : string | null,
+        durationInDays : number | null
+    } | null
 }
 
 @Service()
@@ -181,6 +213,12 @@ export class TrainingApiService {
             trainingTemplateId
         });
     }
+    GetCurrentMicrocycle() : Observable<CurrentMicrocycle>{
+        return this.http.get<CurrentMicrocycle>(`${this.baseUrl}/microcycle/current`);
+    }
+    FinishMicrocycle(microcycleId : string) : Observable<void>{
+        return this.http.post<void>(`${this.baseUrl}/microcycle/${microcycleId}/finish`, {});
+    }
     CreateTrainingTemplate
     (
         programId : string,
@@ -241,9 +279,9 @@ export class TrainingApiService {
     GetAllExercises() : Observable<Exercise[]>{
         return this.http.get<Exercise[]>(`${this.baseUrl}/exercises`);
     }
-    // GetSessionsOfATrainingTemplate (TrainingTemplateId : string) : Observable<Session[]>{
-    //     return this.http.get<Session[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/sessions`)
-    // }
+    GetSessionsOfATrainingTemplate (TrainingTemplateId : string) : Observable<Session[]>{
+        return this.http.get<Session[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/sessions`);
+    }
     GetSetsOfASessionTemplate (TrainingTemplateId : string, SessionTemplateId : string) : Observable<Set[]>{
         return this.http.get<Set[]>(`${this.baseUrl}/training-template/${TrainingTemplateId}/${SessionTemplateId}/sets`);
     }
