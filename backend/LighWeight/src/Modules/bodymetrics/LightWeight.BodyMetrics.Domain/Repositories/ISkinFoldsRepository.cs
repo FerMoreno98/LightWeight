@@ -6,8 +6,8 @@ public interface ISkinFoldsRepository
 {
     Task AddAsync(SkinFolds skinFolds, CancellationToken cancellationToken);
     Task<SkinFolds?> GetByIdAsync(Guid measurementId);
-    /// <summary>Skinfolds of a user, from the most recent</summary>
-    Task<List<SkinFolds>> GetAllOfAUserAsync(Guid userId);
+    /// <summary>The latest measurements of a user, from the most recent</summary>
+    Task<List<SkinFolds>> GetLatestOfAUserAsync(Guid userId, int count);
     /// <summary>Deletes the measurement when saving. Call <see cref="SkinFolds.Delete"/> first so the event is raised</summary>
     void Remove(SkinFolds skinFolds);
 }

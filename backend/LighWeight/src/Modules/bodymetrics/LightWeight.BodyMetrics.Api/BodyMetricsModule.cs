@@ -21,6 +21,7 @@ using Microsoft.AspNetCore.Routing;
 
 public static class BodyMetricsModule
 {
+
     public static IEndpointRouteBuilder MapBodyMetricsEndpoints(this IEndpointRouteBuilder app)
     {
         // Every endpoint works on the measurements of the authenticated user

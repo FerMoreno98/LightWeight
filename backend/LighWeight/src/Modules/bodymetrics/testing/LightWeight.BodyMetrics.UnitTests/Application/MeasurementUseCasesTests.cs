@@ -174,12 +174,12 @@ public class MeasurementUseCasesTests
     }
 
     [Fact]
-    public async Task GetWeightHistory_MapsTheMeasurementsOfTheUser()
+    public async Task GetWeightHistory_ReturnsTheLatestMeasurementsOfTheUser()
     {
         // Arrange
         WeightMeasurement recent = WeightMeasurement.Create(_userId, 81m, Now, Now);
         WeightMeasurement older = WeightMeasurement.Create(_userId, 83m, Now.AddDays(-7), Now);
-        _weights.GetAllOfAUserAsync(_userId).Returns(new List<WeightMeasurement> { recent, older });
+        _weights.GetLatestOfAUserAsync(_userId, GetWeightHistoryQuery.Count).Returns(new List<WeightMeasurement> { recent, older });
         var handler = new GetWeightHistoryQueryHandler(_weights);
         // Act
         var result = await handler.HandleAsync(new GetWeightHistoryQuery(_userId), default);
@@ -187,6 +187,7 @@ public class MeasurementUseCasesTests
         Assert.Equal(new[] { recent.Id, older.Id }, result.Select(r => r.Id));
         Assert.Equal(new[] { 81m, 83m }, result.Select(r => r.Weight));
         Assert.Equal(Now.AddDays(-7), result[1].MeasuredAt);
+        await _weights.Received(1).GetLatestOfAUserAsync(_userId, 10);
     }
 
     // ---------------------------------------------------------------- Perimeters
@@ -274,7 +275,7 @@ public class MeasurementUseCasesTests
         // Arrange
         SkinFolds complete = SkinFolds.Create(_userId, SkinFoldMeasures.Create(15m, 12m, 9m, 10m, 8m, 6m), Now, Now);
         SkinFolds partial = SkinFolds.Create(_userId, SkinFoldMeasures.Create(abdominal: 14m), Now.AddDays(-7), Now);
-        _skinFolds.GetAllOfAUserAsync(_userId).Returns(new List<SkinFolds> { complete, partial });
+        _skinFolds.GetLatestOfAUserAsync(_userId, GetSkinFoldsHistoryQuery.Count).Returns(new List<SkinFolds> { complete, partial });
         var handler = new GetSkinFoldsHistoryQueryHandler(_skinFolds);
         // Act
         var result = await handler.HandleAsync(new GetSkinFoldsHistoryQuery(_userId), default);

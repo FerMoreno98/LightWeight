@@ -15,7 +15,7 @@ public sealed class GetSkinFoldsHistoryQueryHandler : IQueryHandler<GetSkinFolds
     public async Task<List<SkinFoldsResponse>> HandleAsync(GetSkinFoldsHistoryQuery query, CancellationToken ct = default)
     {
         // The repository returns them from the most recent
-        var measurements = await _repository.GetAllOfAUserAsync(query.UserId);
+        var measurements = await _repository.GetLatestOfAUserAsync(query.UserId, GetSkinFoldsHistoryQuery.Count);
         return measurements
             .Select(m => new SkinFoldsResponse(m.Id, m.MeasuredAt, m.Measures.Abdominal, m.Measures.Suprailiac, m.Measures.Tricipital, m.Measures.Subscapular, m.Measures.Thigh, m.Measures.Calf, m.Measures.Summatory))
             .ToList();

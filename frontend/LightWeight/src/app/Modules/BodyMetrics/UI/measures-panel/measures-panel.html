@@ -1,0 +1,177 @@
+@let cfg = config();
+<div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+
+  <!-- Form -->
+  <form
+    (ngSubmit)="save()"
+    class="h-fit rounded-2xl border bg-slate-800 p-5 shadow-lg shadow-black/20 lg:col-span-2"
+    [class]="editing() ? 'border-amber-700/70' : 'border-slate-700'"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold text-white">{{ editing() ? 'Corregir medida' : 'Nueva medida' }}</h2>
+        <p class="mt-1 text-xs text-slate-400">{{ cfg.description }}</p>
+      </div>
+      @if (editing()) {
+        <button type="button" (click)="resetForm()" class="shrink-0 text-sm text-slate-400 transition hover:text-white">Cancelar</button>
+      }
+    </div>
+
+    <label class="mt-5 block">
+      <span class="text-xs font-medium text-slate-300">Fecha y hora</span>
+      <input
+        type="datetime-local"
+        name="measuredAt"
+        [max]="maxDate"
+        [ngModel]="measuredAt()"
+        (ngModelChange)="measuredAt.set($event)"
+        required
+        class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-sm text-white [color-scheme:dark] focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400/20"
+      />
+      @if (isInTheFuture()) {
+        <span class="mt-1 block text-xs text-red-400">La fecha no puede ser futura.</span>
+      }
+    </label>
+
+    @for (group of groups(); track group.name) {
+      @if (group.name) {
+        <h3 class="mt-5 text-xs font-semibold uppercase tracking-wider text-slate-500">{{ group.name }}</h3>
+      }
+      <div class="mt-2 grid gap-3" [class]="cfg.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'">
+        @for (field of group.fields; track field.key) {
+          <label class="block min-w-0">
+            <span class="block truncate text-xs text-slate-300">{{ field.label }}</span>
+            <span class="relative mt-1 block">
+              <input
+                type="number"
+                inputmode="decimal"
+                [name]="field.key"
+                [step]="cfg.step"
+                [ngModel]="values()[field.key] ?? null"
+                (ngModelChange)="setValue(field.key, $event)"
+                [placeholder]="cfg.fields.length > 1 ? '—' : '0'"
+                class="w-full rounded-lg border bg-slate-900 py-2 pl-3 pr-10 text-white placeholder:text-slate-600 focus:outline-none focus:ring-2"
+                [class]="isInvalid(field.key)
+                  ? 'border-red-500 focus:border-red-400 focus:ring-red-400/20'
+                  : 'border-slate-600 focus:border-emerald-400 focus:ring-emerald-400/20'"
+                [class.text-2xl]="cfg.fields.length === 1"
+                [class.font-semibold]="cfg.fields.length === 1"
+              />
+              <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-slate-500">{{ cfg.unit }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    }
+
+    @if (invalidFields().length) {
+      <p class="mt-3 text-xs text-red-400">Cada medida tiene que ser {{ rangeLabel() }}.</p>
+    }
+    @if (error()) {
+      <p class="mt-3 rounded-lg border border-red-900 bg-red-950/50 p-2 text-xs text-red-400">{{ error() }}</p>
+    }
+
+    <button
+      type="submit"
+      [disabled]="!canSave()"
+      class="mt-5 w-full rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-900 transition disabled:cursor-not-allowed disabled:opacity-50"
+      [class]="editing() ? 'bg-amber-400 hover:bg-amber-300' : 'bg-emerald-500 hover:bg-emerald-400'"
+    >
+      {{ isSaving() ? 'Guardando...' : editing() ? 'Guardar corrección' : 'Registrar' }}
+    </button>
+    @if (!hasAnyValue() && cfg.fields.length > 1) {
+      <p class="mt-2 text-center text-xs text-slate-500">Rellena al menos una medida.</p>
+    }
+  </form>
+
+  <!-- History -->
+  <section class="lg:col-span-3">
+    <div class="mb-3 flex items-baseline justify-between gap-3">
+      <h2 class="text-lg font-semibold text-white">Historial</h2>
+      <span class="text-xs text-slate-500">Últimas 10 medidas</span>
+    </div>
+
+    @if (!loaded()) {
+      <div class="flex flex-col gap-3">
+        @for (skeleton of [1, 2, 3]; track skeleton) {
+          <div class="h-16 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+        }
+      </div>
+    } @else if (entries().length === 0) {
+      <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
+        <p class="text-sm font-medium text-slate-300">Todavía no has registrado ninguna medida</p>
+        <p class="mt-1 text-xs text-slate-500">La primera aparecerá aquí.</p>
+      </div>
+    } @else {
+      <ul class="flex flex-col gap-3">
+        @for (entry of entries(); track entry.id) {
+          <li
+            class="rounded-2xl border bg-slate-800/80 p-4 transition"
+            [class]="editing()?.id === entry.id ? 'border-amber-700/70' : 'border-slate-700'"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <p class="text-xs capitalize text-slate-400">{{ formatDate(entry.measuredAt) }}</p>
+                @if (cfg.fields.length === 1) {
+                  <p class="mt-0.5 text-2xl font-bold text-white">{{ format($any(entry[cfg.fields[0].key])) }}</p>
+                }
+              </div>
+              <div class="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  (click)="edit(entry)"
+                  class="flex h-8 w-8 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-700 hover:text-white"
+                  aria-label="Corregir medida"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Z" />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  (click)="deleting.set(entry)"
+                  class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400"
+                  aria-label="Borrar medida"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            @if (cfg.fields.length > 1) {
+              <div class="mt-2 flex flex-wrap gap-1.5">
+                @for (measure of measured(entry); track measure.label) {
+                  <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
+                    {{ measure.label }} <span class="font-semibold text-white">{{ measure.value }}</span>
+                  </span>
+                }
+              </div>
+              @if (cfg.summary; as summaryConfig) {
+                <p class="mt-2 text-xs text-slate-400">
+                  {{ summaryConfig.label }}:
+                  @if (summary(entry); as total) {
+                    <span class="font-semibold text-emerald-300">{{ total }}</span>
+                  } @else {
+                    <span class="text-slate-500">— ({{ summaryConfig.hint.toLowerCase() }})</span>
+                  }
+                </p>
+              }
+            }
+          </li>
+        }
+      </ul>
+    }
+  </section>
+</div>
+
+<app-confirm-dialog
+  [open]="deleting() !== null"
+  title="¿Borrar la medida?"
+  [message]="'Se borrará la medida del ' + (deleting() ? formatDate(deleting()!.measuredAt) : '') + '. Esta acción no se puede deshacer.'"
+  [confirmLabel]="isDeleting() ? 'Borrando...' : 'Borrar'"
+  [busy]="isDeleting()"
+  (confirmed)="confirmDelete()"
+  (cancelled)="deleting.set(null)"
+/>

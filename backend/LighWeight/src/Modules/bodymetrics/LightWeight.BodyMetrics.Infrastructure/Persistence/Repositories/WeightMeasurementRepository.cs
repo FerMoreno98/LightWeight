@@ -23,11 +23,14 @@ public class WeightMeasurementRepository : IWeightMeasurementRepository
         return await _dbContext.WeightMeasurements.SingleOrDefaultAsync(w => w.Id == measurementId);
     }
 
-    public async Task<List<WeightMeasurement>> GetAllOfAUserAsync(Guid userId)
+    public async Task<List<WeightMeasurement>> GetLatestOfAUserAsync(Guid userId, int count)
     {
+        // The id breaks ties between measurements taken at the same moment, so the order is stable
         return await _dbContext.WeightMeasurements
             .Where(w => w.UserId == userId)
             .OrderByDescending(w => w.MeasuredAt)
+            .ThenByDescending(w => w.Id)
+            .Take(count)
             .ToListAsync();
     }
 

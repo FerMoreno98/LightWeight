@@ -27,7 +27,7 @@ Aplicación para planificar y registrar entrenamientos de fuerza / culturismo, c
 | **Auth** | ✅ | ✅ | Login sin contraseña por OTP al email, JWT + refresh token rotativo |
 | **UserProfile** | ✅ | — | Datos personales y fase de entrenamiento (volumen / definición / mantenimiento) |
 | **Training** | 🚧 | 🚧 | Programas, plantillas, sesiones y series; ciclos de planificación |
-| **BodyMetrics** | 🧩 | — | Peso, % graso, medidas (solo dominio) |
+| **BodyMetrics** | ✅ | ✅ | Peso, perímetros y pliegues: registrar, corregir y borrar; publica eventos para el dashboard |
 | **Nutrition** | 🧩 | — | Diario nutricional y macros |
 | **NEAT** | 🧩 | — | Actividad física fuera del entrenamiento |
 | **DeviceIntegration** | 📝 | — | Básculas, wearables (AmazFit), apps de nutrición (FatSecret) |

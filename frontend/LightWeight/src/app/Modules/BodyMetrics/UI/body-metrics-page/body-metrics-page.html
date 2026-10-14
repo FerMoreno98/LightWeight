@@ -1,0 +1,28 @@
+<main class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-5xl">
+    <h1 class="text-2xl font-bold text-white">Medidas corporales</h1>
+    <p class="mt-1 text-sm text-slate-400">Registra tu peso, perímetros y pliegues para seguir tu evolución.</p>
+
+    <div class="mt-6 mb-6 flex gap-1 rounded-xl border border-slate-700 bg-slate-900/60 p-1" role="tablist" aria-label="Tipo de medida">
+      @for (config of configs; track config.kind) {
+        <button
+          type="button"
+          role="tab"
+          (click)="select(config)"
+          [attr.aria-selected]="selected() === config.kind"
+          class="flex-1 rounded-lg px-3 py-2 text-sm font-medium transition"
+          [class]="selected() === config.kind ? 'bg-emerald-500 text-slate-900' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+        >
+          {{ config.title }}
+        </button>
+      }
+    </div>
+
+    <!-- One panel per kind: switching tabs keeps what was loaded in the store -->
+    @for (config of configs; track config.kind) {
+      @if (selected() === config.kind) {
+        <app-measures-panel [config]="config" />
+      }
+    }
+  </div>
+</main>

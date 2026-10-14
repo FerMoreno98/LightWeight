@@ -23,11 +23,14 @@ public class PerimetersRepository : IPerimetersRepository
         return await _dbContext.Perimeters.SingleOrDefaultAsync(p => p.Id == measurementId);
     }
 
-    public async Task<List<Perimeters>> GetAllOfAUserAsync(Guid userId)
+    public async Task<List<Perimeters>> GetLatestOfAUserAsync(Guid userId, int count)
     {
+        // The id breaks ties between measurements taken at the same moment, so the order is stable
         return await _dbContext.Perimeters
             .Where(p => p.UserId == userId)
             .OrderByDescending(p => p.MeasuredAt)
+            .ThenByDescending(p => p.Id)
+            .Take(count)
             .ToListAsync();
     }
 

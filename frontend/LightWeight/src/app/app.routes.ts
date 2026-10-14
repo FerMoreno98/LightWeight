@@ -16,6 +16,10 @@ export const routes: Routes =
         loadChildren: () => import ('../app/Modules/Training/Training.Routes').then(m=>m.TrainingRoutes)
     },
     {
+        path: 'bodymetrics',
+        loadChildren: () => import ('../app/Modules/BodyMetrics/BodyMetrics.Routes').then(m=>m.BodyMetricsRoutes)
+    },
+    {
         path: 'home',
         loadChildren: () => import ('../app/Modules/Home/Home.Routes').then(m=>m.homeRoutes)
     }

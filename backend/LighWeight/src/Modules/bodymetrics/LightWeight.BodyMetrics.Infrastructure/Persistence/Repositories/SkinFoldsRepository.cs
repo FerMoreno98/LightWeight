@@ -23,11 +23,14 @@ public class SkinFoldsRepository : ISkinFoldsRepository
         return await _dbContext.SkinFolds.SingleOrDefaultAsync(s => s.Id == measurementId);
     }
 
-    public async Task<List<SkinFolds>> GetAllOfAUserAsync(Guid userId)
+    public async Task<List<SkinFolds>> GetLatestOfAUserAsync(Guid userId, int count)
     {
+        // The id breaks ties between measurements taken at the same moment, so the order is stable
         return await _dbContext.SkinFolds
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.MeasuredAt)
+            .ThenByDescending(s => s.Id)
+            .Take(count)
             .ToListAsync();
     }
 

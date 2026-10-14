@@ -15,7 +15,7 @@ public sealed class GetPerimetersHistoryQueryHandler : IQueryHandler<GetPerimete
     public async Task<List<PerimetersResponse>> HandleAsync(GetPerimetersHistoryQuery query, CancellationToken ct = default)
     {
         // The repository returns them from the most recent
-        var measurements = await _repository.GetAllOfAUserAsync(query.UserId);
+        var measurements = await _repository.GetLatestOfAUserAsync(query.UserId, GetPerimetersHistoryQuery.Count);
         return measurements
             .Select(m => new PerimetersResponse(m.Id, m.MeasuredAt, m.Measures.Neck, m.Measures.RightArmRelaxed, m.Measures.RightArmTensioned, m.Measures.LeftArmRelaxed, m.Measures.LeftArmTensioned, m.Measures.Chest, m.Measures.Shoulder, m.Measures.Waist, m.Measures.Hip, m.Measures.Abs, m.Measures.RightThigh, m.Measures.LeftThigh, m.Measures.RightCalf, m.Measures.LeftCalf))
             .ToList();

@@ -15,7 +15,7 @@ public sealed class GetWeightHistoryQueryHandler : IQueryHandler<GetWeightHistor
     public async Task<List<WeightResponse>> HandleAsync(GetWeightHistoryQuery query, CancellationToken ct = default)
     {
         // The repository returns them from the most recent
-        var measurements = await _repository.GetAllOfAUserAsync(query.UserId);
+        var measurements = await _repository.GetLatestOfAUserAsync(query.UserId, GetWeightHistoryQuery.Count);
         return measurements
             .Select(m => new WeightResponse(m.Id, m.MeasuredAt, m.Weight))
             .ToList();
