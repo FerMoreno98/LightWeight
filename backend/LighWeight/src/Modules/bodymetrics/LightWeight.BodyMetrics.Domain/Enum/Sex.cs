@@ -1,4 +1,4 @@
-namespace LightWeight.bodymetrics.Domain.Enum;
+namespace LightWeight.BodyMetrics.Domain.Enum;
 
 public enum Sex
 {

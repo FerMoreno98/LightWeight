@@ -1,9 +1,9 @@
-namespace LightWeight.bodymetrics.Domain.Exceptions;
+namespace LightWeight.BodyMetrics.Domain.Exceptions;
 
 public abstract class BodyMetricsDomainException : Exception
 {
     public BodyMetricsDomainException(string message) : base(message)
     {
-        
+
     }
 }

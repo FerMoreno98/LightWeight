@@ -1,144 +1,52 @@
-using LightWeight.bodymetrics.Domain.Events;
-using LightWeight.bodymetrics.Domain.Exceptions;
+using LightWeight.BodyMetrics.Domain.Events;
+using LightWeight.BodyMetrics.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks;
-namespace LightWeight.bodymetrics.Domain.Aggregates;
 
+namespace LightWeight.BodyMetrics.Domain.Aggregates;
+
+/// <summary>Perimeters of a user taken at a moment, in cm</summary>
 public sealed class Perimeters : AggregateRoot<Guid>
 {
-    private Perimeters
-    (
-        Guid Id,
-        Guid userId,
-        decimal? neck,
-        decimal? rightArmRelaxed,
-        decimal? rightArmTensioned, 
-        decimal? leftArmRelaxed, 
-        decimal? leftArmTensioned, 
-        decimal? chest, 
-        decimal? shoulder, 
-        decimal? waist, 
-        decimal? hip, 
-        decimal? abs, 
-        decimal? rightThigh, 
-        decimal? leftThigh, 
-        decimal? rightCalf, 
-        decimal? leftCalf,
-        DateTime measuredAt
-    ) : base (Id)
+    // EF Core cannot bind complex properties to constructor parameters, so Measures is set after construction
+    private Perimeters(Guid Id, Guid userId, DateTime measuredAt) : base(Id)
     {
         UserId = userId;
-        Neck = neck;
-        RightArmRelaxed = rightArmRelaxed;
-        RightArmTensioned = rightArmTensioned;
-        LeftArmRelaxed = leftArmRelaxed;
-        LeftArmTensioned = leftArmTensioned;
-        Chest = chest;
-        Shoulder = shoulder;
-        Waist = waist;
-        Hip = hip;
-        Abs = abs;
-        RightThigh = rightThigh;
-        LeftThigh = leftThigh;
-        RightCalf = rightCalf;
-        LeftCalf = leftCalf;
         MeasuredAt = measuredAt;
+        Measures = null!;
     }
+
     public Guid UserId {get; private set;}
-    public decimal? Neck{get; private set;}
-    public decimal? RightArmRelaxed {get;private set;}
-    public decimal? RightArmTensioned {get;private set;}
-    public decimal? LeftArmRelaxed {get;private set;}
-    public decimal? LeftArmTensioned {get;private set;}
-    public decimal? Chest{get;private set;}
-    public decimal? Shoulder {get;private set;}
-    public decimal? Waist {get;private set;}
-    public decimal? Hip {get;private set;}
-    public decimal? Abs {get;private set;}
-    public decimal? RightThigh {get;private set;}
-    public decimal? LeftThigh {get;private set;}
-    public decimal? RightCalf {get;private set;}
-    public decimal? LeftCalf {get;private set;}
+    /// <summary>The perimeters taken (at least one)</summary>
+    public PerimeterMeasures Measures {get; private set;}
+    /// <summary>When the perimeters were taken (UTC)</summary>
     public DateTime MeasuredAt{get; private set;}
 
-    public static Perimeters Create
-    (
-        Guid userId,
-        decimal? neck,
-        decimal? rightArmRelaxed,
-        decimal? rightArmTensioned, 
-        decimal? leftArmRelaxed, 
-        decimal? leftArmTensioned, 
-        decimal? chest, 
-        decimal? shoulder, 
-        decimal? waist, 
-        decimal? hip, 
-        decimal? abs, 
-        decimal? rightThigh, 
-        decimal? leftThigh, 
-        decimal? rightCalf, 
-        decimal? leftCalf,
-        DateTime measuredAt
-    )
+    /// <summary>Registers the perimeters of a user</summary>
+    /// <param name="userId">Owner of the measurement</param>
+    /// <param name="measures">Perimeters taken; they are already validated</param>
+    /// <param name="measuredAt">When they were taken (UTC); it cannot be in the future</param>
+    /// <param name="now">Current time (UTC)</param>
+    public static Perimeters Create(Guid userId, PerimeterMeasures measures, DateTime measuredAt, DateTime now)
     {
-        ValidateMeasurement(rightArmRelaxed,nameof(rightArmRelaxed));
-        ValidateMeasurement(rightArmTensioned, nameof(rightArmTensioned));
-        ValidateMeasurement(leftArmRelaxed, nameof(leftArmRelaxed));
-        ValidateMeasurement(leftArmTensioned,nameof(leftArmTensioned));
-        ValidateMeasurement(chest,nameof(chest));
-        ValidateMeasurement(shoulder,nameof(shoulder));
-        ValidateMeasurement(waist,nameof(waist));
-        ValidateMeasurement(hip,nameof(hip));
-        ValidateMeasurement(abs,nameof(abs));
-        ValidateMeasurement(rightThigh,nameof(rightThigh));
-        ValidateMeasurement(leftThigh,nameof(leftThigh));
-        ValidateMeasurement(rightCalf,nameof(rightCalf));
-        ValidateMeasurement(leftCalf,nameof(leftCalf));
-        if
-        (
-            neck is null
-            && rightArmRelaxed is null 
-            && rightArmTensioned is null
-            && leftArmRelaxed is null
-            && leftArmTensioned is null
-            && chest is null
-            && shoulder is null
-            && waist is null
-            && hip is null
-            && abs is null
-            && rightThigh is null
-            && leftThigh is null
-            && rightCalf is null
-            && leftCalf is null
-        )
-            throw new EveryPerimeterNullException();
-
-        Perimeters perimeters = new Perimeters
-        (
-            Guid.CreateVersion7(), 
-            userId,
-            neck,
-            rightArmRelaxed,
-            rightArmTensioned, 
-            leftArmRelaxed, 
-            leftArmTensioned, 
-            chest, 
-            shoulder, 
-            waist, 
-            hip, 
-            abs, 
-            rightThigh, 
-            leftThigh, 
-            rightCalf, 
-            leftCalf,
-            measuredAt
-        );
-        perimeters.RaiseDomainEvent(new RegisteredPerimetersDomainEvent(perimeters.Id,perimeters.UserId,perimeters.MeasuredAt));
+        MeasurementRules.EnsureUser(userId);
+        MeasurementRules.EnsureNotInTheFuture(measuredAt, now);
+        var perimeters = new Perimeters(Guid.CreateVersion7(), userId, measuredAt) { Measures = measures };
+        perimeters.RaiseDomainEvent(new PerimetersRegisteredDomainEvent(perimeters.Id, userId, measures, measuredAt));
         return perimeters;
     }
-    private static void ValidateMeasurement(decimal? value,string perimeter)
+
+    /// <summary>Replaces the perimeters and/or the date of the measurement</summary>
+    public void Correct(PerimeterMeasures measures, DateTime measuredAt, DateTime now)
     {
-        if (value.HasValue && value.Value <= 0)
-            throw new NegativePerimeterException(perimeter);
+        MeasurementRules.EnsureNotInTheFuture(measuredAt, now);
+        Measures = measures;
+        MeasuredAt = measuredAt;
+        RaiseDomainEvent(new PerimetersCorrectedDomainEvent(Id, UserId, measures, measuredAt));
     }
 
+    /// <summary>Records that the measurement is deleted. The repository removes it when saving</summary>
+    public void Delete()
+    {
+        RaiseDomainEvent(new PerimetersDeletedDomainEvent(Id, UserId, MeasuredAt));
+    }
 }

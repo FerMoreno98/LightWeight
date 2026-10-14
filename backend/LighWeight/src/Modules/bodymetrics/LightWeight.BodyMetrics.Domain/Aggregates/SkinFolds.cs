@@ -1,109 +1,68 @@
-using LightWeight.bodymetrics.Domain.Enum;
-using LightWeight.bodymetrics.Domain.Events;
-using LightWeight.bodymetrics.Domain.Exceptions;
+using LightWeight.BodyMetrics.Domain.Enum;
+using LightWeight.BodyMetrics.Domain.Events;
+using LightWeight.BodyMetrics.Domain.ValueObjects;
 using LightWeight.shared.BuildingBlocks;
 
-namespace LightWeight.bodymetrics.Domain.Aggregates;
+namespace LightWeight.BodyMetrics.Domain.Aggregates;
 
+/// <summary>Skinfolds of a user taken at a moment, in mm</summary>
 public sealed class SkinFolds : AggregateRoot<Guid>
 {
-    private SkinFolds
-    (
-        Guid Id,
-        Guid userId,
-        decimal? abdominal, 
-        decimal? suprailiac, 
-        decimal? tricipital, 
-        decimal? subscapular, 
-        decimal? thigh, 
-        decimal? calf,
-        DateTime measuredAt
-    ) : base(Id)
+    // EF Core cannot bind complex properties to constructor parameters, so Measures is set after construction
+    private SkinFolds(Guid Id, Guid userId, DateTime measuredAt) : base(Id)
     {
         UserId = userId;
-        Abdominal = abdominal;
-        Suprailiac = suprailiac;
-        Tricipital = tricipital;
-        Subscapular = subscapular;
-        Thigh = thigh;
-        Calf = calf;
         MeasuredAt = measuredAt;
+        Measures = null!;
     }
+
     public Guid UserId{get; private set;}
-    public decimal? Abdominal {get;private set;}
-    public decimal? Suprailiac {get;private set;}
-    public decimal? Tricipital {get;private set;}
-    public decimal? Subscapular {get;private set;}
-    public decimal? Thigh {get;private set;}
-    public decimal? Calf {get;private set;}
-    public decimal? SkinFoldSummatory =>
-    Abdominal.HasValue && Suprailiac.HasValue && Tricipital.HasValue && Subscapular.HasValue && Thigh.HasValue && Calf.HasValue
-    ? Abdominal+Suprailiac+Tricipital+Subscapular+Thigh+Calf 
-    : null;
+    /// <summary>The skinfolds taken (at least one)</summary>
+    public SkinFoldMeasures Measures {get; private set;}
+    /// <summary>When the skinfolds were taken (UTC)</summary>
     public DateTime MeasuredAt{get; private set;}
 
-    public static SkinFolds Create
-    (
-        Guid userId,
-        decimal? abdominal, 
-        decimal? suprailiac, 
-        decimal? tricipital, 
-        decimal? subscapular, 
-        decimal? thigh, 
-        decimal? calf,
-        DateTime measuredAt
-    )
+    /// <summary>Registers the skinfolds of a user</summary>
+    /// <param name="userId">Owner of the measurement</param>
+    /// <param name="measures">Skinfolds taken; they are already validated</param>
+    /// <param name="measuredAt">When they were taken (UTC); it cannot be in the future</param>
+    /// <param name="now">Current time (UTC)</param>
+    public static SkinFolds Create(Guid userId, SkinFoldMeasures measures, DateTime measuredAt, DateTime now)
     {
-        ValidateMeasurement(abdominal,nameof(abdominal));
-        ValidateMeasurement(suprailiac,nameof(suprailiac));
-        ValidateMeasurement(tricipital,nameof(tricipital));
-        ValidateMeasurement(subscapular,nameof(subscapular));
-        ValidateMeasurement(thigh,nameof(thigh));
-        ValidateMeasurement(calf,nameof(calf));
-
-        if
-        (
-            abdominal is null
-            && suprailiac is null
-            && tricipital is null
-            && subscapular is null
-            && thigh is null
-            && calf is null
-        )
-            throw new EverySkinFoldNullException();
-        
-        SkinFolds skinFolds = new SkinFolds
-        (
-            Guid.CreateVersion7(),
-            userId,
-            abdominal, 
-            suprailiac, 
-            tricipital, 
-            subscapular, 
-            thigh, 
-            calf,
-            measuredAt 
-        );
-        skinFolds.RaiseDomainEvent(new RegisteredSkinFoldsDomainEvent(skinFolds.Id,skinFolds.UserId,skinFolds.MeasuredAt));
+        MeasurementRules.EnsureUser(userId);
+        MeasurementRules.EnsureNotInTheFuture(measuredAt, now);
+        var skinFolds = new SkinFolds(Guid.CreateVersion7(), userId, measuredAt) { Measures = measures };
+        skinFolds.RaiseDomainEvent(new SkinFoldsRegisteredDomainEvent(skinFolds.Id, userId, measures, measuredAt));
         return skinFolds;
     }
 
-    private static void ValidateMeasurement(decimal? value,string skinfold)
+    /// <summary>Replaces the skinfolds and/or the date of the measurement</summary>
+    public void Correct(SkinFoldMeasures measures, DateTime measuredAt, DateTime now)
     {
-        if (value.HasValue && value.Value <= 0)
-            throw new NegativeSkinFoldException(skinfold);
+        MeasurementRules.EnsureNotInTheFuture(measuredAt, now);
+        Measures = measures;
+        MeasuredAt = measuredAt;
+        RaiseDomainEvent(new SkinFoldsCorrectedDomainEvent(Id, UserId, measures, measuredAt));
     }
 
+    /// <summary>Records that the measurement is deleted. The repository removes it when saving</summary>
+    public void Delete()
+    {
+        RaiseDomainEvent(new SkinFoldsDeletedDomainEvent(Id, UserId, MeasuredAt));
+    }
+
+    /// <summary>
+    /// Estimated body fat percentage from the sum of the six skinfolds (linear formula by sex).
+    /// Null unless all six skinfolds were measured
+    /// </summary>
     public decimal? CalculateEstimatedFatPercentage(Sex sex)
     {
-        if (!SkinFoldSummatory.HasValue) return null;
-    
+        if (Measures.Summatory is not decimal summatory) return null;
         return sex switch
         {
-            Sex.Male => 0.1051m * SkinFoldSummatory.Value + 2.585m,
-            Sex.Female =>  0.1548m * SkinFoldSummatory.Value + 3.580m,
+            Sex.Male => 0.1051m * summatory + 2.585m,
+            Sex.Female => 0.1548m * summatory + 3.580m,
             _ => null
         };
-
     }
 }

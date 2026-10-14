@@ -15,6 +15,7 @@
     <ProjectReference Include="..\..\Modules\auth\LightWeight.Auth.Api\LightWeight.Auth.Api.csproj" />
     <ProjectReference Include="..\..\Modules\user-profile\LightWeight.UserProfile.Api\LightWeight.UserProfile.Api.csproj" />
     <ProjectReference Include="..\..\Modules\training\LightWeight.Training.Api\LightWeight.Training.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\bodymetrics\LightWeight.BodyMetrics.Api\LightWeight.BodyMetrics.Api.csproj" />
   </ItemGroup>
 
 </Project>

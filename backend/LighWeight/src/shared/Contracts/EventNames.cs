@@ -27,4 +27,26 @@ public static class EventNames
         /// <summary><c>userprofile.stage.changed.v1</c></summary>
         public const string StageChanged = "userprofile.stage.changed.v1";
     }
+
+    /// <summary>Events emitted by the <b>bodymetrics</b> module.</summary>
+    public static class BodyMetrics
+    {
+        /// <summary><c>bodymetrics.weight.recorded.v1</c> (registered or corrected)</summary>
+        public const string WeightRecorded = "bodymetrics.weight.recorded.v1";
+
+        /// <summary><c>bodymetrics.weight.deleted.v1</c></summary>
+        public const string WeightDeleted = "bodymetrics.weight.deleted.v1";
+
+        /// <summary><c>bodymetrics.perimeters.recorded.v1</c> (registered or corrected)</summary>
+        public const string PerimetersRecorded = "bodymetrics.perimeters.recorded.v1";
+
+        /// <summary><c>bodymetrics.perimeters.deleted.v1</c></summary>
+        public const string PerimetersDeleted = "bodymetrics.perimeters.deleted.v1";
+
+        /// <summary><c>bodymetrics.skinfolds.recorded.v1</c> (registered or corrected)</summary>
+        public const string SkinFoldsRecorded = "bodymetrics.skinfolds.recorded.v1";
+
+        /// <summary><c>bodymetrics.skinfolds.deleted.v1</c></summary>
+        public const string SkinFoldsDeleted = "bodymetrics.skinfolds.deleted.v1";
+    }
 }
