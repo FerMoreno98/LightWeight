@@ -174,7 +174,17 @@
                     class="group flex items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-slate-800/80 p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-emerald-400/60"
                   >
                     <div class="min-w-0">
-                      <p class="truncate text-base font-semibold text-white">{{ session.name }}</p>
+                      <div class="flex items-center gap-2">
+                        <p class="truncate text-base font-semibold text-white">{{ session.name }}</p>
+                        @switch (sessionStatus(session)) {
+                          @case ('done') {
+                            <span class="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/60 px-2 py-0.5 text-[11px] font-medium text-emerald-300">Hecha</span>
+                          }
+                          @case ('inProgress') {
+                            <span class="shrink-0 rounded-full border border-amber-700/70 bg-amber-950/50 px-2 py-0.5 text-[11px] font-medium text-amber-300">En curso</span>
+                          }
+                        }
+                      </div>
                       <p class="mt-1 text-xs text-slate-400">
                         {{ session.exercisesCount }} {{ session.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
                         · {{ session.setsCount }} {{ session.setsCount === 1 ? 'serie' : 'series' }}

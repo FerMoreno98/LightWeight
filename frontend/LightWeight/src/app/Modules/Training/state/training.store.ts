@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues } from "../data/training-api.service";
 import { firstValueFrom } from "rxjs";
 
 @Injectable({ providedIn: 'root' })
@@ -18,6 +18,9 @@ export class TrainingStore{
     private _macrocycleDetail = signal<MacrocycleDetail | null>(null);
     private _mesocycleDetail = signal<MesocycleDetail | null>(null);
     private _currentMicrocycle = signal<CurrentMicrocycle | null>(null);
+    private _sessionWorkout = signal<SessionWorkout | null>(null);
+    /** Last performance of each exercise, by exercise id. Merged as new exercises are requested */
+    private _previousPerformance = signal<Record<string, PreviousExercise>>({});
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
@@ -31,6 +34,8 @@ export class TrainingStore{
     macrocycleDetail = this._macrocycleDetail.asReadonly();
     mesocycleDetail = this._mesocycleDetail.asReadonly();
     currentMicrocycle = this._currentMicrocycle.asReadonly();
+    sessionWorkout = this._sessionWorkout.asReadonly();
+    previousPerformance = this._previousPerformance.asReadonly();
 
     async CreateMacrocycle
     (
@@ -191,6 +196,156 @@ export class TrainingStore{
         }
     }
 
+    /** Loads what has been done this week for a session of a template */
+    async GetSessionWorkout(templateSessionId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            this._sessionWorkout.set(await firstValueFrom(this.api.GetSessionWorkout(templateSessionId)));
+            return true;
+        }catch{
+            this._error.set('No se ha podido cargar el entrenamiento');
+            return false;
+        }
+    }
+
+    /** Loads the last performance of the given exercises and merges it with the ones already loaded */
+    async GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null, reset = false) : Promise<boolean>{
+        if (reset) this._previousPerformance.set({});
+        const missing = exerciseIds.filter((id, i) => exerciseIds.indexOf(id) === i && !this._previousPerformance()[id]);
+        if (missing.length === 0) return true;
+        try{
+            const previous = await firstValueFrom(this.api.GetPreviousPerformance(missing, excludeSessionId));
+            this._previousPerformance.update(current => {
+                const next = { ...current };
+                for (const exercise of previous) next[exercise.exerciseId] = exercise;
+                return next;
+            });
+            return true;
+        }catch{
+            this._error.set('No se han podido cargar los registros anteriores');
+            return false;
+        }
+    }
+
+    /** Starts the session and reloads the workout */
+    async StartTrainingSession
+    (
+        templateSessionId : string,
+        motivationLevel : number,
+        sleepLevel : number,
+        domsLevel : number,
+        comments : string | null
+    ) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.StartTrainingSession(templateSessionId, motivationLevel, sleepLevel, domsLevel, comments));
+        }catch{
+            this._error.set('No se ha podido iniciar el entrenamiento');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
+    /** Registers a performed set (templateSetId null for an extra set) and reloads the workout */
+    async RegisterSet(templateSessionId : string, trainingSessionId : string, templateSetId : string | null, superSetGroupId : string | null, values : SetValues) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.RegisterSet(trainingSessionId, templateSetId, superSetGroupId, values));
+        }catch{
+            this._error.set('No se ha podido registrar la serie');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
+    /** Joins registered sets in a superset (or separates them with null) and reloads the workout */
+    async AssignSuperSet(templateSessionId : string, trainingSessionId : string, setIds : string[], superSetGroupId : string | null) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.AssignSuperSet(trainingSessionId, setIds, superSetGroupId));
+        }catch{
+            this._error.set('No se ha podido guardar la superserie');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
+    /** Joins planned sets in a superset and reloads the sets of the session */
+    async CreateTemplateSuperSet(trainingTemplateId : string, templateSessionId : string, templateSetIds : string[]) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.CreateTemplateSuperSet(templateSessionId, templateSetIds));
+        }catch{
+            this._error.set('No se ha podido crear la superserie');
+            return false;
+        }
+        return this.GetSetsFromASessionTemplate(trainingTemplateId, templateSessionId);
+    }
+
+    /** Separates a superset of a session and reloads its sets */
+    async RemoveTemplateSuperSet(trainingTemplateId : string, templateSessionId : string, superSetGroupId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.RemoveTemplateSuperSet(templateSessionId, superSetGroupId));
+        }catch{
+            this._error.set('No se ha podido separar la superserie');
+            return false;
+        }
+        return this.GetSetsFromASessionTemplate(trainingTemplateId, templateSessionId);
+    }
+
+    /** Corrects a registered set and reloads the workout */
+    async UpdateSet(templateSessionId : string, trainingSessionId : string, setId : string, values : SetValues) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.UpdateSet(trainingSessionId, setId, values));
+        }catch{
+            this._error.set('No se ha podido guardar la serie');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
+    /** Removes a registered set and reloads the workout */
+    async RemoveSet(templateSessionId : string, trainingSessionId : string, setId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.RemoveSet(trainingSessionId, setId));
+        }catch{
+            this._error.set('No se ha podido borrar la serie');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
+    /**
+     * Finishes the session and reloads the workout.
+     * Returns whether it completed (and closed) the week, or null if it could not be finished
+     */
+    async FinishTrainingSession(templateSessionId : string, trainingSessionId : string) : Promise<{weekFinished: boolean, weekNumber: number} | null>{
+        this._error.set(null);
+        try{
+            const result = await firstValueFrom(this.api.FinishTrainingSession(trainingSessionId));
+            await this.GetSessionWorkout(templateSessionId);
+            return result;
+        }catch{
+            this._error.set('No se ha podido finalizar el entrenamiento');
+            return null;
+        }
+    }
+
+    /** Deletes the session in progress with its sets and reloads the workout, so it can be started again */
+    async DiscardTrainingSession(templateSessionId : string, trainingSessionId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.DiscardTrainingSession(trainingSessionId));
+        }catch{
+            this._error.set('No se ha podido descartar el entrenamiento');
+            return false;
+        }
+        return this.GetSessionWorkout(templateSessionId);
+    }
+
     async CreateProgram
     (
         name : string,
@@ -291,8 +446,7 @@ export class TrainingStore{
         isMyoRep:boolean,
         aimMuscleGroups : string [],
         expectedRPE:number,
-        series:number,
-        superSetGroupId :string | null
+        series:number
     ) : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);
@@ -308,8 +462,7 @@ export class TrainingStore{
                     isMyoRep,
                     aimMuscleGroups,
                     expectedRPE,
-                    series,
-                    superSetGroupId
+                    series
                 ));
             return true;
         }catch{
@@ -484,8 +637,7 @@ export class TrainingStore{
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRPE:number,
-        superSetGroupId :string | null
+        expectedRPE:number
     ){
         this._isLoading.set(true);
         this._error.set(null);
@@ -500,8 +652,7 @@ export class TrainingStore{
                     isCluster,
                     isMyoRep,
                     aimMuscleGroups,
-                    expectedRPE,
-                    superSetGroupId
+                    expectedRPE
                 ))
             return true;
         }catch{

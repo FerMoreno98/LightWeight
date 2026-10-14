@@ -14,6 +14,5 @@ public sealed record CreateTemplateSetCommand
     bool IsCluster,
     decimal ExpectedRPE,
     int Series,
-    List<string> AimMuscleGroups,
-    Guid? SuperSetGroupId
+    List<string> AimMuscleGroups
 ) : ICommand;

@@ -57,9 +57,7 @@ public sealed class UpdateTemplateSetCommandHandler : ICommandHandler<UpdateTemp
             range,
             command.ExpectedRPE,
             aimGroups,
-            trainingTechniques,
-            command.SuperSetGroupId
-
+            trainingTechniques
         );
         await _UOW.SaveChangesAsync(ct);
                                     

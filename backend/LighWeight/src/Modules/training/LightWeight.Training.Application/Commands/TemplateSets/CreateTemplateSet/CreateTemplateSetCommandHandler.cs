@@ -58,8 +58,7 @@ public sealed class CreateTemplateSetCommandHandler : ICommandHandler<CreateTemp
             range,
             command.ExpectedRPE,
             aimGroups,
-            trainingTechniques,
-            command.SuperSetGroupId
+            trainingTechniques
         );
         templateSession.AddSet(set);
         }

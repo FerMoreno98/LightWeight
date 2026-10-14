@@ -15,6 +15,5 @@ public sealed record UpdateTemplateSetCommand
     bool IsMyoRep,
     bool IsCluster,
     decimal ExpectedRPE,
-    List<string> AimMuscleGroups,
-    Guid? SuperSetGroupId
+    List<string> AimMuscleGroups
 ) : ICommand;

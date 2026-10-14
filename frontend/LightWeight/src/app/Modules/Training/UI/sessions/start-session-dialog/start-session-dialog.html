@@ -1,0 +1,78 @@
+@if (open()) {
+  <div class="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:px-4">
+    <div class="backdrop-fade absolute inset-0 bg-black/60 backdrop-blur-sm" (click)="cancel()"></div>
+
+    <form
+      (ngSubmit)="confirm()"
+      class="dialog-pop relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40 sm:rounded-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="start-session-title"
+    >
+      <h2 id="start-session-title" class="text-lg font-semibold text-white">Iniciar entrenamiento</h2>
+      <p class="mt-1 text-sm text-slate-400">{{ sessionName() }} · ¿Cómo llegas hoy?</p>
+
+      <div class="mt-6 flex flex-col gap-5">
+        @for (field of fields; track field.key) {
+          <fieldset>
+            <div class="flex items-baseline justify-between gap-2">
+              <legend class="text-sm font-medium text-slate-200">{{ field.label }}</legend>
+              <span class="text-xs text-slate-500">{{ field.hint }}</span>
+            </div>
+            <div class="mt-2 grid grid-cols-10 gap-1">
+              @for (level of levels; track level) {
+                <button
+                  type="button"
+                  (click)="select(field.key, level)"
+                  [attr.aria-pressed]="values()[field.key] === level"
+                  class="h-9 rounded-md border text-sm font-semibold transition"
+                  [class]="values()[field.key] === level
+                    ? 'border-emerald-400 bg-emerald-500 text-slate-900'
+                    : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500'"
+                >
+                  {{ level }}
+                </button>
+              }
+            </div>
+          </fieldset>
+        }
+
+        <label class="block">
+          <span class="text-sm font-medium text-slate-200">Comentarios <span class="font-normal text-slate-500">(opcional)</span></span>
+          <textarea
+            [(ngModel)]="comments"
+            name="comments"
+            rows="3"
+            maxlength="1000"
+            placeholder="Molestias, cómo te encuentras, cambios de gimnasio..."
+            class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          ></textarea>
+        </label>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          (click)="cancel()"
+          [disabled]="busy()"
+          class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700 disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          [disabled]="busy()"
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
+        >
+          @if (busy()) {
+            <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+            </svg>
+          }
+          Empezar
+        </button>
+      </div>
+    </form>
+  </div>
+}

@@ -54,8 +54,7 @@ public class SetTemplateTests
             false,
             8,
             series,
-            new List<string>(),
-            null
+            new List<string>()
         );
     }
 

@@ -17,20 +17,29 @@ public class TrainingSessionConfiguration : IEntityTypeConfiguration<TrainingSes
         builder.HasIndex(t => t.UserId).HasDatabaseName("Ix_TrainingSession_UserId");
         builder.Property(t => t.Name).HasColumnName("Name").HasMaxLength(200).IsRequired();
         builder.Property(t => t.StartAt).HasColumnName("StartAt").IsRequired();
+        builder.Property(t => t.FinishedAt).HasColumnName("FinishedAt");
+        builder.Ignore(t => t.IsFinished);
         builder.Property(t => t.Duration).HasColumnName("Duration").HasColumnType("interval");
         builder.Property(t => t.Comments).HasColumnName("Comments");
         builder.Property(t => t.MotivationLevel).HasColumnName("MotivationLevel").IsRequired();
         builder.Property(t => t.SleepLevel).HasColumnName("SleepLevel").IsRequired();
         builder.Property(t => t.DOMSLevel).HasColumnName("DOMSLevel").IsRequired();
         builder.Property(t => t.TemplateSessionId).HasColumnName("TemplateSessionId");
+        // A session of the template is trained at most once per week
+        builder.HasIndex(t => new { t.MicrocycleId, t.TemplateSessionId })
+            .HasDatabaseName("Ux_TrainingSession_TemplateSessionPerWeek")
+            .IsUnique()
+            .HasFilter("\"TemplateSessionId\" IS NOT NULL");
         builder.Ignore(t => t.DomainEvents);
 
         builder.HasMany(t => t.Sets)
             .WithOne()
             .HasForeignKey("TrainingSessionId")
+            .IsRequired()
             .HasPrincipalKey(t => t.Id)
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(t => t.Sets)
+            .HasField("_sets")
             .UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasOne<Microcycle>()

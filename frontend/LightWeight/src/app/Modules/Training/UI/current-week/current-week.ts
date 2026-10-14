@@ -68,6 +68,13 @@ export class CurrentWeek {
     return TRAINING_DISTRIBUTION_LABELS[template.trainingDistribution] ?? template.trainingDistribution;
   }
 
+  /** "Hecha" / "En curso" for the sessions already started this week */
+  sessionStatus(session: Session): 'done' | 'inProgress' | null {
+    const started = this.current()?.trainingSessions.find(s => s.templateSessionId === session.id);
+    if (!started) return null;
+    return started.finishedAt ? 'done' : 'inProgress';
+  }
+
   openSession(session: Session) {
     const templateId = this.current()?.microcycle?.trainingTemplateId;
     if (!templateId) return;

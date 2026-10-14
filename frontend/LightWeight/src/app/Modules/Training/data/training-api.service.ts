@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { environment } from '../../../../Environments/Environment';
 import { Observable } from 'rxjs';
@@ -141,7 +141,57 @@ export interface CurrentMicrocycle{
         /** null when the template has been deleted */
         templateName : string | null,
         durationInDays : number | null
-    } | null
+    } | null,
+    /** Sessions started in the active week (empty unless InProgress) */
+    trainingSessions : { id : string, templateSessionId : string | null, finishedAt : string | null }[]
+}
+
+/** A set actually performed in a session */
+export interface PerformedSet{
+    id : string,
+    exerciseId : string,
+    /** Empty when the exercise no longer exists */
+    exerciseName : string,
+    /** Planned set it covers, null for an extra set */
+    templateSetId : string | null,
+    repetitions : number,
+    weight : number,
+    rpe : number,
+    isBodyWeight : boolean,
+    /** Superset it was performed in (planned or improvised), null when it was performed alone */
+    superSetGroupId : string | null
+}
+export interface WorkoutSession{
+    id : string,
+    startAt : string,
+    /** null while the session is in progress */
+    finishedAt : string | null,
+    /** "hh:mm:ss(.fffffff)", zero while in progress */
+    duration : string,
+    motivationLevel : number,
+    sleepLevel : number,
+    domsLevel : number,
+    comments : string | null,
+    sets : PerformedSet[]
+}
+/** What has been done this week for a session of a template */
+export interface SessionWorkout{
+    /** True when the session belongs to the week in progress and has not been started */
+    canStart : boolean,
+    session : WorkoutSession | null
+}
+/** Last time an exercise was performed in the active macrocycle */
+export interface PreviousExercise{
+    exerciseId : string,
+    performedAt : string,
+    sets : { repetitions : number, weight : number, rpe : number, isBodyWeight : boolean }[]
+}
+export interface SetValues{
+    exerciseId : string,
+    repetitions : number,
+    weight : number,
+    rpe : number,
+    isBodyWeight : boolean
 }
 
 @Service()
@@ -219,6 +269,52 @@ export class TrainingApiService {
     FinishMicrocycle(microcycleId : string) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/microcycle/${microcycleId}/finish`, {});
     }
+    GetSessionWorkout(templateSessionId : string) : Observable<SessionWorkout>{
+        return this.http.get<SessionWorkout>(`${this.baseUrl}/training-session/workout/${templateSessionId}`);
+    }
+    GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null) : Observable<PreviousExercise[]>{
+        let params = new HttpParams();
+        for (const id of exerciseIds) params = params.append('exerciseIds', id);
+        if (excludeSessionId) params = params.set('excludeSessionId', excludeSessionId);
+        return this.http.get<PreviousExercise[]>(`${this.baseUrl}/training-session/previous`, { params });
+    }
+    StartTrainingSession
+    (
+        templateSessionId : string,
+        motivationLevel : number,
+        sleepLevel : number,
+        domsLevel : number,
+        comments : string | null
+    ) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/training-session`, {
+            templateSessionId,
+            motivationLevel,
+            sleepLevel,
+            domsLevel,
+            comments
+        });
+    }
+    RegisterSet(trainingSessionId : string, templateSetId : string | null, superSetGroupId : string | null, values : SetValues) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/training-session/${trainingSessionId}/sets`, { ...values, templateSetId, superSetGroupId });
+    }
+    /** Joins registered sets in a superset, or separates them with null */
+    AssignSuperSet(trainingSessionId : string, setIds : string[], superSetGroupId : string | null) : Observable<void>{
+        return this.http.put<void>(`${this.baseUrl}/training-session/${trainingSessionId}/supersets`, { setIds, superSetGroupId });
+    }
+    UpdateSet(trainingSessionId : string, setId : string, values : SetValues) : Observable<void>{
+        return this.http.put<void>(`${this.baseUrl}/training-session/${trainingSessionId}/sets/${setId}`, values);
+    }
+    RemoveSet(trainingSessionId : string, setId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/training-session/${trainingSessionId}/sets/${setId}`);
+    }
+    /** weekFinished is true when this was the last pending session of the week and the week has been closed */
+    FinishTrainingSession(trainingSessionId : string) : Observable<{weekFinished: boolean, weekNumber: number}>{
+        return this.http.post<{weekFinished: boolean, weekNumber: number}>(`${this.baseUrl}/training-session/${trainingSessionId}/finish`, {});
+    }
+    /** Deletes a session in progress with all its sets */
+    DiscardTrainingSession(trainingSessionId : string) : Observable<void>{
+        return this.http.post<void>(`${this.baseUrl}/training-session/${trainingSessionId}/discard`, {});
+    }
     CreateTrainingTemplate
     (
         programId : string,
@@ -259,8 +355,7 @@ export class TrainingApiService {
         isMyoRep:boolean,
         aimMuscleGroups : string [],
         expectedRPE:number,
-        series:number,
-        superSetGroupId :string | null
+        series:number
     ) : Observable<void>{
         return this.http.post<void>(`${this.baseUrl}/template-set`,{
             exerciseId,
@@ -272,9 +367,15 @@ export class TrainingApiService {
             isMyoRep,
             expectedRPE,
             series,
-            aimMuscleGroups,
-            superSetGroupId
+            aimMuscleGroups
         })
+    }
+    /** Joins planned sets of a session in a superset (at least two exercises) */
+    CreateTemplateSuperSet(templateSessionId : string, templateSetIds : string[]) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/template-session/${templateSessionId}/supersets`, { templateSetIds });
+    }
+    RemoveTemplateSuperSet(templateSessionId : string, superSetGroupId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/template-session/${templateSessionId}/supersets/${superSetGroupId}`);
     }
     GetAllExercises() : Observable<Exercise[]>{
         return this.http.get<Exercise[]>(`${this.baseUrl}/exercises`);
@@ -316,8 +417,7 @@ export class TrainingApiService {
         isCluster:boolean,
         isMyoRep:boolean,
         aimMuscleGroups : string [],
-        expectedRPE:number,
-        superSetGroupId :string | null
+        expectedRPE:number
     ) : Observable<void>{
         return this.http.put<void>(`${this.baseUrl}/template-set`,{
             templateSessionId,
@@ -328,8 +428,7 @@ export class TrainingApiService {
             isCluster,
             isMyoRep,
             expectedRPE,
-            aimMuscleGroups,
-            superSetGroupId
+            aimMuscleGroups
         
         })
     }

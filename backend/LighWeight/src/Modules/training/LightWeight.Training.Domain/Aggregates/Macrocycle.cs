@@ -125,6 +125,32 @@ public sealed class Macrocycle : AggregateRoot<Guid>
         mesocycle.FinishMicrocycle(microcycleId, now);
     }
 
+    /// <summary>
+    /// Finishes a week once every session planned in its template has been trained and finished.
+    /// Nothing changes when the week is already finished or some planned session is missing
+    /// </summary>
+    /// <param name="microcycleId">Week to check</param>
+    /// <param name="plannedSessionIds">Sessions of the template the week follows</param>
+    /// <param name="finishedSessionIds">Sessions of the template already trained and finished this week</param>
+    /// <param name="now">Completion timestamp</param>
+    /// <returns>True when the week has been finished now</returns>
+    public bool FinishMicrocycleIfCompleted
+    (
+        Guid microcycleId,
+        IReadOnlyCollection<Guid> plannedSessionIds,
+        IReadOnlyCollection<Guid> finishedSessionIds,
+        DateTime now
+    )
+    {
+        Microcycle microcycle = _mesocycles.SelectMany(m => m.Microcycles).SingleOrDefault(m => m.Id == microcycleId)
+            ?? throw new MicrocycleNotFoundDomainException();
+        // A template without sessions can never be completed: that week is finished by hand
+        if(microcycle.IsFinished || plannedSessionIds.Count == 0 || !plannedSessionIds.All(finishedSessionIds.Contains))
+            return false;
+        FinishMicrocycle(microcycleId, now);
+        return true;
+    }
+
     /// <summary>Finishes the macrocycle and, with the same timestamp, its active mesocycle and active week (if any)</summary>
     /// <param name="now">Completion timestamp</param>
     public void Finish(DateTime now)

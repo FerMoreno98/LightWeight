@@ -42,6 +42,14 @@ public class ProgramAndCyclesTests
         return (program, template);
     }
 
+    /// <summary>Training session repository returning the given sessions for any week</summary>
+    private static ITrainingSessionRepository SessionsRepository(params TrainingSession[] sessions)
+    {
+        ITrainingSessionRepository repository = Substitute.For<ITrainingSessionRepository>();
+        repository.GetByMicrocycleIdAsync(Arg.Any<Guid>()).Returns(sessions.ToList());
+        return repository;
+    }
+
     private static Macrocycle CreateActiveMacrocycle(Guid userId)
     {
         return Macrocycle.Create(userId, TrainingStage.Bulk, null, DateTime.UtcNow, null);
@@ -714,7 +722,7 @@ public class ProgramAndCyclesTests
         IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
         _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns((Macrocycle?)null);
         GetCurrentMicrocycleQueryHandler queryHandler =
-            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>(),SessionsRepository());
         // Act
         var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
         // Assert
@@ -734,7 +742,7 @@ public class ProgramAndCyclesTests
         macrocycle.FinishMesocycle(finished.Id, DateTime.UtcNow);
         _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
         GetCurrentMicrocycleQueryHandler queryHandler =
-            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>());
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,Substitute.For<IProgramRepository>(),SessionsRepository());
         // Act
         var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
         // Assert
@@ -758,7 +766,7 @@ public class ProgramAndCyclesTests
         _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         GetCurrentMicrocycleQueryHandler queryHandler =
-            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository,SessionsRepository());
         // Act
         var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
         // Assert
@@ -784,7 +792,7 @@ public class ProgramAndCyclesTests
         _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         GetCurrentMicrocycleQueryHandler queryHandler =
-            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository,SessionsRepository());
         // Act
         var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
         // Assert
@@ -796,6 +804,34 @@ public class ProgramAndCyclesTests
         Assert.Equal(template.Id, result.Microcycle.TrainingTemplateId);
         Assert.Equal("ValidTemplateName", result.Microcycle.TemplateName);
         Assert.Equal(7, result.Microcycle.DurationInDays);
+    }
+
+    [Fact]
+    public async Task GetCurrentMicrocycleQuery_WithAnActiveWeek_ReturnsTheSessionsStartedThisWeek()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IMacrocycleRepository _macrocycleRepository = Substitute.For<IMacrocycleRepository>();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        (Program program, TrainingTemplate template) = CreateProgramWithTemplate(userId);
+        Macrocycle macrocycle = CreateActiveMacrocycle(userId);
+        Mesocycle mesocycle = macrocycle.PlanMesocycle(program.Id, 8, null, null, DateTime.UtcNow);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, template.Id, DateTime.UtcNow);
+        var pushId = Guid.CreateVersion7();
+        var pullId = Guid.CreateVersion7();
+        TrainingSession finished = TrainingSession.Create(week.Id, userId, "Push", DateTime.UtcNow, null, 8, 8, 2, pushId);
+        finished.Finish(DateTime.UtcNow.AddHours(1));
+        TrainingSession inProgress = TrainingSession.Create(week.Id, userId, "Pull", DateTime.UtcNow, null, 8, 8, 2, pullId);
+        _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
+        _programRepository.GetByIdAsync(program.Id).Returns(program);
+        GetCurrentMicrocycleQueryHandler queryHandler =
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository,SessionsRepository(finished, inProgress));
+        // Act
+        var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
+        // Assert
+        Assert.Equal(2, result.TrainingSessions.Count);
+        Assert.NotNull(result.TrainingSessions.Single(s => s.TemplateSessionId == pushId).FinishedAt);
+        Assert.Null(result.TrainingSessions.Single(s => s.TemplateSessionId == pullId).FinishedAt);
     }
 
     [Fact]
@@ -813,7 +849,7 @@ public class ProgramAndCyclesTests
         _macrocycleRepository.GetActiveOfAUserAsync(userId).Returns(macrocycle);
         _programRepository.GetByIdAsync(program.Id).Returns(program);
         GetCurrentMicrocycleQueryHandler queryHandler =
-            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository);
+            new GetCurrentMicrocycleQueryHandler(_macrocycleRepository,_programRepository,SessionsRepository());
         // Act
         var result = await queryHandler.HandleAsync(new GetCurrentMicrocycleQuery(userId),default);
         // Assert

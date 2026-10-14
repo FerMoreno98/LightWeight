@@ -38,7 +38,6 @@ export class ExerciseSettings {
 
   isEditMode = false;
   editingSetId: string | null = null;
-  editingSuperSetGroupId: string | null = null;
 
   async ngOnInit(){
     this.TemplateId = this.route.snapshot.paramMap.get('templateid');
@@ -54,7 +53,6 @@ export class ExerciseSettings {
       if (set){
         this.isEditMode = true;
         this.editingSetId = set.id;
-        this.editingSuperSetGroupId = set.superSetGroupId;
         this.selectedExercise = this.Exercises.find(e => e.id === set.exerciseId) ?? null;
         this.min = set.repetitionRangeMin;
         this.max = set.repetitionRangeMax;
@@ -121,8 +119,7 @@ export class ExerciseSettings {
           this.isCluster,
           this.isMyoRep,
           aimMuscleGroups,
-          this.expectedRPE!,
-          this.editingSuperSetGroupId
+          this.expectedRPE!
         )
       : await this.store.CreateTemplateSet(
           this.selectedExercise.id,
@@ -134,8 +131,7 @@ export class ExerciseSettings {
           this.isMyoRep,
           aimMuscleGroups,
           this.expectedRPE!,
-          this.series!,
-          null
+          this.series!
         );
 
     if (success){

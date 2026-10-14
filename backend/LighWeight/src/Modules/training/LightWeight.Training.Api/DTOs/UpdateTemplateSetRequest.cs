@@ -10,6 +10,5 @@ public sealed record UpdateTemplateSetRequest
     bool IsMyoRep,
     bool IsCluster,
     decimal ExpectedRPE,
-    List<string> AimMuscleGroups,
-    Guid? SuperSetGroupId
+    List<string> AimMuscleGroups
 );

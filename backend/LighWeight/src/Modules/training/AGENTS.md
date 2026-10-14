@@ -28,17 +28,21 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **DB table**: `training_Microcycles` (FK → Mesocycle cascade, FK → TrainingTemplate restrict, unique `(MesocycleId, WeekNumber)`)
 
 ### `TrainingSession` (AggregateRoot)
-- **Properties**: `MicrocycleId`, `Name`, `StartAt`, `Duration` (TimeSpan), `Comments?`, `MotivationLevel` (1-10), `SleepLevel` (1-10), `DOMSLevel` (1-10)
+- **Properties**: `MicrocycleId`, `UserId`, `TemplateSessionId?`, `Name`, `StartAt`, `FinishedAt?` (null while in progress), `Duration`, `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` (1-10)
+- **Child entities**: `Set` (only created and changed through the session)
 - **Invariants**:
-  - References a parent `MicrocycleId`
-  - `Duration` starts as zero and is calculated when `EndTraining()` is called
-  - `MotivationLevel`, `SleepLevel`, and `DOMSLevel` are subjective user ratings (1-10)
-- **Child entities**: `Set`
-- **Domain events it emits**: None yet
-- **Behaviour methods**:
-  - `EndTraining(DateTime now)`: calculates total session duration
-  - `RegisterSet(Set set)`: adds a performed set to the session
-- **DB table**: `training_TrainingSessions` (FK → Microcycle, `Duration` as `interval`)
+  - Only the week in progress can be trained, with a session of the week's template (checked by `CreateTrainingSession`)
+  - A session of the template is trained at most once per week (handler + partial unique index `Ux_TrainingSession_TemplateSessionPerWeek`)
+  - A finished session is read only; `Finish(now)` stores `FinishedAt` and `Duration = now - StartAt`
+  - A planned set (`TemplateSetId`) is covered at most once per session; corrections go through `UpdateSet`
+- **Behaviour methods**: `RegisterSet`, `UpdateSet`, `RemoveSet`, `Finish`
+- **Repository**: `ITrainingSessionRepository`, including `GetLastSetsOfExercisesAsync` (last performance of each exercise in a set of weeks, used for "Anterior")
+- **DB table**: `training_TrainingSessions` (FK → Microcycle cascade, FK → TemplateSession restrict)
+
+### `Set` (Entity, child of `TrainingSession`)
+- **Properties**: `ExerciseId` (the exercise actually performed), `TemplateSetId?`, `Repetitions`, `Weight`, `RPE` (1-10), `IsBodyWeight`, `AdvanceTrainingTechniques`, `SuperSetGroupId?`
+- Real sets are not tied to the plan: with `TemplateSetId` they cover a planned set (with the planned exercise or a substitute), without it they are extra sets. Technique and superset are copied from the planned set
+- **DB table**: `training_Sets` (FK → TrainingSession cascade, FK → Exercise, FK → TemplateSet restrict; technique stored as `AdvanceTrainingTechniques_IsDropSet/IsCluster/IsMyoRep`)
 
 ### `Program` (AggregateRoot)
 - **Properties**: `UserId`, `Name`, `Periodization`, `AimMuscleGroups` (List\<MuscleGroups\>)
@@ -74,12 +78,6 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **Design note**: Exercises belong to a user-managed catalog. Users can create their own exercises. The `Set` and `TemplateSet` entities reference `ExerciseId` rather than embedding the full value.
 - **DB table**: `training_Exercises` (`_aimMuscleGroups` stored as `jsonb`)
 
-### `Set` (Entity, child of `TrainingSession`)
-- **Properties**: `ExerciseId`, `Repetitions`, `IsBodyWeight`, `AdvanceTrainingTechniques` (ValueObject), `Weight`, `RPE`, `SuperSetGroupId?`
-- `SuperSetGroupId` (nullable): shared ID across sets that form a superset; `null` means not part of a superset
-- `AdvanceTrainingTechniques` is a ValueObject (IsDropSet/IsCluster/IsMyoRep) enforcing at most one technique active per set
-- **DB table**: `training_Sets` (FK → TrainingSession, FK → Exercise; `AdvanceTrainingTechniques` columns embedded)
-
 ### `TemplateSession` (Entity, child of `TrainingTemplate`)
 - **Properties**: `Name`, `IsDeleted`, `DeletedAt?`
 - Represents a planned session within a template
@@ -94,7 +92,9 @@ This module handles strength and bodybuilding training planning and logging. It 
 
 ## 3. Non-obvious business rules
 
-- **Supersets are modeled via `SuperSetGroupId`**: There is no `IsSuperSet` boolean. Sets sharing the same `SuperSetGroupId` belong to the same superset. This allows pairs, triplets, or any group size and keeps the model relational without coupling entities.
+- **Supersets are modeled via `SuperSetGroupId`**: There is no `IsSuperSet` boolean. Sets sharing the same `SuperSetGroupId` belong to the same superset (pairs, triplets...). They are performed alternating their exercises round by round (round r = the r-th set of each exercise).
+  - **Planned**: only `TemplateSession.CreateSuperSet(setIds)` / `RemoveSuperSet(groupId)` change them (clients cannot send a group id when creating or updating a set). A planned superset needs at least two different exercises and is dissolved when it is left with one (also when deleting sets). `Duplicate` gives the copies new group ids.
+  - **Real**: the client sends the group each set was performed in (planned, improvised in the session or none) and `TrainingSession.AssignSuperSet` regroups recorded sets. No minimum of exercises is enforced, because sets are recorded one by one.
 - **At most one advanced technique per set**: `AdvanceTrainingTechniques` enforces that only one of `IsDropSet`, `IsCluster`, or `IsMyoRep` can be `true`. Attempting to create with more than one active throws `AdvanceTrainingTechniquesExceptions`.
 - **Template vs. real sessions**: `TrainingTemplate`, `TemplateSession`, and `TemplateSet` are planning aggregates and never reference real session IDs. Real `TrainingSession` and its `Set` are created independently, possibly copying structure from a template.
 - **Templates use soft delete**: `TrainingTemplate`, `TemplateSession` and `TemplateSet` are never physically deleted. `Microcycle.TrainingTemplateId`, `TrainingSession.TemplateSessionId` and `Set.TemplateSetId` point to these inner entities of the `Program` aggregate, so a hard delete would leave dangling references in the training history.

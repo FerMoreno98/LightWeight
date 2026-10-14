@@ -2,10 +2,9 @@ namespace LightWeight.Training.Api.DTOs;
 
 public sealed record CreateTrainingSessionRequest
 (
-    Guid MicrocycleId,
-    string Name,
-    string? Comments,
+    Guid TemplateSessionId,
     int MotivationLevel,
     int SleepLevel,
-    int DOMSLevel
+    int DOMSLevel,
+    string? Comments
 );

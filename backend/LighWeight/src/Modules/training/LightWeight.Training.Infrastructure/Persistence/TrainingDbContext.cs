@@ -15,6 +15,7 @@ public class TrainingDbContext(DbContextOptions<TrainingDbContext> options) : Db
     public DbSet<Microcycle> Microcycles => Set<Microcycle>();
     public DbSet<Program> Programs => Set<Program>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
+    public DbSet<TrainingSession> TrainingSessions => Set<TrainingSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

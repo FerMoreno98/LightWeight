@@ -18,29 +18,68 @@
           <h1 class="text-2xl font-bold text-white">Series de la sesión</h1>
           <p class="mt-1 text-sm text-slate-400">Ejercicios, rangos de repeticiones y RPE objetivo.</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button
-            type="button"
-            (click)="deleteSession()"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 shadow-sm transition hover:bg-red-950/70"
-          >
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
-            </svg>
-            Borrar sesión
-          </button>
-          <button
-            type="button"
-            (click)="addSet()"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
-          >
-            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
-            </svg>
-            Añadir serie
-          </button>
-        </div>
+        @if (!isSelecting()) {
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              (click)="deleteSession()"
+              class="inline-flex items-center gap-1.5 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 shadow-sm transition hover:bg-red-950/70"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+              </svg>
+              Borrar sesión
+            </button>
+            @if (groupedSets().length >= 2) {
+              <button
+                type="button"
+                (click)="startSelecting()"
+                class="inline-flex items-center gap-1.5 rounded-lg border border-sky-800 bg-sky-950/40 px-4 py-2 text-sm font-semibold text-sky-300 shadow-sm transition hover:bg-sky-950/70"
+              >
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                </svg>
+                Crear superserie
+              </button>
+            }
+            <button
+              type="button"
+              (click)="addSet()"
+              class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+            >
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+              </svg>
+              Añadir serie
+            </button>
+          </div>
+        }
       </div>
+
+      @if (isSelecting()) {
+        <div class="sticky top-2 z-10 mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-800 bg-slate-900/95 p-4 shadow-lg shadow-black/30 backdrop-blur">
+          <p class="text-sm text-slate-300">
+            Marca los ejercicios que harás alternando, ronda a ronda. Necesitas al menos dos ejercicios distintos.
+          </p>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              (click)="cancelSelecting()"
+              class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              (click)="createSuperSet()"
+              [disabled]="!canCreateSuperSet() || isSavingSuperSet()"
+              class="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ isSavingSuperSet() ? 'Creando...' : 'Crear superserie' }}
+            </button>
+          </div>
+        </div>
+      }
 
       @if (error()) {
         <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
@@ -71,57 +110,40 @@
         </div>
       } @else {
         <div class="flex flex-col gap-5">
-          @for (group of groupedSets(); track group.exerciseId) {
-            <div class="rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 shadow-lg shadow-black/20 transition duration-200 hover:border-slate-600">
-              <h2 class="text-lg font-semibold leading-tight text-white">{{ exerciseName(group.exerciseId) }}</h2>
-
-              <div class="mt-3 flex flex-col divide-y divide-slate-700/60 border-t border-slate-700/60">
-                @for (set of group.sets; track set.id; let i = $index) {
-                  <div
-                    (click)="selectSet(set)"
-                    class="group flex cursor-pointer flex-wrap items-center justify-between gap-3 rounded-lg py-3 px-2 -mx-2 transition hover:bg-slate-900/60"
-                  >
-                    <div class="flex flex-wrap items-center gap-2">
-                      <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-950/60 text-[11px] font-semibold text-emerald-300">
-                        {{ i + 1 }}
-                      </span>
-                      <div class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">
-                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Repeticiones</p>
-                        <p class="text-sm font-semibold text-white">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</p>
-                      </div>
-                      <div class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">
-                        <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">RPE</p>
-                        <p class="text-sm font-semibold text-white">{{ set.expectedRPE }}</p>
-                      </div>
-                      @if (set.aimMuscleGroups.length) {
-                        <div class="flex flex-wrap gap-1.5">
-                          @for (muscle of set.aimMuscleGroups; track muscle) {
-                            <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
-                              {{ muscle }}
-                            </span>
-                          }
-                        </div>
-                      }
-                    </div>
-                    <div class="flex shrink-0 items-center gap-1">
-                      <button
-                        type="button"
-                        (click)="$event.stopPropagation(); deleteSet(set.id)"
-                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400"
-                        aria-label="Borrar serie"
-                      >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
-                        </svg>
-                      </button>
-                      <svg class="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                      </svg>
-                    </div>
-                  </div>
-                }
+          @for (unit of units(); track $index) {
+            @if (unit.kind === 'single') {
+              <div class="rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 shadow-lg shadow-black/20 transition duration-200 hover:border-slate-600">
+                <ng-container *ngTemplateOutlet="exercise; context: { $implicit: unit.item, label: null }" />
               </div>
-            </div>
+            } @else {
+              <div class="rounded-2xl border border-sky-800/70 bg-sky-950/20 p-5 shadow-lg shadow-black/20">
+                <div class="mb-3 flex items-center justify-between gap-3">
+                  <h2 class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-sky-300">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                    </svg>
+                    Superserie {{ unit.label }}
+                  </h2>
+                  @if (!isSelecting()) {
+                    <button
+                      type="button"
+                      (click)="separate(unit.groupId)"
+                      [disabled]="isSavingSuperSet()"
+                      class="rounded-lg px-3 py-1.5 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-white disabled:opacity-50"
+                    >
+                      Separar
+                    </button>
+                  }
+                </div>
+                <div class="flex flex-col gap-3">
+                  @for (group of unit.items; track group.key; let i = $index) {
+                    <div class="rounded-xl border border-slate-700 bg-slate-800/80 p-4">
+                      <ng-container *ngTemplateOutlet="exercise; context: { $implicit: group, label: unit.label + (i + 1) }" />
+                    </div>
+                  }
+                </div>
+              </div>
+            }
           }
         </div>
       }
@@ -129,3 +151,73 @@
 
   </div>
 </div>
+
+<ng-template #exercise let-group let-label="label">
+  <div class="flex items-center gap-3">
+    @if (isSelecting()) {
+      <input
+        type="checkbox"
+        [checked]="isSelected(group)"
+        (change)="toggleSelected(group)"
+        [attr.aria-label]="'Seleccionar ' + group.exerciseName"
+        class="h-5 w-5 shrink-0 rounded border-slate-600 bg-slate-900 accent-sky-500"
+      />
+    }
+    @if (label) {
+      <span class="rounded-md bg-sky-900/60 px-2 py-0.5 text-xs font-bold text-sky-200">{{ label }}</span>
+    }
+    <h2 class="text-lg font-semibold leading-tight text-white">{{ group.exerciseName }}</h2>
+  </div>
+
+  <div class="mt-3 flex flex-col divide-y divide-slate-700/60 border-t border-slate-700/60">
+    @for (set of group.sets; track set.id; let i = $index) {
+      <div
+        (click)="isSelecting() ? toggleSelected(group) : selectSet(set)"
+        class="group flex cursor-pointer flex-wrap items-center justify-between gap-3 rounded-lg py-3 px-2 -mx-2 transition hover:bg-slate-900/60"
+      >
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-950/60 text-[11px] font-semibold text-emerald-300">
+            {{ i + 1 }}
+          </span>
+          <div class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">Repeticiones</p>
+            <p class="text-sm font-semibold text-white">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</p>
+          </div>
+          <div class="rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5">
+            <p class="text-[10px] font-medium uppercase tracking-wide text-slate-500">RPE</p>
+            <p class="text-sm font-semibold text-white">{{ set.expectedRPE }}</p>
+          </div>
+          @if (techniqueLabel(set); as technique) {
+            <span class="rounded-full border border-amber-800/60 bg-amber-950/40 px-2.5 py-1 text-xs text-amber-300">{{ technique }}</span>
+          }
+          @if (set.aimMuscleGroups.length) {
+            <div class="flex flex-wrap gap-1.5">
+              @for (muscle of set.aimMuscleGroups; track muscle) {
+                <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
+                  {{ muscle }}
+                </span>
+              }
+            </div>
+          }
+        </div>
+        @if (!isSelecting()) {
+          <div class="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              (click)="$event.stopPropagation(); deleteSet(set.id)"
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400"
+              aria-label="Borrar serie"
+            >
+              <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+              </svg>
+            </button>
+            <svg class="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</ng-template>

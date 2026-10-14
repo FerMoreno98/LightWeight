@@ -19,7 +19,18 @@ using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
 using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateSession;
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
+using LightWeight.Training.Application.Commands.TemplateSuperSets.CreateTemplateSuperSet;
+using LightWeight.Training.Application.Commands.TemplateSuperSets.RemoveTemplateSuperSet;
+using LightWeight.Training.Application.Commands.TrainingSessions.AssignSuperSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
+using LightWeight.Training.Application.Commands.TrainingSessions.DiscardTrainingSession;
+using LightWeight.Training.Application.Commands.TrainingSessions.FinishTrainingSession;
+using LightWeight.Training.Application.Commands.TrainingSessions.RegisterSet;
+using LightWeight.Training.Application.Commands.TrainingSessions.RemoveSet;
+using LightWeight.Training.Application.Commands.TrainingSessions.UpdateSet;
+using LightWeight.Training.Application.Queries.TrainingSessions.GetPreviousPerformance;
+using LightWeight.Training.Application.Queries.TrainingSessions.GetSessionWorkout;
+using Microsoft.AspNetCore.Mvc;
 using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTrainingTemplate;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
@@ -54,7 +65,18 @@ public static class TrainingModule
         group.MapPost("/training-template", CreateTrainingTemplate).RequireAuthorization();
         group.MapPost("/template-session", CreateTemplateSession).RequireAuthorization();
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
+        group.MapPost("/template-session/{templateSessionId:guid}/supersets", CreateTemplateSuperSet).RequireAuthorization();
+        group.MapDelete("/template-session/{templateSessionId:guid}/supersets/{superSetGroupId:guid}", RemoveTemplateSuperSet).RequireAuthorization();
         group.MapPost("/training-session", CreateTrainingSession).RequireAuthorization();
+        group.MapGet("/training-session/workout/{templateSessionId:guid}", GetSessionWorkout).RequireAuthorization();
+        group.MapGet("/training-session/previous", GetPreviousPerformance).RequireAuthorization();
+        group.MapPost("/training-session/{trainingSessionId:guid}/sets", RegisterSet).RequireAuthorization();
+        group.MapPut("/training-session/{trainingSessionId:guid}/sets/{setId:guid}", UpdateSet).RequireAuthorization();
+        group.MapDelete("/training-session/{trainingSessionId:guid}/sets/{setId:guid}", RemoveSet).RequireAuthorization();
+        group.MapPost("/training-session/{trainingSessionId:guid}/finish", FinishTrainingSession).RequireAuthorization();
+        group.MapPut("/training-session/{trainingSessionId:guid}/supersets", AssignSuperSet).RequireAuthorization();
+        // DELETE /training-session/{id} already deletes a session of a template, so discarding is a POST
+        group.MapPost("/training-session/{trainingSessionId:guid}/discard", DiscardTrainingSession).RequireAuthorization();
         group.MapGet("/exercises", GetAllExercises).RequireAuthorization();
         group.MapGet("/training-template/{trainingTemplateId:guid}/sessions", GetSessionsOfATrainingTemplate).RequireAuthorization();
         group.MapGet("/training-template/{trainingTemplateId:guid}/{sessionTemplateId:guid}/sets",GetSetsOfASessionTemplate).RequireAuthorization();
@@ -303,8 +325,7 @@ public static class TrainingModule
             request.IsCluster,
             request.ExpectedRPE,
             request.Series,
-            request.AimMuscleGroups,
-            request.SuperSetGroupId
+            request.AimMuscleGroups
         ), ct);
         return TypedResults.Ok();
     }
@@ -313,18 +334,194 @@ public static class TrainingModule
     (
         CreateTrainingSessionRequest request,
         IMediator mediator,
+        HttpContext httpContext,
         CancellationToken ct
     )
     {
-        await mediator.SendAsync(new CreateTrainingSessionCommand(
-            request.MicrocycleId,
-            request.Name,
-            request.Comments,
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<CreateTrainingSessionCommand, Guid>(new CreateTrainingSessionCommand(
+            Guid.Parse(userId),
+            request.TemplateSessionId,
             request.MotivationLevel,
             request.SleepLevel,
-            request.DOMSLevel
+            request.DOMSLevel,
+            request.Comments
         ), ct);
-        return TypedResults.Ok();
+        return TypedResults.Ok(new { id });
+    }
+
+    private static async Task<IResult> GetSessionWorkout
+    (
+        Guid templateSessionId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var workout = await mediator.QueryAsync<GetSessionWorkoutQuery, GetSessionWorkoutResponse>(
+            new GetSessionWorkoutQuery(templateSessionId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(workout);
+    }
+
+    private static async Task<IResult> GetPreviousPerformance
+    (
+        [FromQuery] Guid[] exerciseIds,
+        [FromQuery] Guid? excludeSessionId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var previous = await mediator.QueryAsync<GetPreviousPerformanceQuery, List<GetPreviousPerformanceResponse>>(
+            new GetPreviousPerformanceQuery(exerciseIds, excludeSessionId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(previous);
+    }
+
+    private static async Task<IResult> RegisterSet
+    (
+        Guid trainingSessionId,
+        RegisterSetRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<RegisterSetCommand, Guid>(new RegisterSetCommand(
+            trainingSessionId,
+            Guid.Parse(userId),
+            request.ExerciseId,
+            request.TemplateSetId,
+            request.Repetitions,
+            request.Weight,
+            request.RPE,
+            request.IsBodyWeight,
+            request.SuperSetGroupId
+        ), ct);
+        return TypedResults.Ok(new { id });
+    }
+
+    private static async Task<IResult> UpdateSet
+    (
+        Guid trainingSessionId,
+        Guid setId,
+        UpdateSetRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new UpdateSetCommand(
+            trainingSessionId,
+            setId,
+            Guid.Parse(userId),
+            request.ExerciseId,
+            request.Repetitions,
+            request.Weight,
+            request.RPE,
+            request.IsBodyWeight
+        ), ct);
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> RemoveSet
+    (
+        Guid trainingSessionId,
+        Guid setId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new RemoveSetCommand(trainingSessionId, setId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> FinishTrainingSession
+    (
+        Guid trainingSessionId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var result = await mediator.SendAsync<FinishTrainingSessionCommand, FinishTrainingSessionResponse>(
+            new FinishTrainingSessionCommand(trainingSessionId, Guid.Parse(userId)), ct);
+        return TypedResults.Ok(result);
+    }
+
+    private static async Task<IResult> AssignSuperSet
+    (
+        Guid trainingSessionId,
+        AssignSuperSetRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new AssignSuperSetCommand(trainingSessionId, Guid.Parse(userId), request.SetIds, request.SuperSetGroupId), ct);
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> CreateTemplateSuperSet
+    (
+        Guid templateSessionId,
+        CreateTemplateSuperSetRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<CreateTemplateSuperSetCommand, Guid>(
+            new CreateTemplateSuperSetCommand(templateSessionId, Guid.Parse(userId), request.TemplateSetIds), ct);
+        return TypedResults.Ok(new { id });
+    }
+
+    private static async Task<IResult> RemoveTemplateSuperSet
+    (
+        Guid templateSessionId,
+        Guid superSetGroupId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new RemoveTemplateSuperSetCommand(templateSessionId, Guid.Parse(userId), superSetGroupId), ct);
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> DiscardTrainingSession
+    (
+        Guid trainingSessionId,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new DiscardTrainingSessionCommand(trainingSessionId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
     }
 
     private static async Task<IResult> GetAllExercises(
@@ -495,9 +692,7 @@ public static class TrainingModule
             request.IsMyoRep,
             request.IsCluster,
             request.ExpectedRPE,
-            request.AimMuscleGroups,
-            request.SuperSetGroupId
-
+            request.AimMuscleGroups
         ),ct);
         return TypedResults.Ok();
     }

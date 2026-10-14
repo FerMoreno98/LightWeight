@@ -6,20 +6,22 @@ public sealed class CreateTrainingSessionCommandValidator : AbstractValidator<Cr
 {
     public CreateTrainingSessionCommandValidator()
     {
-        RuleFor(x => x.MicrocycleId)
+        RuleFor(x => x.UserId)
             .NotEmpty();
 
-        RuleFor(x => x.Name)
-            .NotEmpty()
-            .MaximumLength(100);
+        RuleFor(x => x.TemplateSessionId)
+            .NotEmpty();
 
         RuleFor(x => x.MotivationLevel)
-            .InclusiveBetween(0, 10);
+            .InclusiveBetween(1, 10);
 
         RuleFor(x => x.SleepLevel)
-            .InclusiveBetween(0, 10);
+            .InclusiveBetween(1, 10);
 
         RuleFor(x => x.DOMSLevel)
-            .InclusiveBetween(0, 10);
+            .InclusiveBetween(1, 10);
+
+        RuleFor(x => x.Comments)
+            .MaximumLength(1000);
     }
 }

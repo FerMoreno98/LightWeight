@@ -334,4 +334,68 @@ public class CyclesTests
         // Assert
         Assert.Throws<MicrocycleNotFoundDomainException>(() => macrocycle.FinishMicrocycle(Guid.CreateVersion7(), Now));
     }
+
+    // ---------------------------------------------------------------- FinishMicrocycleIfCompleted
+
+    [Fact]
+    public void FinishMicrocycleIfCompleted_AllPlannedSessionsFinished_FinishesTheWeek()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        var push = Guid.CreateVersion7();
+        var pull = Guid.CreateVersion7();
+        // Act
+        bool finished = macrocycle.FinishMicrocycleIfCompleted(week.Id, new[] { push, pull }, new[] { pull, push }, Now.AddDays(3));
+        // Assert
+        Assert.True(finished);
+        Assert.Equal(Now.AddDays(3), week.FinishedAt);
+        Assert.False(mesocycle.IsFinished);
+    }
+
+    [Fact]
+    public void FinishMicrocycleIfCompleted_SomeSessionPending_KeepsTheWeekInProgress()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        var push = Guid.CreateVersion7();
+        // Act
+        bool finished = macrocycle.FinishMicrocycleIfCompleted(week.Id, new[] { push, Guid.CreateVersion7() }, new[] { push }, Now);
+        // Assert
+        Assert.False(finished);
+        Assert.False(week.IsFinished);
+    }
+
+    [Fact]
+    public void FinishMicrocycleIfCompleted_TemplateWithoutSessions_NeverFinishesTheWeek()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        // Act
+        bool finished = macrocycle.FinishMicrocycleIfCompleted(week.Id, Array.Empty<Guid>(), new[] { Guid.CreateVersion7() }, Now);
+        // Assert
+        Assert.False(finished);
+        Assert.False(week.IsFinished);
+    }
+
+    [Fact]
+    public void FinishMicrocycleIfCompleted_WeekAlreadyFinished_DoesNothing()
+    {
+        // Arrange
+        Macrocycle macrocycle = CreateActiveMacrocycle();
+        Mesocycle mesocycle = PlanFirstMesocycle(macrocycle);
+        Microcycle week = macrocycle.PlanMicrocycle(mesocycle.Id, Guid.CreateVersion7(), Now);
+        macrocycle.FinishMicrocycle(week.Id, Now);
+        var push = Guid.CreateVersion7();
+        // Act
+        bool finished = macrocycle.FinishMicrocycleIfCompleted(week.Id, new[] { push }, new[] { push }, Now.AddDays(1));
+        // Assert
+        Assert.False(finished);
+        Assert.Equal(Now, week.FinishedAt);
+    }
 }

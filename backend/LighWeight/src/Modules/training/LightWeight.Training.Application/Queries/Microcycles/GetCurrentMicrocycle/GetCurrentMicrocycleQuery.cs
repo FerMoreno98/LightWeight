@@ -21,6 +21,7 @@ public static class CurrentMicrocycleStatus
 /// <param name="Status">One of <see cref="CurrentMicrocycleStatus"/></param>
 /// <param name="NextWeekNumber">Number the next planned week will get (only with PendingPlanning)</param>
 /// <param name="Microcycle">The active week (only with InProgress)</param>
+/// <param name="TrainingSessions">Sessions started in the active week (empty unless InProgress)</param>
 public sealed record GetCurrentMicrocycleResponse
 (
     string Status,
@@ -29,8 +30,12 @@ public sealed record GetCurrentMicrocycleResponse
     Guid? ProgramId,
     string? ProgramName,
     int? NextWeekNumber,
-    CurrentMicrocycleResponse? Microcycle
+    CurrentMicrocycleResponse? Microcycle,
+    List<CurrentWeekSessionResponse> TrainingSessions
 );
+
+/// <param name="FinishedAt">Null while the session is in progress</param>
+public sealed record CurrentWeekSessionResponse(Guid Id, Guid? TemplateSessionId, DateTime? FinishedAt);
 
 /// <param name="TemplateName">Null when the template has been deleted</param>
 public sealed record CurrentMicrocycleResponse

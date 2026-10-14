@@ -1,0 +1,273 @@
+@let v = view();
+<div class="fade-slide-in">
+  <button
+    type="button"
+    (click)="close.emit()"
+    class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+  >
+    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+    </svg>
+    Todos los ejercicios
+  </button>
+
+  <!-- Exercise header -->
+  <div class="flex flex-wrap items-start justify-between gap-3">
+    <div class="min-w-0">
+      @if (v.superSet; as superSet) {
+        <p class="text-xs font-semibold uppercase tracking-wider text-sky-300">
+          Superserie {{ superSet.label }} · Ronda {{ superSet.round }} de {{ superSet.rounds }}
+        </p>
+      } @else {
+        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-400">
+          {{ v.kind === 'extra' ? 'Ejercicio extra' : 'Serie ' + (v.setIndex + 1) + ' de ' + v.slots.length }}
+        </p>
+      }
+      <h2 class="mt-1 text-2xl font-bold text-white">{{ v.exerciseName }}</h2>
+      @if (v.replacedName) {
+        <p class="mt-0.5 text-sm text-amber-300">En lugar de {{ v.replacedName }}</p>
+      }
+    </div>
+    @if (v.canReplace) {
+      <div class="flex flex-wrap gap-2">
+        @if (v.canRestore) {
+          <button
+            type="button"
+            (click)="restorePlanned.emit()"
+            class="rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:text-white"
+          >
+            Volver al planificado
+          </button>
+        }
+        <button
+          type="button"
+          (click)="replaceExercise.emit()"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-3 py-2 text-sm text-slate-200 transition hover:bg-slate-700"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4 4 4m6 0v12m0 0 4-4m-4 4-4-4" />
+          </svg>
+          Cambiar ejercicio
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- Exercises of the superset -->
+  @if (v.superSet; as superSet) {
+    <div class="mt-4 flex flex-wrap gap-2" aria-label="Ejercicios de la superserie">
+      @for (member of superSet.members; track member.label; let i = $index) {
+        <button
+          type="button"
+          (click)="selectMember.emit(i)"
+          [attr.aria-current]="member.current"
+          class="inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition"
+          [class]="member.current
+            ? 'border-sky-400 bg-sky-500 text-slate-900'
+            : 'border-sky-900 bg-sky-950/40 text-sky-200 hover:border-sky-600'"
+        >
+          <span class="font-bold">{{ member.label }}</span>
+          <span class="truncate">{{ member.name }}</span>
+          @if (member.done) {
+            <svg class="h-3.5 w-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+            </svg>
+          }
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Sets of the exercise -->
+  <div class="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Series">
+    @for (slot of v.slots; track $index; let i = $index) {
+      <button
+        type="button"
+        role="tab"
+        (click)="selectSet.emit(i)"
+        [attr.aria-selected]="i === v.setIndex"
+        class="flex h-10 min-w-10 items-center justify-center gap-1 rounded-full border px-3 text-sm font-semibold transition"
+        [class]="i === v.setIndex
+          ? 'border-emerald-400 bg-emerald-500 text-slate-900'
+          : slot.performed
+            ? 'border-emerald-800/60 bg-emerald-950/50 text-emerald-300 hover:border-emerald-600'
+            : 'border-slate-700 bg-slate-900 text-slate-400 hover:border-slate-500'"
+      >
+        @if (slot.performed && i !== v.setIndex) {
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+          </svg>
+        }
+        @if (!slot.planned && !slot.performed) { + } @else { {{ i + 1 }} }
+      </button>
+    }
+  </div>
+
+  <!-- Planned and previous -->
+  <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <section class="rounded-2xl border border-slate-700 bg-slate-800/80 p-4">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Planificado</h3>
+      @if (slot().planned; as planned) {
+        <p class="mt-2 text-xl font-bold text-white">
+          {{ planned.repetitionRangeMin }}–{{ planned.repetitionRangeMax }} reps
+          <span class="text-base font-semibold text-slate-400">· RPE {{ planned.expectedRPE }}</span>
+        </p>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          @if (techniqueLabel(planned.technique); as technique) {
+            <span class="rounded-full border border-amber-800/60 bg-amber-950/40 px-2 py-0.5 text-xs text-amber-300">{{ technique }}</span>
+          }
+          @if (planned.superSetGroupId) {
+            <span class="rounded-full border border-sky-800/60 bg-sky-950/40 px-2 py-0.5 text-xs text-sky-300">Superserie</span>
+          }
+        </div>
+      } @else {
+        <p class="mt-2 text-sm text-slate-400">Serie extra, fuera del plan.</p>
+      }
+    </section>
+
+    <section class="rounded-2xl border border-slate-700 bg-slate-800/80 p-4">
+      <div class="flex items-baseline justify-between gap-2">
+        <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-500">Anterior</h3>
+        @if (v.previous) {
+          <span class="text-xs text-slate-500">{{ formatDay(v.previous.performedAt) }}</span>
+        }
+      </div>
+      @if (v.previous; as previous) {
+        @if (previousSet(); as same) {
+          <p class="mt-2 text-xl font-bold text-white">{{ formatPerformedSet(same) }}</p>
+        } @else {
+          <p class="mt-2 text-sm text-slate-400">No hiciste una serie {{ v.setIndex + 1 }}.</p>
+        }
+        <ol class="mt-2 flex flex-col gap-0.5 text-xs text-slate-400">
+          @for (set of previous.sets; track $index; let i = $index) {
+            <li [class.text-slate-200]="i === v.setIndex">S{{ i + 1 }} · {{ formatPerformedSet(set) }}</li>
+          }
+        </ol>
+      } @else {
+        <p class="mt-2 text-sm text-slate-400">Sin registros en este macrociclo.</p>
+      }
+    </section>
+  </div>
+
+  <!-- Today -->
+  <form
+    (ngSubmit)="submit()"
+    class="mt-4 rounded-2xl border p-4"
+    [class]="slot().performed ? 'border-emerald-800/60 bg-emerald-950/20' : 'border-slate-600 bg-slate-800'"
+  >
+    <div class="flex items-center justify-between gap-2">
+      <h3 class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Hoy</h3>
+      @if (slot().performed) {
+        <span class="text-xs text-emerald-300">Registrada</span>
+      }
+    </div>
+
+    <div class="mt-3 grid grid-cols-3 gap-3">
+      @for (field of fields; track field.key) {
+        <label class="block min-w-0">
+          <span class="text-xs text-slate-400">{{ field.label }}</span>
+          <input
+            type="number"
+            inputmode="decimal"
+            [name]="field.key"
+            [step]="field.inputStep"
+            min="0"
+            [disabled]="v.readOnly"
+            [ngModel]="form()[field.key]"
+            (ngModelChange)="updateNumber(field.key, $event)"
+            class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-2.5 text-center text-lg font-semibold text-white focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 disabled:opacity-60"
+          />
+          @if (!v.readOnly) {
+            <span class="mt-1 grid grid-cols-2 gap-1">
+              <button type="button" (click)="step(field.key, -field.step)" class="rounded-md bg-slate-900 py-1 text-sm text-slate-300 transition hover:bg-slate-700" [attr.aria-label]="'Restar a ' + field.label">−</button>
+              <button type="button" (click)="step(field.key, field.step)" class="rounded-md bg-slate-900 py-1 text-sm text-slate-300 transition hover:bg-slate-700" [attr.aria-label]="'Sumar a ' + field.label">+</button>
+            </span>
+          }
+        </label>
+      }
+    </div>
+
+    <label class="mt-3 inline-flex items-center gap-2 text-sm text-slate-300">
+      <input
+        type="checkbox"
+        name="isBodyWeight"
+        [disabled]="v.readOnly"
+        [ngModel]="form().isBodyWeight"
+        (ngModelChange)="update('isBodyWeight', $event)"
+        class="h-4 w-4 rounded border-slate-600 bg-slate-900 accent-emerald-500"
+      />
+      Peso corporal <span class="text-xs text-slate-500">(el peso es lastre extra)</span>
+    </label>
+
+    @if (!v.readOnly) {
+      <button
+        type="submit"
+        [disabled]="!isValid() || busy()"
+        class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        @if (busy()) {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+          </svg>
+        }
+        {{ slot().performed ? 'Guardar cambios' : v.nextLabel ? 'Registrar y pasar a ' + v.nextLabel : 'Registrar serie' }}
+      </button>
+    }
+  </form>
+
+  <!-- Today's sets of this exercise -->
+  @if (hasPerformedSets()) {
+    <section class="mt-6">
+      <h3 class="mb-2 text-sm font-semibold text-slate-300">Series de hoy</h3>
+      <ul class="flex flex-col divide-y divide-slate-700/60 overflow-hidden rounded-xl border border-slate-700 bg-slate-800/60">
+        @for (slot of v.slots; track $index; let i = $index) {
+          @if (slot.performed; as performed) {
+            <li class="flex items-center gap-3 px-3 py-2.5">
+              <button type="button" (click)="selectSet.emit(i)" class="flex min-w-0 flex-1 items-center gap-3 text-left">
+                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-950/60 text-[11px] font-semibold text-emerald-300">{{ i + 1 }}</span>
+                <span class="truncate text-sm text-white">{{ formatPerformedSet(performed) }}</span>
+                @if (performed.exerciseName && performed.exerciseName !== v.exerciseName) {
+                  <span class="truncate text-xs text-amber-300">{{ performed.exerciseName }}</span>
+                }
+              </button>
+              @if (!v.readOnly) {
+                <button
+                  type="button"
+                  (click)="remove.emit(performed)"
+                  [disabled]="busy()"
+                  class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400 disabled:opacity-50"
+                  aria-label="Borrar serie"
+                >
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+                  </svg>
+                </button>
+              }
+            </li>
+          }
+        }
+      </ul>
+    </section>
+  }
+
+  <!-- Exercise navigation -->
+  <div class="mt-6 flex items-center justify-between gap-3">
+    <button
+      type="button"
+      (click)="previousExercise.emit()"
+      [disabled]="!v.hasPreviousExercise"
+      class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:text-white disabled:invisible"
+    >
+      ← Ejercicio anterior
+    </button>
+    <button
+      type="button"
+      (click)="nextExercise.emit()"
+      [disabled]="!v.hasNextExercise"
+      class="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-slate-400 transition hover:text-white disabled:invisible"
+    >
+      Siguiente ejercicio →
+    </button>
+  </div>
+</div>

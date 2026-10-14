@@ -14,3 +14,17 @@ public sealed class SetNotFoundDomainException : TrainingDomainException
         
     }
 }
+public sealed class SuperSetNeedsTwoExercisesDomainException : TrainingDomainException
+{
+    public SuperSetNeedsTwoExercisesDomainException() : base("A superset needs at least two different exercises")
+    {
+
+    }
+}
+public sealed class SuperSetNotFoundDomainException : TrainingDomainException
+{
+    public SuperSetNotFoundDomainException() : base("The superset does not belong to this session")
+    {
+
+    }
+}

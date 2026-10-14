@@ -68,6 +68,56 @@ public sealed class TemplateSession : Entity<Guid>
        TemplateSet? set = _templateExercises.SingleOrDefault(e => e.Id == TemplateSetId && !e.IsDeleted)
        ?? throw new SetNotFoundDomainException();
        set.MarkAsDeleted(now);
+       if (set.SuperSetGroupId is Guid superSetGroupId)
+           DissolveIfSingleExercise(superSetGroupId);
+    }
+
+    /// <summary>
+    /// Joins planned sets in a superset: they are performed alternating their exercises, round by round
+    /// (round r = the r-th set of each exercise). Sets that were in another superset leave it
+    /// </summary>
+    /// <param name="templateSetIds">Active sets of this session. They must cover at least two different exercises</param>
+    /// <returns>The id of the new superset</returns>
+    public Guid CreateSuperSet(IReadOnlyCollection<Guid> templateSetIds)
+    {
+        List<TemplateSet> sets = templateSetIds
+            .Distinct()
+            .Select(id => TemplateExercises.SingleOrDefault(s => s.Id == id) ?? throw new SetNotFoundDomainException())
+            .ToList();
+        if (sets.Select(s => s.ExerciseId).Distinct().Count() < 2)
+            throw new SuperSetNeedsTwoExercisesDomainException();
+
+        List<Guid> previousGroups = sets
+            .Select(s => s.SuperSetGroupId)
+            .OfType<Guid>()
+            .Distinct()
+            .ToList();
+        Guid superSetGroupId = Guid.CreateVersion7();
+        foreach (var set in sets)
+            set.SetSuperSet(superSetGroupId);
+        // A superset that loses sets may be left with a single exercise, which is no longer a superset
+        foreach (var previous in previousGroups)
+            DissolveIfSingleExercise(previous);
+        return superSetGroupId;
+    }
+
+    /// <summary>Separates a superset: its sets become normal sets again</summary>
+    /// <param name="superSetGroupId">Superset of this session</param>
+    public void RemoveSuperSet(Guid superSetGroupId)
+    {
+        List<TemplateSet> sets = TemplateExercises.Where(s => s.SuperSetGroupId == superSetGroupId).ToList();
+        if (sets.Count == 0)
+            throw new SuperSetNotFoundDomainException();
+        foreach (var set in sets)
+            set.SetSuperSet(null);
+    }
+
+    private void DissolveIfSingleExercise(Guid superSetGroupId)
+    {
+        List<TemplateSet> sets = TemplateExercises.Where(s => s.SuperSetGroupId == superSetGroupId).ToList();
+        if (sets.Select(s => s.ExerciseId).Distinct().Count() < 2)
+            foreach (var set in sets)
+                set.SetSuperSet(null);
     }
 
     /// <summary>Marks the session and all its sets as deleted without removing them from the database</summary>

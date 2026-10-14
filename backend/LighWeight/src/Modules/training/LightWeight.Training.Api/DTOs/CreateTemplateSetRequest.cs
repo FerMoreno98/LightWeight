@@ -13,6 +13,5 @@ public sealed record CreateTemplateSetRequest
     bool IsCluster,
     decimal ExpectedRPE,
     int Series,
-    List<string> AimMuscleGroups,
-    Guid? SuperSetGroupId
+    List<string> AimMuscleGroups
 );

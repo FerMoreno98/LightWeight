@@ -10,11 +10,13 @@ public sealed class GetCurrentMicrocycleQueryHandler : IQueryHandler<GetCurrentM
 {
     private readonly IMacrocycleRepository _macrocycleRepository;
     private readonly IProgramRepository _programRepository;
+    private readonly ITrainingSessionRepository _trainingSessionRepository;
 
-    public GetCurrentMicrocycleQueryHandler(IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository)
+    public GetCurrentMicrocycleQueryHandler(IMacrocycleRepository macrocycleRepository, IProgramRepository programRepository, ITrainingSessionRepository trainingSessionRepository)
     {
         _macrocycleRepository = macrocycleRepository;
         _programRepository = programRepository;
+        _trainingSessionRepository = trainingSessionRepository;
     }
 
     public async Task<GetCurrentMicrocycleResponse> HandleAsync(GetCurrentMicrocycleQuery query, CancellationToken ct = default)
@@ -22,12 +24,12 @@ public sealed class GetCurrentMicrocycleQueryHandler : IQueryHandler<GetCurrentM
         Macrocycle? macrocycle = await _macrocycleRepository.GetActiveOfAUserAsync(query.UserId);
         if(macrocycle is null)
         {
-            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.NoActiveMacrocycle, null, null, null, null, null, null);
+            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.NoActiveMacrocycle, null, null, null, null, null, null, new());
         }
         Mesocycle? mesocycle = macrocycle.ActiveMesocycle;
         if(mesocycle is null)
         {
-            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.NoActiveMesocycle, macrocycle.Id, null, null, null, null, null);
+            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.NoActiveMesocycle, macrocycle.Id, null, null, null, null, null, new());
         }
 
         Program program = await _programRepository.GetByIdAsync(mesocycle.ProgramId)
@@ -36,11 +38,12 @@ public sealed class GetCurrentMicrocycleQueryHandler : IQueryHandler<GetCurrentM
         if(microcycle is null)
         {
             int nextWeek = mesocycle.Microcycles.Count == 0 ? 1 : mesocycle.Microcycles.Max(m => m.WeekNumber) + 1;
-            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.PendingPlanning, macrocycle.Id, mesocycle.Id, program.Id, program.Name, nextWeek, null);
+            return new GetCurrentMicrocycleResponse(CurrentMicrocycleStatus.PendingPlanning, macrocycle.Id, mesocycle.Id, program.Id, program.Name, nextWeek, null, new());
         }
 
         // Soft deleted templates are not loaded, so the week may point to a template that is no longer there
         TrainingTemplate? template = program.trainingTemplates.SingleOrDefault(t => t.Id == microcycle.TrainingTemplateId);
+        List<TrainingSession> sessions = await _trainingSessionRepository.GetByMicrocycleIdAsync(microcycle.Id);
         return new GetCurrentMicrocycleResponse
         (
             CurrentMicrocycleStatus.InProgress,
@@ -57,7 +60,10 @@ public sealed class GetCurrentMicrocycleQueryHandler : IQueryHandler<GetCurrentM
                 microcycle.TrainingTemplateId,
                 template?.Name,
                 template?.DurationInDays
-            )
+            ),
+            sessions
+                .Select(s => new CurrentWeekSessionResponse(s.Id, s.TemplateSessionId, s.FinishedAt))
+                .ToList()
         );
     }
 }

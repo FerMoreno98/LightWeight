@@ -71,21 +71,25 @@ public sealed class TemplateSet : Entity<Guid>
             AdvanceTrainingTechniques = advanceTrainingTechniques ?? AdvanceTrainingTechniques.None
         };
     }
+    /// <summary>Updates the plan of the set. Its superset is kept: supersets are changed through the TemplateSession</summary>
     public void UpdateSet
     (
         RepetitionRange repetitionRange,
         decimal expectedRPE,
         List<MuscleGroups> aimMuscleGroups,
-        AdvanceTrainingTechniques? advanceTrainingTechniques = null,
-        Guid? superSetGroupId = null
+        AdvanceTrainingTechniques? advanceTrainingTechniques = null
     )
     {
         RepetitionRange = repetitionRange;
         ExpectedRPE = expectedRPE;
         AimMuscleGroups = aimMuscleGroups;
         AdvanceTrainingTechniques = advanceTrainingTechniques;
-        SuperSetGroupId = superSetGroupId;
+    }
 
+    /// <summary>Joins the set to a superset, or takes it out with null. Only the TemplateSession calls it</summary>
+    internal void SetSuperSet(Guid? superSetGroupId)
+    {
+        SuperSetGroupId = superSetGroupId;
     }
 
     /// <summary>Marks the set as deleted without removing it from the database</summary>
