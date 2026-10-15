@@ -88,7 +88,7 @@ bodymetrics/
 
 Host: `App/LightWeight.App/Program.cs` calls `AddBodyMetricsModule(configuration)` and `MapBodyMetricsEndpoints()`.
 
-Frontend: `frontend/LightWeight/src/app/Modules/BodyMetrics` — route `/bodymetrics`, one generic `measures-panel` driven by `UI/measurement-config.ts` (fields, unit and limits per kind; keep its limits in sync with the domain).
+Frontend: `frontend/LightWeight/src/app/Modules/BodyMetrics` — route `/bodymetrics`, one generic `measures-panel` driven by `UI/measurement-config.ts` (fields, unit and limits per kind; keep its limits in sync with the domain). The page also has an **"Evolución" tab** with the charts: they belong to the Dashboard module (`Modules/Dashboard/UI/body-metrics-charts`) and read the dashboard projections, not this module's API.
 
 ## 6. Dependencies
 

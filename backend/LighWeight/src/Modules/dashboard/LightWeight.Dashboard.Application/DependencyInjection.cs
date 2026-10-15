@@ -1,6 +1,9 @@
 using FluentValidation;
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Projectors.BodyMetrics;
+using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetPerimetersEvolution;
+using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetSkinFoldsEvolution;
+using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetWeightEvolution;
 using LightWeight.shared.Behavior;
 using LightWeight.shared.Contracts.BodyMetrics;
 using LightWeight.shared.Mediator;
@@ -24,8 +27,11 @@ public static class DependencyInjection
             services.AddScoped(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>));
         services.AddValidatorsFromAssembly(typeof(DependencyInjection).Assembly);
 
-        // Commands
+        // Commands and queries
         services.AddScoped<ICommandHandler<RebuildProjectionsCommand>, RebuildProjectionsCommandHandler>();
+        services.AddScoped<IQueryHandler<GetWeightEvolutionQuery, WeightEvolutionResponse>, GetWeightEvolutionQueryHandler>();
+        services.AddScoped<IQueryHandler<GetPerimetersEvolutionQuery, List<PerimetersPoint>>, GetPerimetersEvolutionQueryHandler>();
+        services.AddScoped<IQueryHandler<GetSkinFoldsEvolutionQuery, List<SkinFoldsPoint>>, GetSkinFoldsEvolutionQueryHandler>();
 
         // Projectors: integration events of bodymetrics -> projections
         services.AddScoped<IIntegrationEventHandler<WeightRecordedIntegrationEvent>, WeightProjector>();

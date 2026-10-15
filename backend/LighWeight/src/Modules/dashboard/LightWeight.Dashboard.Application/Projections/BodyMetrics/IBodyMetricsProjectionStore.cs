@@ -17,4 +17,10 @@ public interface IBodyMetricsProjectionStore
 
     /// <summary>Deletes every bodymetrics projection of the user, before rebuilding them</summary>
     Task ClearUserAsync(Guid userId, CancellationToken ct = default);
+
+    // Reads: the whole history of the user, from the oldest measurement
+
+    Task<List<WeightProjection>> GetWeightsAsync(Guid userId, CancellationToken ct = default);
+    Task<List<PerimetersProjection>> GetPerimetersAsync(Guid userId, CancellationToken ct = default);
+    Task<List<SkinFoldsProjection>> GetSkinFoldsAsync(Guid userId, CancellationToken ct = default);
 }

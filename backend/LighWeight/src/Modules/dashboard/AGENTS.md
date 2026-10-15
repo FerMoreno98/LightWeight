@@ -2,22 +2,31 @@
 
 ## 1. Module purpose
 
-Read model of the application. It receives the integration events of the other modules and keeps them as projections ready to be charted. Today it projects **BodyMetrics** (weight, perimeters, skinfolds); the read queries and the charts come in the next iteration. It can rebuild the projections of a user by asking the source modules to publish their state again. See `Dashboard.md` for the functional description.
+Read model of the application. It receives the integration events of the other modules and keeps them as projections ready to be charted. Today it projects **BodyMetrics** (weight, perimeters, skinfolds) and serves their whole history for the charts of the "Evolución" tab in the BodyMetrics page. It can rebuild the projections of a user by asking the source modules to publish their state again. See `Dashboard.md` for the functional description.
 
 ## 2. Shape of the module
 
 **No Domain layer, on purpose.** There are no aggregates nor invariants: the dashboard only copies what happened in other modules. The layers are:
 
-- **Application**: projections (plain classes), the store interface, the projectors (`IIntegrationEventHandler<T>`) and the `RebuildProjections` command. It references `LightWeight.Shared` directly.
+- **Application**: projections (plain classes), the store interface, the projectors (`IIntegrationEventHandler<T>`), the `RebuildProjections` command, the read queries and the calculations. It references `LightWeight.Shared` directly.
 - **Infrastructure**: `DashboardDbContext`, `BodyMetricsProjectionStore`, migrations.
 - **Api**: `MapDashboardEndpoints`.
 
 ### Projections (`Application/Projections/BodyMetrics`)
 - `WeightProjection`, `PerimetersProjection`, `SkinFoldsProjection`: key `MeasurementId` (the id of the source measurement), plus `UserId` and `MeasuredAt`.
-- `IBodyMetricsProjectionStore`: `Upsert…`/`Delete…` per kind and `ClearUserAsync`. **Each operation saves at once** (one event, one write).
+- `IBodyMetricsProjectionStore`: `Upsert…`/`Delete…` per kind and `ClearUserAsync`. **Each operation saves at once** (one event, one write). Reads: `Get{Weights,Perimeters,SkinFolds}Async(userId)`, the whole history from the oldest (`AsNoTracking`).
 
 ### Projectors (`Application/Projectors/BodyMetrics`)
 - `WeightProjector`, `PerimetersProjector`, `SkinFoldsProjector`: `…Recorded` → upsert, `…Deleted` → delete.
+
+### Queries (`Application/Queries/BodyMetrics`)
+- `GetWeightEvolution` → `{ Points[{MeasuredAt, Weight}], WeeklyAverages[{WeekStart, Average, Count}] }`.
+- `GetPerimetersEvolution` / `GetSkinFoldsEvolution` → one point per measurement with every field (null if not measured; skinfolds include `Summatory`).
+
+### Calculations (`Application/Calculations`)
+- `WeeklyAverages`: pure and static. Groups by ISO week (Monday 00:00 UTC to Sunday), average rounded to 2 decimals, weeks without values do not appear.
+- Calculated **when reading**, not stored: a few hundred points per user, and nothing more to keep in sync or rebuild.
+- It lives in Application and not in a Domain project because it protects no invariant (it only reads valid data). If calculations with rules of their own appear (fat %, energy balance), `Calculations/` can be moved to a `LightWeight.Dashboard.Domain` project as is.
 
 ## 3. Non-obvious rules
 
@@ -29,6 +38,8 @@ Read model of the application. It receives the integration events of the other m
 - **Projections only store what the event carries.** Calculations that need other data (e.g. fat percentage, which needs the user's sex) wait until that data arrives through an event.
 - **Dates are UTC** (`timestamp with time zone`). They come already normalized from the source events.
 - **Time comes from `IClock`**, never `DateTime.UtcNow`.
+- **The shared mediator does not validate queries**: the query handlers check the user themselves.
+- **Weeks are cut in UTC.** Morning weigh-ins in Spain never change week; if that ever matters, pass the user's time zone to `WeeklyAverages`.
 
 ## 4. Database schema
 
@@ -52,6 +63,8 @@ dashboard/
 │   ├── Projections/BodyMetrics/   # projections + IBodyMetricsProjectionStore
 │   ├── Projectors/BodyMetrics/    # integration event handlers
 │   ├── Commands/RebuildProjections/
+│   ├── Queries/BodyMetrics/       # Get{Weight,Perimeters,SkinFolds}Evolution
+│   ├── Calculations/              # WeeklyAverages
 │   └── DependencyInjection.cs     # AddDashboardApplication
 ├── LightWeight.Dashboard.Infrastructure/
 │   ├── Configurations/            # EF configurations of the projections
@@ -59,11 +72,13 @@ dashboard/
 │   ├── Persistence/               # DashboardDbContext, BodyMetricsProjectionStore
 │   └── DependencyInjection.cs     # AddDashboardInfrastructure, AddDashboardModule
 ├── LightWeight.Dashboard.Api/
-│   └── DashboardModule.cs         # MapDashboardEndpoints (/api/dashboard)
+│   └── DashboardModule.cs         # MapDashboardEndpoints (/api/dashboard): POST /rebuild, GET /bodymetrics/{weight,perimeters,skinfolds}
 └── testing/LightWeight.Dashboard.UnitTests/   # Application/ + Fakes/ (in-memory store)
 ```
 
 Host: `App/LightWeight.App/Program.cs` calls `AddDashboardModule(configuration)` and `MapDashboardEndpoints()`. The `Dockerfile` copies the three `.csproj` (there is no Domain project).
+
+Frontend: `frontend/LightWeight/src/app/Modules/Dashboard` — `data/dashboard-api.service.ts`, `state/body-metrics-charts.store.ts`, `UI/line-chart` (generic time chart over ng2-charts' `BaseChartDirective`, linear X axis with timestamps), `UI/body-metrics-charts` (the four charts + "Recalcular") and `UI/chart-theme.ts` (colors). The charts are embedded in the "Evolución" tab of the BodyMetrics page; Chart.js is registered in the `providers` of `BodyMetricsCharts` so it only loads with that tab. Series colors: the first 4 slots of a categorical palette validated for color blindness on the card surface — never more than 4 series per chart, and a field keeps its color while selected.
 
 ## 6. Dependencies
 
@@ -74,10 +89,10 @@ Host: `App/LightWeight.App/Program.cs` calls `AddDashboardModule(configuration)`
 
 ## 7. Current state
 
-**Done:** BodyMetrics projections (tables, store, projectors), rebuild (`POST /api/dashboard/rebuild` + BodyMetrics answering it), host registration, unit tests.
+**Done:** BodyMetrics projections (tables, store, projectors), rebuild (`POST /api/dashboard/rebuild` + BodyMetrics answering it), read queries with weekly averages, host registration, unit tests, frontend charts.
 
 **Pending:**
-- Read queries and endpoints for the charts; frontend screen with Chart.js and the "Recalcular" button.
+- Range filter (`?from=&to=`, e.g. by macrocycle) on the read endpoints, once Training publishes its events.
 - Training as a source (its integration events + subscription to the rebuild).
 - Fat percentage (needs the sex from UserProfile).
 - Outbox in the shared messaging (reliable events, real replay).

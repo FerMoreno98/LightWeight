@@ -1,0 +1,124 @@
+<section class="space-y-4" aria-label="Evolución de las medidas">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <p class="text-sm text-slate-400">Todo tu histórico. Pasa el dedo o el ratón por la gráfica para ver cada medida.</p>
+    <button
+      type="button"
+      (click)="rebuild()"
+      [disabled]="store.rebuilding() || store.loading()"
+      title="Vuelve a generar las gráficas a partir de tus medidas, por si alguna no aparece"
+      class="rounded-lg border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:opacity-50"
+    >
+      {{ store.rebuilding() ? 'Recalculando…' : 'Recalcular' }}
+    </button>
+  </div>
+
+  @if (store.error(); as error) {
+    <p class="rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error }}</p>
+  }
+
+  @if (!store.loaded()) {
+    @if (store.loading()) {
+      @for (i of [1, 2, 3]; track i) {
+        <div class="h-80 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+      }
+    }
+  } @else {
+    <!-- Weight -->
+    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <header class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 class="text-lg font-semibold text-white">Peso</h2>
+        @if (lastWeight(); as last) {
+          <p class="text-sm text-slate-400">Último: <span class="font-medium text-slate-200">{{ last }}</span></p>
+        }
+      </header>
+      @if (store.weight().points.length > 0) {
+        <app-line-chart [series]="weightSeries()" unit="kg" ariaLabel="Evolución del peso: cada pesaje y la media de cada semana" />
+      } @else {
+        <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'Aún no hay pesajes. Registra el primero en la pestaña Peso.' }" />
+      }
+    </article>
+
+    <!-- Perimeters -->
+    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <header class="mb-4">
+        <h2 class="text-lg font-semibold text-white">Perímetros</h2>
+        <p class="mt-1 text-xs text-slate-500">Elige hasta {{ maxSeries }} a la vez.</p>
+      </header>
+      @if (perimeterFields().length > 0) {
+        <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Perímetros a mostrar">
+          @for (field of perimeterFields(); track field.key) {
+            @let color = colorOf(selectedPerimeters(), field.key);
+            <button
+              type="button"
+              (click)="togglePerimeter(field.key)"
+              [attr.aria-pressed]="color !== null"
+              [disabled]="color === null && selectedPerimeters().length >= maxSeries"
+              class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+              [class]="color !== null ? 'border-slate-500 bg-slate-700 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'"
+            >
+              @if (color !== null) {
+                <span class="h-2 w-2 rounded-full" [style.background-color]="color"></span>
+              }
+              {{ field.label }}
+            </button>
+          }
+        </div>
+        <app-line-chart [series]="perimeterSeries()" [unit]="perimeterUnit" ariaLabel="Evolución de los perímetros seleccionados" />
+      } @else {
+        <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'Aún no hay perímetros. Regístralos en la pestaña Perímetros.' }" />
+      }
+    </article>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+      <!-- Summatory of skinfolds -->
+      <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+        <header class="mb-4">
+          <h2 class="text-lg font-semibold text-white">Sumatorio de pliegues</h2>
+          <p class="mt-1 text-xs text-slate-500">Solo las mediciones con los seis pliegues.</p>
+        </header>
+        @if (hasSummatory()) {
+          <app-line-chart [series]="summatorySeries()" [unit]="skinFoldUnit" ariaLabel="Evolución del sumatorio de los seis pliegues" />
+        } @else {
+          <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'El sumatorio aparece cuando registras los seis pliegues en una misma medición.' }" />
+        }
+      </article>
+
+      <!-- Each skinfold -->
+      <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+        <header class="mb-4">
+          <h2 class="text-lg font-semibold text-white">Pliegues</h2>
+          <p class="mt-1 text-xs text-slate-500">Elige hasta {{ maxSeries }} a la vez.</p>
+        </header>
+        @if (skinFoldFields().length > 0) {
+          <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Pliegues a mostrar">
+            @for (field of skinFoldFields(); track field.key) {
+              @let color = colorOf(selectedSkinFolds(), field.key);
+              <button
+                type="button"
+                (click)="toggleSkinFold(field.key)"
+                [attr.aria-pressed]="color !== null"
+                [disabled]="color === null && selectedSkinFolds().length >= maxSeries"
+                class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+                [class]="color !== null ? 'border-slate-500 bg-slate-700 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'"
+              >
+                @if (color !== null) {
+                  <span class="h-2 w-2 rounded-full" [style.background-color]="color"></span>
+                }
+                {{ field.label }}
+              </button>
+            }
+          </div>
+          <app-line-chart [series]="skinFoldSeries()" [unit]="skinFoldUnit" ariaLabel="Evolución de los pliegues seleccionados" />
+        } @else {
+          <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'Aún no hay pliegues. Regístralos en la pestaña Pliegues.' }" />
+        }
+      </article>
+    </div>
+  }
+</section>
+
+<ng-template #empty let-message>
+  <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
+    {{ message }}
+  </div>
+</ng-template>

@@ -35,6 +35,24 @@ public sealed class BodyMetricsProjectionStore : IBodyMetricsProjectionStore
         await _context.BodySkinFolds.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
     }
 
+    public Task<List<WeightProjection>> GetWeightsAsync(Guid userId, CancellationToken ct = default)
+        => _context.BodyWeights.AsNoTracking()
+            .Where(w => w.UserId == userId)
+            .OrderBy(w => w.MeasuredAt)
+            .ToListAsync(ct);
+
+    public Task<List<PerimetersProjection>> GetPerimetersAsync(Guid userId, CancellationToken ct = default)
+        => _context.BodyPerimeters.AsNoTracking()
+            .Where(p => p.UserId == userId)
+            .OrderBy(p => p.MeasuredAt)
+            .ToListAsync(ct);
+
+    public Task<List<SkinFoldsProjection>> GetSkinFoldsAsync(Guid userId, CancellationToken ct = default)
+        => _context.BodySkinFolds.AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .OrderBy(s => s.MeasuredAt)
+            .ToListAsync(ct);
+
     // Find by id: overwrite every value if it exists, add it otherwise
     private async Task UpsertAsync<T>(DbSet<T> set, T projection, Guid measurementId, CancellationToken ct) where T : class
     {

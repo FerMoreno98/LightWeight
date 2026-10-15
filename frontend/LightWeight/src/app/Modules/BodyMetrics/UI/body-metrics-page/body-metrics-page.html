@@ -8,7 +8,7 @@
         <button
           type="button"
           role="tab"
-          (click)="select(config)"
+          (click)="select(config.kind)"
           [attr.aria-selected]="selected() === config.kind"
           class="flex-1 rounded-lg px-3 py-2 text-sm font-medium transition"
           [class]="selected() === config.kind ? 'bg-emerald-500 text-slate-900' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
@@ -16,6 +16,16 @@
           {{ config.title }}
         </button>
       }
+      <button
+        type="button"
+        role="tab"
+        (click)="select('evolution')"
+        [attr.aria-selected]="selected() === 'evolution'"
+        class="flex-1 rounded-lg px-3 py-2 text-sm font-medium transition"
+        [class]="selected() === 'evolution' ? 'bg-emerald-500 text-slate-900' : 'text-slate-300 hover:bg-slate-800 hover:text-white'"
+      >
+        Evolución
+      </button>
     </div>
 
     <!-- One panel per kind: switching tabs keeps what was loaded in the store -->
@@ -23,6 +33,9 @@
       @if (selected() === config.kind) {
         <app-measures-panel [config]="config" />
       }
+    }
+    @if (selected() === 'evolution') {
+      <app-body-metrics-charts />
     }
   </div>
 </main>

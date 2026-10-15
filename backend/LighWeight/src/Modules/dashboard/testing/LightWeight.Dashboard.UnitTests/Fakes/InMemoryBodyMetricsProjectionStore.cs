@@ -44,6 +44,15 @@ internal sealed class InMemoryBodyMetricsProjectionStore : IBodyMetricsProjectio
         return Task.CompletedTask;
     }
 
+    public Task<List<WeightProjection>> GetWeightsAsync(Guid userId, CancellationToken ct = default)
+        => Task.FromResult(Weights.Values.Where(w => w.UserId == userId).OrderBy(w => w.MeasuredAt).ToList());
+
+    public Task<List<PerimetersProjection>> GetPerimetersAsync(Guid userId, CancellationToken ct = default)
+        => Task.FromResult(Perimeters.Values.Where(p => p.UserId == userId).OrderBy(p => p.MeasuredAt).ToList());
+
+    public Task<List<SkinFoldsProjection>> GetSkinFoldsAsync(Guid userId, CancellationToken ct = default)
+        => Task.FromResult(SkinFolds.Values.Where(s => s.UserId == userId).OrderBy(s => s.MeasuredAt).ToList());
+
     private static Task Delete<T>(Dictionary<Guid, T> rows, Guid measurementId, Func<T, bool> ofUser)
     {
         if (rows.TryGetValue(measurementId, out T? row) && ofUser(row))

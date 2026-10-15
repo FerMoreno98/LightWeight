@@ -31,7 +31,7 @@ Aplicación para planificar y registrar entrenamientos de fuerza / culturismo, c
 | **Nutrition** | 🧩 | — | Diario nutricional y macros |
 | **NEAT** | 🧩 | — | Actividad física fuera del entrenamiento |
 | **DeviceIntegration** | 📝 | — | Básculas, wearables (AmazFit), apps de nutrición (FatSecret) |
-| **Dashboard** | 🚧 | — | Read model para gráficas a partir de eventos: proyecciones de BodyMetrics y reconstrucción; faltan las consultas y las gráficas |
+| **Dashboard** | 🚧 | 🚧 | Read model para gráficas a partir de eventos: evolución de BodyMetrics (pestaña "Evolución" en Medidas) con media semanal del peso; falta Training |
 
 ✅ funcional · 🚧 en desarrollo · 🧩 esqueleto de proyectos · 📝 solo diseño (`.md`)
 
