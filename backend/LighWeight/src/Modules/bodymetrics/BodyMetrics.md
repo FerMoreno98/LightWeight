@@ -63,7 +63,11 @@ Contracts: `shared/Contracts/BodyMetrics/BodyMetricsIntegrationEvents.cs`, names
 
 ## Events Subscribed To
 
-None.
+| Integration event | Name | Origin | Action |
+|---|---|---|---|
+| `RebuildRequestedIntegrationEvent` | `dashboard.rebuild.requested.v1` | Dashboard | Publishes again a `…Recorded` event for **every** measurement of the user (weights, perimeters and skinfolds), built from the current rows. |
+
+Events are not stored anywhere, so they cannot be replayed: when the Dashboard rebuilds its projections it empties them and asks the sources to regenerate the events from their current state (`Application/Events/RebuildRequestedIntegrationEventHandler.cs`). The regenerated events are the same `…Recorded` events as always, with `OccurredAtUtc` set to the time of the rebuild; consumers cannot tell them from new ones and upsert them.
 
 ## API
 

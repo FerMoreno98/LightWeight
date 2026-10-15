@@ -49,4 +49,11 @@ public static class EventNames
         /// <summary><c>bodymetrics.skinfolds.deleted.v1</c></summary>
         public const string SkinFoldsDeleted = "bodymetrics.skinfolds.deleted.v1";
     }
+
+    /// <summary>Events emitted by the <b>dashboard</b> module.</summary>
+    public static class Dashboard
+    {
+        /// <summary><c>dashboard.rebuild.requested.v1</c> (the source modules republish the user's data)</summary>
+        public const string RebuildRequested = "dashboard.rebuild.requested.v1";
+    }
 }

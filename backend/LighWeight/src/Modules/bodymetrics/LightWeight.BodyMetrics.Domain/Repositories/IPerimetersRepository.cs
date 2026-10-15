@@ -8,6 +8,8 @@ public interface IPerimetersRepository
     Task<Perimeters?> GetByIdAsync(Guid measurementId);
     /// <summary>The latest measurements of a user, from the most recent</summary>
     Task<List<Perimeters>> GetLatestOfAUserAsync(Guid userId, int count);
+    /// <summary>Every measurement of a user. Only to publish them again when the dashboard rebuilds its projections</summary>
+    Task<List<Perimeters>> GetAllOfAUserAsync(Guid userId);
     /// <summary>Deletes the measurement when saving. Call <see cref="Perimeters.Delete"/> first so the event is raised</summary>
     void Remove(Perimeters perimeters);
 }

@@ -34,6 +34,14 @@ public class SkinFoldsRepository : ISkinFoldsRepository
             .ToListAsync();
     }
 
+    public async Task<List<SkinFolds>> GetAllOfAUserAsync(Guid userId)
+    {
+        return await _dbContext.SkinFolds
+            .Where(s => s.UserId == userId)
+            .OrderBy(s => s.MeasuredAt)
+            .ToListAsync();
+    }
+
     public void Remove(SkinFolds skinFolds)
     {
         _dbContext.SkinFolds.Remove(skinFolds);

@@ -17,11 +17,11 @@ public sealed class WeightDomainEventsHandler :
 
     public Task HandleAsync(WeightRegisteredDomainEvent @event, CancellationToken ct = default)
         => _publisher.PublishAsync(
-            new WeightRecordedIntegrationEvent(@event.MeasurementId, @event.UserId, @event.Weight, @event.MeasuredAt, @event.OccurredAtUtc), ct);
+            BodyMetricsIntegrationEventMapper.WeightRecorded(@event.MeasurementId, @event.UserId, @event.Weight, @event.MeasuredAt, @event.OccurredAtUtc), ct);
 
     public Task HandleAsync(WeightCorrectedDomainEvent @event, CancellationToken ct = default)
         => _publisher.PublishAsync(
-            new WeightRecordedIntegrationEvent(@event.MeasurementId, @event.UserId, @event.Weight, @event.MeasuredAt, @event.OccurredAtUtc), ct);
+            BodyMetricsIntegrationEventMapper.WeightRecorded(@event.MeasurementId, @event.UserId, @event.Weight, @event.MeasuredAt, @event.OccurredAtUtc), ct);
 
     public Task HandleAsync(WeightDeletedDomainEvent @event, CancellationToken ct = default)
         => _publisher.PublishAsync(

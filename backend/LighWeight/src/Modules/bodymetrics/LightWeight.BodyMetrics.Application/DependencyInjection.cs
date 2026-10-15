@@ -14,6 +14,7 @@ using LightWeight.BodyMetrics.Application.Commands.SkinFolds.DeleteSkinFolds;
 using LightWeight.BodyMetrics.Application.Queries.SkinFolds.GetSkinFoldsHistory;
 using LightWeight.BodyMetrics.Domain.Events;
 using LightWeight.shared.Behavior;
+using LightWeight.shared.Contracts.Dashboard;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CorrectSkinFoldsCommand>, CorrectSkinFoldsCommandHandler>();
         services.AddScoped<ICommandHandler<DeleteSkinFoldsCommand>, DeleteSkinFoldsCommandHandler>();
         services.AddScoped<IQueryHandler<GetSkinFoldsHistoryQuery, List<SkinFoldsResponse>>, GetSkinFoldsHistoryQueryHandler>();
+
+        // The dashboard asks to publish again the measurements of a user when it rebuilds its projections
+        services.AddScoped<IIntegrationEventHandler<RebuildRequestedIntegrationEvent>, RebuildRequestedIntegrationEventHandler>();
 
         // Domain events -> integration events. They are dispatched by the module's UnitOfWork after saving
         services.AddScoped<IDomainEventHandler<WeightRegisteredDomainEvent>, WeightDomainEventsHandler>();

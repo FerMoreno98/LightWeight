@@ -2,37 +2,67 @@
 
 ## Responsibility
 
-This is the aggregation and visualization module: it consumes domain events published by the other modules (BodyMetrics, NEAT, DeviceIntegration, Nutrition, Training, and potentially Auth/UserProfile) and transforms them into data optimized for graphing. According to the diagram, it is the only module that **only receives events** — it does not emit its own domain events, as its output is user-facing (views/graphs) rather than directed toward other modules.
+The aggregation and visualization module. It consumes the integration events published by the other modules and keeps them as **projections**: read models in its own schema, shaped for charts (evolution of body weight, perimeters, skinfolds and, in the future, training volume, calories, NEAT...). It is the only module that **only receives events**: its output is for the user (views and charts), not for other modules.
 
-Conceptually, it acts as a dedicated read model, independent of the original aggregates of each module, and is optimized for queries and visualization rather than transactional consistency.
+It does not decide anything: it records what already happened elsewhere. That is why it has **no Domain layer** (no aggregates, no invariants) — only Application, Infrastructure and Api. Its tables can be emptied and rebuilt at any time from the source modules.
 
-## Main Entities / Aggregates
+## Projections
 
-- **Dashboard** (root aggregate / projection).
-  - `Entity` — a generic marker in the diagram, pending final specification: it will most likely represent the different read projections (one per graph/widget type: weight evolution, training volume, calories, NEAT activity, etc.).
+### BodyMetrics (implemented)
 
-## Events Emitted
+| Projection | Table | Fed by | Content |
+|---|---|---|---|
+| `WeightProjection` | `dashboard_BodyWeights` | `bodymetrics.weight.{recorded,deleted}.v1` | `MeasuredAt`, `Weight` (kg) |
+| `PerimetersProjection` | `dashboard_BodyPerimeters` | `bodymetrics.perimeters.{recorded,deleted}.v1` | `MeasuredAt`, the 14 perimeters (cm, null if not measured) |
+| `SkinFoldsProjection` | `dashboard_BodySkinFolds` | `bodymetrics.skinfolds.{recorded,deleted}.v1` | `MeasuredAt`, the 6 skinfolds (mm) and `Summatory` (null without the six) |
 
-**None.** It is a terminal module in the event flow — its job is to transform and serve data, not to notify other modules.
+All of them are keyed by the `MeasurementId` of bodymetrics and indexed by `(UserId, MeasuredAt)`, which is how the charts read them.
 
 ## Events Subscribed To
 
-| Origin Event | Origin Module | Action Upon Receipt |
+| Integration event | Origin | Action |
 |---|---|---|
-| `BodyMetrics.WeightMeasureRecorded` | BodyMetrics | Update the body weight evolution projection. |
-| `BodyMetrics.PerimetrosRecorded` | BodyMetrics | Update the perimeter evolution projection. |
-| `BodyMetrics.PliegueRecorded` | BodyMetrics | Update the estimated body fat percentage evolution projection. |
-| `Neat.ActivityRegistered` | NEAT | Update the caloric expenditure projection for extra activity. |
-| `DeviceIntegration.ScaleDataReceived` | DeviceIntegration | (Optional: if raw scale data needs to be graphed in addition to the consolidated data from BodyMetrics). |
-| `DeviceIntegration.AmazFitDataReceived` | DeviceIntegration | Update steps, activity, and heart rate projections. |
-| `Nutrition.DiaryDayUpdated` / `DiaryDayClosed` | Nutrition | Update the daily calorie/macronutrient projection. |
-| `Training.TrainingDayCompleted` | Training | Update the training adherence and volume projection. |
-| `Training.SerieRecorded` | Training | Update the load progression projection per exercise. |
-| `Training.MesocicloStarted` / `MesocicloCompleted` | Training | Mark the start/end of blocks on the graph timelines. |
+| `bodymetrics.weight.recorded.v1` | BodyMetrics | Upsert the weight by `MeasurementId` |
+| `bodymetrics.weight.deleted.v1` | BodyMetrics | Delete the weight (nothing if it does not exist) |
+| `bodymetrics.perimeters.recorded.v1` | BodyMetrics | Upsert the perimeters |
+| `bodymetrics.perimeters.deleted.v1` | BodyMetrics | Delete the perimeters |
+| `bodymetrics.skinfolds.recorded.v1` | BodyMetrics | Upsert the skinfolds and their summatory |
+| `bodymetrics.skinfolds.deleted.v1` | BodyMetrics | Delete the skinfolds |
+
+`…recorded` arrives when a measurement is registered, when it is corrected and when it is published again during a rebuild, so the projectors always **upsert**. Applying the same event twice leaves the same result.
+
+## Events Emitted
+
+| Integration event | Name | Payload | Raised when |
+|---|---|---|---|
+| `RebuildRequestedIntegrationEvent` | `dashboard.rebuild.requested.v1` | `UserId`, `OccurredAtUtc` | The user asks to rebuild their projections |
+
+It is not a notification of something that happened in the dashboard, but a request to the source modules. Contract: `shared/Contracts/Dashboard/DashboardIntegrationEvents.cs`.
+
+## Rebuild
+
+Events live in memory during the request that raises them: they are **not stored anywhere** (there is no outbox or event store), so they cannot be replayed. To rebuild, the sources regenerate them from their current state:
+
+1. `POST /api/dashboard/rebuild` → `RebuildProjectionsCommand(UserId)`.
+2. The dashboard **empties every projection of the user** (this also removes the measurements whose `…deleted` event it missed).
+3. It publishes `dashboard.rebuild.requested.v1`.
+4. Each subscribed source module (today, BodyMetrics) publishes a `…recorded` event for every row of that user.
+5. The same projectors fill the tables again.
+
+The dashboard does not know which modules answer: a new source only has to subscribe to the event. Rebuilding twice gives the same result, and other users are never touched.
+
+## API
+
+All endpoints require authentication and work on the projections of the authenticated user (`/api/dashboard`).
+
+| Method | Route | Body | Response |
+|--------|-------|------|----------|
+| `POST` | `/rebuild` | — | 204 — projections of the user rebuilt from the sources |
 
 ## Open Notes
 
-- Specify the exact nature of `Entity` in the diagram: it will most likely turn into several concrete projections (`WeightTrendView`, `TrainingVolumeView`, `CalorieBalanceView`, etc.) instead of a single generic entity.
-- Decide on the projection strategy: should materialized projections be stored in their own schema (`dashboard`) and updated via event handlers, or should they be calculated on the fly by querying other modules? Given that this is a modular monolith (not distributed microservices), evaluate whether materialization is truly necessary or if well-indexed cross-module queries would suffice.
-- Define replay needs: determine if it needs to replay historical events for users joining with existing data, or if it will only consume events from the moment of its creation onward.
-- Decide on cron/refresh intervals: if any projection requires heavy calculations (weekly/monthly aggregates) instead of updating event-by-event, define the execution schedules.
+* **Projections can get out of sync.** The projectors run synchronously inside the request of the source module, after its commit. If a projector fails, the measurement is saved but the request returns an error and the projection misses it. "Rebuild" fixes it; an outbox (reliable events, real replay) is the long-term fix and will be done as a separate task in the shared messaging.
+* **The rebuild is not atomic.** Emptying and refilling are separate writes; if it fails halfway, running it again leaves everything right.
+* **Next iteration:** read queries and endpoints for the charts (e.g. weight with weekly average) and the frontend screen with Chart.js and the "Recalcular" button.
+* **Fat percentage:** needs the sex of the user, which would come from a UserProfile event.
+* **Future sources:** Training (volume, load progression, adherence), Nutrition (FatSecret data: calories and macros) and NEAT. Each one will publish its integration events and subscribe to `dashboard.rebuild.requested.v1`.

@@ -34,6 +34,14 @@ public class WeightMeasurementRepository : IWeightMeasurementRepository
             .ToListAsync();
     }
 
+    public async Task<List<WeightMeasurement>> GetAllOfAUserAsync(Guid userId)
+    {
+        return await _dbContext.WeightMeasurements
+            .Where(w => w.UserId == userId)
+            .OrderBy(w => w.MeasuredAt)
+            .ToListAsync();
+    }
+
     public void Remove(WeightMeasurement measurement)
     {
         _dbContext.WeightMeasurements.Remove(measurement);

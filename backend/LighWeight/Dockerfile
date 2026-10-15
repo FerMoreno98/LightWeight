@@ -16,6 +16,11 @@ COPY src/Modules/bodymetrics/LightWeight.BodyMetrics.Application/*.csproj ./Modu
 COPY src/Modules/bodymetrics/LightWeight.BodyMetrics.Infrastructure/*.csproj ./Modules/bodymetrics/LightWeight.BodyMetrics.Infrastructure/
 COPY src/Modules/bodymetrics/LightWeight.BodyMetrics.Api/*.csproj ./Modules/bodymetrics/LightWeight.BodyMetrics.Api/
 
+# --- Módulo: dashboard (sin Domain) ---
+COPY src/Modules/dashboard/LightWeight.Dashboard.Application/*.csproj ./Modules/dashboard/LightWeight.Dashboard.Application/
+COPY src/Modules/dashboard/LightWeight.Dashboard.Infrastructure/*.csproj ./Modules/dashboard/LightWeight.Dashboard.Infrastructure/
+COPY src/Modules/dashboard/LightWeight.Dashboard.Api/*.csproj ./Modules/dashboard/LightWeight.Dashboard.Api/
+
 # --- Módulo: userprofile ---
 COPY src/Modules/user-profile/LightWeight.UserProfile.Domain/*.csproj ./Modules/user-profile/LightWeight.UserProfile.Domain/
 COPY src/Modules/user-profile/LightWeight.UserProfile.Application/*.csproj ./Modules/user-profile/LightWeight.UserProfile.Application/

@@ -34,6 +34,14 @@ public class PerimetersRepository : IPerimetersRepository
             .ToListAsync();
     }
 
+    public async Task<List<Perimeters>> GetAllOfAUserAsync(Guid userId)
+    {
+        return await _dbContext.Perimeters
+            .Where(p => p.UserId == userId)
+            .OrderBy(p => p.MeasuredAt)
+            .ToListAsync();
+    }
+
     public void Remove(Perimeters perimeters)
     {
         _dbContext.Perimeters.Remove(perimeters);

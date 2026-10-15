@@ -32,6 +32,8 @@ Registers the body measurements of the user — **body weight** (kg), **perimete
 - **Delete is two steps.** `aggregate.Delete()` raises the `…DeletedDomainEvent`, then `repository.Remove(aggregate)` deletes the row when saving. Always call both, in that order, or the event is lost.
 - **The UnitOfWork collects the aggregates before saving** (`Persistence/UnitOfWork.cs`). EF Core detaches deleted entities in `SaveChanges`; collecting them first is what lets the deleted events be dispatched. Keep that order if the UnitOfWork is touched.
 - **Register and correct publish the same integration event** (`…Recorded`, full values). Consumers upsert by `MeasurementId`; `…Deleted` removes it.
+- **The `…Recorded` events are built in one place**, `Application/Events/BodyMetricsIntegrationEventMapper.cs` (from the domain event fields or from the aggregate). Both the domain event handlers and the rebuild handler use it: a new field in a contract is added there once.
+- **Rebuild = regenerate, not replay.** On `dashboard.rebuild.requested.v1` the module reads every measurement of the user (`GetAllOfAUserAsync`, only used for this) and publishes a `…Recorded` for each one. Keep it read-only: it must not modify measurements nor raise domain events.
 - **Domain events carry the real time of the event** (`DomainEvent.OccurredAtUtc`, set on creation); the date of the measurement goes in its own `MeasuredAt` field. Do not mix them.
 - **Dates are UTC.** Columns are `timestamp with time zone`. The application normalizes the incoming date (`Application/Utils/UtcDate.Normalize`): a date without zone is taken as UTC, a local one is converted. Npgsql rejects non-UTC `DateTime` for these columns.
 - **Time comes from `IClock`**, never `DateTime.UtcNow`, so handlers can be tested with a fixed time.
@@ -69,7 +71,7 @@ bodymetrics/
 │   ├── Commands/{Weights,Perimeters,SkinFolds}/{Register,Correct,Delete}…   # command + validator + handler
 │   ├── Commands/{Perimeters,SkinFolds}/{PerimeterValues,SkinFoldValues}.cs  # client values → value object
 │   ├── Queries/{Weights,Perimeters,SkinFolds}/Get…History                   # latest 10
-│   ├── Events/            # domain events → integration events (IEventPublisher)
+│   ├── Events/            # domain events → integration events, mapper, rebuild handler
 │   ├── Exceptions/        # MeasurementNotFoundApplicationException
 │   ├── Utils/UtcDate.cs
 │   └── DependencyInjection.cs   # AddBodyMetricsApplication
@@ -93,17 +95,16 @@ Frontend: `frontend/LightWeight/src/app/Modules/BodyMetrics` — route `/bodymet
 - **Depends on**: `LightWeight.Shared` (building blocks, mediator, messaging, `IClock`, contracts).
 - **Shared services**: `IMediator`, `IEventPublisher`, `IEventDispatcher`, `IClock` and the validation pipeline are registered with `TryAdd`/existence checks, because other modules register them too (a duplicated pipeline behaviour would validate each command twice).
 - **Integration events published**: `bodymetrics.{weight,perimeters,skinfolds}.{recorded,deleted}.v1` (see `BodyMetrics.md`).
-- **Integration events consumed**: none.
-- **Expected consumers**: Dashboard.
+- **Integration events consumed**: `dashboard.rebuild.requested.v1` → republishes the `…Recorded` events of the user.
+- **Consumers**: Dashboard (projections of weight, perimeters and skinfolds).
 
 ## 7. Current state
 
-**Done:** domain with value objects and events, integration contracts, persistence (schema, migrations, repositories, UnitOfWork with event dispatch), commands/queries/validators, API, host registration, frontend (register, latest 10, correct, delete), unit tests for domain and application.
+**Done:** domain with value objects and events, integration contracts, persistence (schema, migrations, repositories, UnitOfWork with event dispatch), commands/queries/validators, API, host registration, frontend (register, latest 10, correct, delete), unit tests for domain and application, answer to the dashboard rebuild.
 
 **Pending:**
 - Global exception handler (errors reach the client as 500).
 - Exposing the estimated fat percentage (needs the sex from UserProfile).
-- Dashboard consuming the events.
 
 ## 8. Things NOT to do in this module
 
