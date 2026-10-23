@@ -10,6 +10,15 @@ export const SERIES_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500'] as con
 /** Maximum series in a chart at the same time */
 export const MAX_SERIES = SERIES_COLORS.length;
 
+/**
+ * Values around zero (better / worse than before): the blue and red poles of the validated dark palette.
+ * Always shown with their sign too, so the meaning never depends on the color alone
+ */
+export const DIVERGING = {
+    positive: '#3987e5',
+    negative: '#e66767',
+} as const;
+
 export const CHART_CHROME = {
     /** Card background (slate-800): ring around the points so overlapping ones stay apart */
     surface: '#1e293b',

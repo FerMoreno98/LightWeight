@@ -12,6 +12,8 @@ public interface ITrainingSessionRepository
     Task<List<TrainingSession>> GetByMicrocycleIdAsync(Guid MicrocycleId);
     /// <summary>The session of a week that follows the given session of the template (there is at most one)</summary>
     Task<TrainingSession?> GetByMicrocycleAndTemplateSessionAsync(Guid MicrocycleId, Guid TemplateSessionId);
+    /// <summary>Every finished session of the user, from the oldest. Only used to publish them again when the dashboard rebuilds</summary>
+    Task<List<TrainingSession>> GetFinishedOfAUserAsync(Guid UserId);
     /// <summary>
     /// For each exercise, the sets of it performed in the most recent session of the given weeks that contains it
     /// </summary>

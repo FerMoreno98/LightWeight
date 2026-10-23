@@ -40,6 +40,9 @@ using LightWeight.Training.Application.Queries.SessionTemplates.GetTemplateSessi
 using LightWeight.Training.Application.Queries.SetTemplates.GetSetsFromSessionTemplate;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 using LightWeight.Training.Domain.Enum;
+using LightWeight.Training.Application.Events;
+using LightWeight.Training.Domain.Events;
+using LightWeight.shared.Contracts.Dashboard;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LightWeight.Training.Application;
@@ -91,6 +94,12 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DuplicateTrainingTemplateCommand, Guid>,DuplicateTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<RenameTrainingTemplateCommand>,RenameTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTemplateSetCommand>,UpdateTemplateSetCommandHandler>();
+
+        // Domain events -> integration events. They are dispatched by the module's UnitOfWork after saving
+        services.AddScoped<TrainingSessionEventFactory>();
+        services.AddScoped<IDomainEventHandler<TrainingSessionFinishedDomainEvent>, TrainingSessionDomainEventsHandler>();
+        // The dashboard asks to publish again the finished sessions of a user when it rebuilds its projections
+        services.AddScoped<IIntegrationEventHandler<RebuildRequestedIntegrationEvent>, RebuildRequestedIntegrationEventHandler>();
         return services;
     }
 }

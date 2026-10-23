@@ -1,0 +1,92 @@
+<section class="mx-auto mt-10 max-w-4xl space-y-4" aria-label="Evolución de tus entrenamientos">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h2 class="text-xl font-bold text-white">Tus entrenamientos</h2>
+    <button
+      type="button"
+      (click)="rebuild()"
+      [disabled]="store.rebuilding() || store.loading()"
+      title="Vuelve a generar las gráficas a partir de tus entrenamientos (la primera vez carga todo tu histórico)"
+      class="rounded-lg border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:opacity-50"
+    >
+      {{ store.rebuilding() ? 'Recalculando…' : 'Recalcular' }}
+    </button>
+  </div>
+
+  @if (store.error(); as error) {
+    <p class="rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error }}</p>
+  }
+
+  @if (!store.loaded()) {
+    @if (store.loading()) {
+      @for (i of [1, 2]; track i) {
+        <div class="h-80 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+      }
+    }
+  } @else if (store.sessions().length === 0) {
+    <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
+      Aún no hay sesiones terminadas. Si ya entrenabas antes, pulsa <span class="font-medium text-slate-200">Recalcular</span> para cargar tu histórico.
+    </div>
+  } @else {
+    <!-- Session performance over the wellbeing it started with -->
+    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <header class="mb-4">
+        <h3 class="text-lg font-semibold text-white">Rendimiento de cada sesión</h3>
+        <p class="mt-1 text-xs text-slate-500">
+          1RM estimado de la primera serie de cada ejercicio frente a la última vez en la misma zona de repeticiones, de media.
+          Debajo, cómo llegabas: sueño, agujetas y motivación.
+        </p>
+      </header>
+      @if (hasPerformance()) {
+        <app-bar-chart
+          label="Rendimiento"
+          [points]="performancePoints()"
+          unit="%"
+          [xDomain]="sessionDates()"
+          ariaLabel="Rendimiento de cada sesión frente a la vez anterior, en porcentaje"
+        />
+      } @else {
+        <p class="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-4 py-6 text-center text-sm text-slate-400">
+          El rendimiento aparece cuando repites un ejercicio en la misma zona de repeticiones.
+        </p>
+      }
+      <div class="mt-4 border-t border-slate-700/60 pt-4">
+        <app-line-chart
+          [series]="wellbeingSeries()"
+          unit=""
+          [xDomain]="sessionDates()"
+          [yRange]="{ min: 1, max: 10 }"
+          [compact]="true"
+          ariaLabel="Sueño, agujetas y motivación de cada sesión, de 1 a 10"
+        />
+      </div>
+      <p class="mt-3 text-xs text-slate-500">La relación se ve con semanas de datos, no con una sesión suelta.</p>
+    </article>
+
+    <!-- Weekly volume per muscle group -->
+    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <header class="mb-4">
+        <h3 class="text-lg font-semibold text-white">Volumen semanal</h3>
+        <p class="mt-1 text-xs text-slate-500">Series por grupo muscular en cada semana de entrenamiento. Elige hasta {{ maxSeries }} a la vez.</p>
+      </header>
+      <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Grupos musculares a mostrar">
+        @for (muscle of muscles(); track muscle) {
+          @let color = muscleSelection.colorOf(muscle);
+          <button
+            type="button"
+            (click)="muscleSelection.toggle(muscle)"
+            [attr.aria-pressed]="color !== null"
+            [disabled]="color === null && muscleSelection.isFull()"
+            class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
+            [class]="color !== null ? 'border-slate-500 bg-slate-700 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'"
+          >
+            @if (color !== null) {
+              <span class="h-2 w-2 rounded-full" [style.background-color]="color"></span>
+            }
+            {{ muscleLabel(muscle) }}
+          </button>
+        }
+      </div>
+      <app-line-chart [series]="volumeSeries()" unit="series" ariaLabel="Series por grupo muscular en cada semana de entrenamiento" />
+    </article>
+  }
+</section>

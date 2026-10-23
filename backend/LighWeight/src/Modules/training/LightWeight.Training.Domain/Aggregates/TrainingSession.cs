@@ -1,5 +1,6 @@
 using LightWeight.shared.BuildingBlocks;
 using LightWeight.Training.Domain.Entities;
+using LightWeight.Training.Domain.Events;
 using LightWeight.Training.Domain.Exceptions;
 using LightWeight.Training.Domain.ValueObjects;
 
@@ -117,6 +118,7 @@ public sealed class TrainingSession : AggregateRoot<Guid>
         EnsureInProgress();
         FinishedAt = now;
         Duration = now - StartAt;
+        RaiseDomainEvent(new TrainingSessionFinishedDomainEvent(Id, UserId, MicrocycleId, now));
     }
 
     /// <summary>

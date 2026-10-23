@@ -1,5 +1,6 @@
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Projections.BodyMetrics;
+using LightWeight.Dashboard.Application.Projections.Training;
 using LightWeight.shared.Contracts;
 using LightWeight.shared.Contracts.Dashboard;
 using LightWeight.shared.Messaging;
@@ -13,6 +14,7 @@ public class RebuildProjectionsTests
     private static readonly DateTime Now = new(2026, 10, 15, 8, 0, 0, DateTimeKind.Utc);
 
     private readonly IBodyMetricsProjectionStore _store = Substitute.For<IBodyMetricsProjectionStore>();
+    private readonly ITrainingProjectionStore _training = Substitute.For<ITrainingProjectionStore>();
     private readonly IEventPublisher _publisher = Substitute.For<IEventPublisher>();
     private readonly IClock _clock = Substitute.For<IClock>();
     private readonly Guid _userId = Guid.CreateVersion7();
@@ -26,13 +28,14 @@ public class RebuildProjectionsTests
     public async Task EmptiesTheProjectionsOfTheUserBeforeAskingForTheEventsAgain()
     {
         // Arrange
-        var handler = new RebuildProjectionsCommandHandler(_store, _publisher, _clock);
+        var handler = new RebuildProjectionsCommandHandler(_store, _training, _publisher, _clock);
         // Act
         await handler.HandleAsync(new RebuildProjectionsCommand(_userId));
         // Assert: the order matters, emptying afterwards would delete what the sources publish
         Received.InOrder(() =>
         {
             _store.ClearUserAsync(_userId, Arg.Any<CancellationToken>());
+            _training.ClearUserAsync(_userId, Arg.Any<CancellationToken>());
             _publisher.PublishAsync
             (
                 Arg.Is<RebuildRequestedIntegrationEvent>(e =>
@@ -48,12 +51,14 @@ public class RebuildProjectionsTests
     public async Task OnlyEmptiesTheRequestingUser()
     {
         // Arrange
-        var handler = new RebuildProjectionsCommandHandler(_store, _publisher, _clock);
+        var handler = new RebuildProjectionsCommandHandler(_store, _training, _publisher, _clock);
         // Act
         await handler.HandleAsync(new RebuildProjectionsCommand(_userId));
         // Assert
         await _store.Received(1).ClearUserAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _store.Received(1).ClearUserAsync(_userId, Arg.Any<CancellationToken>());
+        await _training.Received(1).ClearUserAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _training.Received(1).ClearUserAsync(_userId, Arg.Any<CancellationToken>());
     }
 
     [Fact]

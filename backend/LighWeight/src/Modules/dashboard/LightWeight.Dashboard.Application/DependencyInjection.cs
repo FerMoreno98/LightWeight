@@ -1,6 +1,13 @@
 using FluentValidation;
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Projectors.BodyMetrics;
+using LightWeight.Dashboard.Application.Projectors.Training;
+using LightWeight.Dashboard.Application.Calculations.Training;
+using LightWeight.Dashboard.Application.Queries.Training.GetExerciseProgress;
+using LightWeight.Dashboard.Application.Queries.Training.GetExercisesProgress;
+using LightWeight.Dashboard.Application.Queries.Training.GetSessionsPerformance;
+using LightWeight.Dashboard.Application.Queries.Training.GetTrainingVolume;
+using LightWeight.shared.Contracts.Training;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetPerimetersEvolution;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetSkinFoldsEvolution;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetWeightEvolution;
@@ -40,6 +47,13 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationEventHandler<PerimetersDeletedIntegrationEvent>, PerimetersProjector>();
         services.AddScoped<IIntegrationEventHandler<SkinFoldsRecordedIntegrationEvent>, SkinFoldsProjector>();
         services.AddScoped<IIntegrationEventHandler<SkinFoldsDeletedIntegrationEvent>, SkinFoldsProjector>();
+
+        // Training: projector of the finished sessions and the queries of the charts
+        services.AddScoped<IIntegrationEventHandler<TrainingSessionFinishedIntegrationEvent>, TrainingSessionProjector>();
+        services.AddScoped<IQueryHandler<GetTrainingVolumeQuery, List<WeeklyVolumePoint>>, GetTrainingVolumeQueryHandler>();
+        services.AddScoped<IQueryHandler<GetSessionsPerformanceQuery, List<SessionPerformanceResponse>>, GetSessionsPerformanceQueryHandler>();
+        services.AddScoped<IQueryHandler<GetExercisesProgressQuery, List<ExerciseProgressSummary>>, GetExercisesProgressQueryHandler>();
+        services.AddScoped<IQueryHandler<GetExerciseProgressQuery, ExerciseProgressResponse?>, GetExerciseProgressQueryHandler>();
         return services;
     }
 }

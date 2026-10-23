@@ -47,6 +47,14 @@ public class TrainingSessionRepository : ITrainingSessionRepository
             .SingleOrDefaultAsync(t => t.MicrocycleId == MicrocycleId && t.TemplateSessionId == TemplateSessionId);
     }
 
+    public async Task<List<TrainingSession>> GetFinishedOfAUserAsync(Guid UserId)
+    {
+        return await SessionsWithSets
+            .Where(t => t.UserId == UserId && t.FinishedAt != null)
+            .OrderBy(t => t.StartAt)
+            .ToListAsync();
+    }
+
     public async Task<List<ExercisePerformance>> GetLastSetsOfExercisesAsync
     (
         IReadOnlyCollection<Guid> MicrocycleIds,

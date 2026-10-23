@@ -1,0 +1,62 @@
+<main class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-3xl">
+    <h1 class="text-2xl font-bold text-white">Progreso</h1>
+    <p class="mt-1 text-sm text-slate-400">Tus ejercicios, del último que has entrenado al más antiguo. Entra en uno para ver todo su histórico.</p>
+
+    <input
+      type="search"
+      [value]="search()"
+      (input)="search.set($any($event.target).value)"
+      placeholder="Buscar ejercicio…"
+      aria-label="Buscar ejercicio"
+      class="mt-6 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder-slate-500 outline-none focus:border-emerald-500"
+    />
+
+    @if (store.error(); as error) {
+      <p class="mt-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error }}</p>
+    }
+
+    <div class="mt-4 space-y-2">
+      @if (!store.listLoaded()) {
+        @if (store.loading()) {
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="h-16 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+          }
+        }
+      } @else if (store.exercises().length === 0) {
+        <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
+          Aún no has terminado ninguna sesión. Si ya tienes entrenamientos, pulsa <span class="font-medium text-slate-200">Recalcular</span> en el inicio para cargar tu histórico.
+        </div>
+      } @else {
+        @for (exercise of exercises(); track exercise.exerciseId) {
+          <a
+            [routerLink]="['/progress', exercise.exerciseId]"
+            class="flex items-center justify-between gap-4 rounded-2xl border border-slate-700 bg-slate-800/80 p-4 transition hover:border-slate-500 hover:bg-slate-800"
+          >
+            <div class="min-w-0">
+              <p class="truncate font-medium text-white">{{ exercise.name }}</p>
+              <p class="mt-0.5 text-xs text-slate-400">
+                {{ daysAgo(exercise.lastPerformedAt) }} · {{ exercise.sessions }} {{ exercise.sessions === 1 ? 'sesión' : 'sesiones' }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right">
+              @if (exercise.lastEstimatedOneRepMax !== null) {
+                <p class="text-sm text-slate-200">1RM est. <span class="font-semibold tabular-nums">{{ oneRepMax(exercise.lastEstimatedOneRepMax) }}</span></p>
+                @if (exercise.trend !== null) {
+                  <p class="text-xs font-medium tabular-nums" [class]="trendClass(exercise.trend)">{{ trend(exercise.trend) }}</p>
+                } @else {
+                  <p class="text-xs text-slate-500">sin comparación</p>
+                }
+              } @else {
+                <p class="text-sm text-slate-400">peso corporal</p>
+                <p class="text-xs text-slate-500">—</p>
+              }
+            </div>
+          </a>
+        } @empty {
+          <p class="py-8 text-center text-sm text-slate-400">Ningún ejercicio coincide con «{{ search() }}».</p>
+        }
+      }
+    </div>
+  </div>
+</main>

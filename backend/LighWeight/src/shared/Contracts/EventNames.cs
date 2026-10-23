@@ -50,6 +50,13 @@ public static class EventNames
         public const string SkinFoldsDeleted = "bodymetrics.skinfolds.deleted.v1";
     }
 
+    /// <summary>Events emitted by the <b>training</b> module.</summary>
+    public static class Training
+    {
+        /// <summary><c>training.session.finished.v1</c> (the whole session with its sets)</summary>
+        public const string SessionFinished = "training.session.finished.v1";
+    }
+
     /// <summary>Events emitted by the <b>dashboard</b> module.</summary>
     public static class Dashboard
     {

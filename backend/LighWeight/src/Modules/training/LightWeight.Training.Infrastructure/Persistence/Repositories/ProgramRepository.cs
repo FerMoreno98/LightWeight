@@ -1,4 +1,5 @@
 using LightWeight.Training.Domain.Aggregates;
+using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 
@@ -62,5 +63,19 @@ public class ProgramRepository : IProgramRepository
             .SingleOrDefaultAsync(p => p.trainingTemplates
                 .Any(t => t.TemplateSessions
                     .Any(ts => ts.TemplateExercises.Any(te => te.Id == TemplateSetId))));
+    }
+
+    public async Task<List<PlannedSetData>> GetPlannedSetsIncludingDeletedAsync(IReadOnlyCollection<Guid> TemplateSetIds)
+    {
+        if(TemplateSetIds.Count == 0) return new();
+        List<Guid> ids = TemplateSetIds.Distinct().ToList();
+        // Read only: the planned sets are read straight from their table, skipping the soft delete filter
+        var rows = await _dbContext.Set<TemplateSet>()
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(t => ids.Contains(t.Id))
+            .Select(t => new { t.Id, t.RepetitionRange.Min, t.RepetitionRange.Max, t.AimMuscleGroups })
+            .ToListAsync();
+        return rows.Select(r => new PlannedSetData(r.Id, r.Min, r.Max, r.AimMuscleGroups)).ToList();
     }
 }
