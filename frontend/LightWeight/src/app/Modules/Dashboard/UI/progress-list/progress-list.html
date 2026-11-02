@@ -25,7 +25,7 @@
         }
       } @else if (store.exercises().length === 0) {
         <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
-          Aún no has terminado ninguna sesión. Si ya tienes entrenamientos, pulsa <span class="font-medium text-slate-200">Recalcular</span> en el inicio para cargar tu histórico.
+          Aún no has terminado ninguna sesión.
         </div>
       } @else {
         @for (exercise of exercises(); track exercise.exerciseId) {

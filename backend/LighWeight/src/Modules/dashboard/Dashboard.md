@@ -100,14 +100,14 @@ The charts are grouped by area: body measurements (and, in the future, nutrition
 * **Perímetros**: the perimeters chosen with a selector (waist by default, up to 4 at once).
 * **Sumatorio de pliegues**: only the measurements with the six skinfolds.
 * **Pliegues**: the skinfolds chosen with a selector (up to 4). Separate from the summatory because their scales are very different (one axis per chart).
-* **Recalcular**: calls `POST /rebuild` and reloads.
+* **Recalcular**: commented out in the template. `POST /rebuild` stays available as a repair tool.
 
 Training charts:
 
 * **Home** (below the current week):
   * **Session performance**: lollipops around 0 (blue better, red worse, with the sign in the label; a dot keeps 0 % visible; the axis covers at least ±5 % and is clipped at ±25 %, where an arrow marks a value out of scale with its real value in the tooltip; excluded exercises appear in the tooltip), stacked over **sleep, DOMS and motivation** on the same date axis, so a bad session and a bad night fall on the same vertical.
   * **Weekly volume** per muscle group (chips, up to 4).
-  * **Recalcular**: the first time, it loads the history of sessions finished before the event existed.
+  * **Recalcular**: commented out in the template. Sessions finished before the event existed need one call to `POST /rebuild` to reach the charts.
 * **Progreso** (`/progress`, in the Entrenamiento menu):
   * The list of exercises: search, last session, current estimated 1RM, trend with arrow and number.
   * **`/progress/:exerciseId`**: estimated 1RM and best weight (hollow points = less precise; the tooltip shows the wellbeing of the session), performance lost between sets by zone (1ª→2ª / 1ª→última), and the last 10 sessions as a table.

@@ -1,6 +1,7 @@
 <section class="mx-auto mt-10 max-w-4xl space-y-4" aria-label="Evolución de tus entrenamientos">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 class="text-xl font-bold text-white">Tus entrenamientos</h2>
+    <!-- Hidden: POST /api/dashboard/rebuild is kept as a repair tool, see Dashboard.md
     <button
       type="button"
       (click)="rebuild()"
@@ -10,6 +11,7 @@
     >
       {{ store.rebuilding() ? 'Recalculando…' : 'Recalcular' }}
     </button>
+    -->
   </div>
 
   @if (store.error(); as error) {
@@ -24,7 +26,7 @@
     }
   } @else if (store.sessions().length === 0) {
     <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
-      Aún no hay sesiones terminadas. Si ya entrenabas antes, pulsa <span class="font-medium text-slate-200">Recalcular</span> para cargar tu histórico.
+      Aún no hay sesiones terminadas.
     </div>
   } @else {
     <!-- Session performance over the wellbeing it started with -->

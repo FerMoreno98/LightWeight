@@ -84,7 +84,7 @@ Contract: `shared/Contracts/Training/TrainingIntegrationEvents.cs`, name in `Eve
 |---|---|---|---|
 | `RebuildRequestedIntegrationEvent` | `dashboard.rebuild.requested.v1` | Dashboard | Publishes again a `training.session.finished.v1` for **every finished session** of the user, built from the current tables (`ITrainingSessionRepository.GetFinishedOfAUserAsync`) |
 
-Sessions finished before the event existed reach the dashboard this way: after deploying, "Recalcular" loads the whole history once.
+Sessions finished before the event existed reach the dashboard this way: after deploying, one call to `POST /api/dashboard/rebuild` loads the whole history (the "Recalcular" button is commented out).
 
 ## Key Design Decisions
 
