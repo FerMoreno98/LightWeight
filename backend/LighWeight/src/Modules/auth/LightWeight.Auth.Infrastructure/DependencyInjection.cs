@@ -13,6 +13,7 @@ using LightWeight.shared.Types;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LightWeight.Auth.Infrastructure;
 
@@ -39,6 +40,7 @@ public static class DependencyInjection
             services.AddScoped<IModuleMigrationManager>(sp => 
             new ModuleMigrationManager(
                 sp.GetRequiredService<IMigrationRunner>(),
+                sp.GetRequiredService<ILogger<ModuleMigrationManager>>(),
                 "Auth"
             ));
             services.AddScoped<IUserRepository,UserRepository>();

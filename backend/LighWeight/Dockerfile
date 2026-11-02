@@ -58,7 +58,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Usuario no root (buena práctica de seguridad)
-RUN useradd -m appuser
+# La carpeta de logs debe existir con este dueño para que el volumen herede los permisos
+RUN useradd -m appuser && mkdir logs && chown appuser logs
 USER appuser
 
 EXPOSE 8080

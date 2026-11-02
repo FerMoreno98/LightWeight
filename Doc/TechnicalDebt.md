@@ -6,7 +6,7 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 
 ### `LightWeight.Shared` no es agnóstico
 
-- **Qué pasa:** depende de FluentMigrator, FluentValidation y `Microsoft.Extensions.DependencyInjection.Abstractions`. Como los proyectos Domain lo referencian, esas librerías también les llegan.
+- **Qué pasa:** depende de FluentMigrator, FluentValidation y `Microsoft.Extensions.DependencyInjection.Abstractions`, y `Microsoft.Extensions.Logging.Abstractions`. Como los proyectos Domain lo referencian, esas librerías también les llegan.
 - **Por qué se dejó:** es un cambio amplio para lo que aporta ahora.
 - **Cuándo retomarla:** si la aplicación escala mucho o algún módulo se extrae.
 - **Solución prevista:** crear `LightWeight.Shared.Infrastructure` y mover ahí `Mediator`, `EventPublisher`, `EventDispatcher`, `ValidationPipelineBehavior` y `ModuleMigrationManager`, que son los únicos archivos que usan librerías externas. Conservando sus namespaces no cambia ningún `using`. Debe ir en una carpeta hermana de `src/shared/`, porque el csproj de Shared compila todo lo que hay bajo su carpeta.
@@ -31,6 +31,12 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 - **Qué pasa:** está oculto en el front, pero `POST /api/dashboard/rebuild` sigue disponible.
 - **Por qué se dejó:** era una medida de seguridad para eventos perdidos, poco probables en un monolito modular.
 - **Cuándo retomarla:** cuando una proyección nueva necesite cargar datos existentes, habrá que usar el endpoint. Conviene conservarlo.
+
+### `EventPublisher` aísla a todos los suscriptores
+
+- **Qué pasa:** si un suscriptor falla, se registra y la petición sigue. Es correcto para los proyectores, pero también se aplica a cualquier suscriptor futuro, y un rebuild con un fallo parcial responde 204.
+- **Por qué se dejó:** hoy los suscriptores son los proyectores, los handlers de rebuild y un handler vacío de `UserCreated`.
+- **Cuándo retomarla:** antes de añadir un suscriptor cuyo fallo deba cancelar la operación o avisar al usuario.
 
 ## Validación
 

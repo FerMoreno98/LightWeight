@@ -36,7 +36,7 @@ Read model of the application. It receives the integration events of the other m
 
 ## 3. Non-obvious rules
 
-- **Projectors must be idempotent and must not throw for existing or missing data.** `…Recorded` arrives on register, on correct and during a rebuild: always upsert. Deleting a missing row does nothing. They run inside the request of the source module, after its commit: an exception here returns an error to a user whose measurement was saved anyway.
+- **Projectors must be idempotent and must not throw for existing or missing data.** `…Recorded` arrives on register, on correct and during a rebuild: always upsert. Deleting a missing row does nothing. They run inside the request of the source module, after its commit: `EventPublisher` logs an exception here and continues, so it leaves the projection behind without any error for the user.
 - **Upsert = find by id, then overwrite every value or add** (`CurrentValues.SetValues`). A correction can turn a value into null, so never merge field by field.
 - **Deletes filter by `MeasurementId` and `UserId`**, so an event can never remove a row of another user.
 - **The training sets are matched by `SetId` when a session is written again** (overwrite / add / remove the missing ones), never deleted and re-inserted: EF Core cannot track a deleted and a new entity with the same key in one save.
@@ -108,7 +108,6 @@ Training: `UI/training-overview` (home: session performance as `UI/bar-chart` st
 **Pending:**
 - Macrocycle/mesocycle filter: optional `?macrocycleId=`/`?mesocycleId=` on the training endpoints (the ids are already stored), cycle events from Training for the selector, and their date ranges for the body measurement charts.
 - Fat percentage (needs the sex from UserProfile).
-- Structured logs in the event flow; subscriber failures logged instead of returning 500 to the user.
 
 ## 8. Things NOT to do in this module
 

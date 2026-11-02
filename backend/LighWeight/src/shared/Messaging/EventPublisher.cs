@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using LightWeight.shared.Contracts;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LightWeight.shared.Messaging;
 
@@ -17,14 +19,19 @@ namespace LightWeight.shared.Messaging;
 /// </code>
 /// Zero registered handlers is a valid state in a monolith — an integration event with no
 /// in-process subscribers is published as a no-op.
+/// The publisher runs after the commit of the source module, so a failing subscriber is logged and
+/// the next one still runs: the data of the user is saved and must not be answered as an error.
+/// Only the event name and the handler are logged, never the payload, which carries personal data.
 /// </remarks>
 public sealed class EventPublisher : IEventPublisher
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<EventPublisher> _logger;
 
-    public EventPublisher(IServiceProvider serviceProvider)
+    public EventPublisher(IServiceProvider serviceProvider, ILogger<EventPublisher> logger)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -36,7 +43,18 @@ public sealed class EventPublisher : IEventPublisher
 
         foreach (IIntegrationEventHandler<T> handler in handlers)
         {
-            await handler.HandleAsync(@event, ct);
+            long startedAt = Stopwatch.GetTimestamp();
+            try
+            {
+                await handler.HandleAsync(@event, ct);
+                _logger.LogDebug("Integration event {EventName} handled by {Handler} in {ElapsedMs} ms",
+                    @event.EventName, handler.GetType().Name, Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                _logger.LogError(exception, "Integration event {EventName} failed in {Handler}",
+                    @event.EventName, handler.GetType().Name);
+            }
         }
     }
 }

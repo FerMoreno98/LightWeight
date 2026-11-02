@@ -1,7 +1,9 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using LightWeight.shared.BuildingBlocks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LightWeight.shared.Messaging;
 
@@ -27,10 +29,12 @@ public sealed class EventDispatcher : IEventDispatcher
     private static readonly ConcurrentDictionary<Type, MethodInfo> _handlerMethodCache = new();
 
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<EventDispatcher> _logger;
 
-    public EventDispatcher(IServiceProvider serviceProvider)
+    public EventDispatcher(IServiceProvider serviceProvider, ILogger<EventDispatcher> logger)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
     }
 
     /// <inheritdoc />
@@ -56,8 +60,12 @@ public sealed class EventDispatcher : IEventDispatcher
                     continue;
                 }
 
+                // A failure is not logged here: it reaches the global exception handler with its whole trace
+                long startedAt = Stopwatch.GetTimestamp();
                 Task task = (Task)handleMethod.Invoke(handler, new object[] { domainEvent, ct })!;
                 await task;
+                _logger.LogDebug("Domain event {EventType} handled by {Handler} in {ElapsedMs} ms",
+                    concreteEventType.Name, handler.GetType().Name, Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds);
             }
         }
     }

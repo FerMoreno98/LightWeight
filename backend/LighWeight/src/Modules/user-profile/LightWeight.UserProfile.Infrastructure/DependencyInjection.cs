@@ -11,6 +11,7 @@ using LightWeight.UserProfile.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace LightWeight.UserProfile.Infrastructure;
 
@@ -35,6 +36,7 @@ public static class DependencyInjection
                 services.AddScoped<IModuleMigrationManager>(sp => 
                     new ModuleMigrationManager(
                 sp.GetRequiredService<IMigrationRunner>(),
+                sp.GetRequiredService<ILogger<ModuleMigrationManager>>(),
                 "UserProfile"
             ));
             services.AddScoped<IUserRepository,UserRepository>();
