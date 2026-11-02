@@ -1,3 +1,5 @@
+using LightWeight.shared.Exceptions;
+
 namespace LightWeight.Training.Domain.Exceptions;
 
 public sealed class ReptitionRangeLessThanZeroDomainException : TrainingDomainException
@@ -7,7 +9,7 @@ public sealed class ReptitionRangeLessThanZeroDomainException : TrainingDomainEx
         
     }
 }
-public sealed class SetNotFoundDomainException : TrainingDomainException
+public sealed class SetNotFoundDomainException : TrainingDomainException, INotFoundException
 {
     public SetNotFoundDomainException() : base("Set not found")
     {
@@ -21,7 +23,7 @@ public sealed class SuperSetNeedsTwoExercisesDomainException : TrainingDomainExc
 
     }
 }
-public sealed class SuperSetNotFoundDomainException : TrainingDomainException
+public sealed class SuperSetNotFoundDomainException : TrainingDomainException, INotFoundException
 {
     public SuperSetNotFoundDomainException() : base("The superset does not belong to this session")
     {

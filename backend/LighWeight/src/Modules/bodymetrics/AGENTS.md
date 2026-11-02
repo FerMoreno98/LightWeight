@@ -103,7 +103,6 @@ Frontend: `frontend/LightWeight/src/app/Modules/BodyMetrics` — route `/bodymet
 **Done:** domain with value objects and events, integration contracts, persistence (schema, migrations, repositories, UnitOfWork with event dispatch), commands/queries/validators, API, host registration, frontend (register, latest 10, correct, delete), unit tests for domain and application, answer to the dashboard rebuild.
 
 **Pending:**
-- Global exception handler (errors reach the client as 500).
 - Exposing the estimated fat percentage (needs the sex from UserProfile).
 
 ## 8. Things NOT to do in this module

@@ -1,3 +1,5 @@
+using LightWeight.shared.Exceptions;
+
 namespace LightWeight.Training.Domain.Exceptions;
 
 public sealed class NameEmptyDomainException : TrainingDomainException
@@ -28,7 +30,7 @@ public sealed class InvalidTrainingDistributionDomainException : TrainingDomainE
         
     }
 }
-public sealed class TrainingTemplateNotFoundDomainException : TrainingDomainException
+public sealed class TrainingTemplateNotFoundDomainException : TrainingDomainException, INotFoundException
 {
     public TrainingTemplateNotFoundDomainException() : base("This training template does not correspond to any program")
     {

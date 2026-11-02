@@ -171,7 +171,6 @@ training/
 
 **Pending:**
 - Cycle events (macro/mesocycle started and finished) for the Dashboard filter by macrocycle.
-- Global exception handler (errors reach the client as 500).
 
 ## 8. Things NOT to do in this module
 

@@ -1,3 +1,5 @@
+using LightWeight.shared.Exceptions;
+
 
 
 namespace LightWeight.Auth.Domain.Exceptions;
@@ -27,7 +29,7 @@ public sealed class InvalidRefreshTokenException : AuthDomainException
     }
 }
 
-public sealed class RefreshTokenNotFoundException : AuthDomainException
+public sealed class RefreshTokenNotFoundException : AuthDomainException, INotFoundException
 {
     public RefreshTokenNotFoundException() : base("Token not found")
     {

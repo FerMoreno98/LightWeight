@@ -1,6 +1,7 @@
 
 using System.Text;
 using FluentMigrator.Runner;
+using LightWeight.App.Exceptions;
 using LightWeight.App.Extensions;
 using LightWeight.Auth.Infrastructure;
 using LightWeight.BodyMetrics.Infrastructure;
@@ -38,6 +39,10 @@ builder.Services
 // Registrar el orquestador
 builder.Services.AddScoped<IMigrationOrchestrator, MigrationOrchestrator>();
 
+// Toda excepción que llegue al host se responde como ProblemDetails
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 // Configurar autorización SIN política por defecto
 builder.Services.AddAuthorization(options =>
 {
@@ -60,6 +65,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 var app = builder.Build();
+// El primero, para capturar lo que lance cualquier middleware posterior
+app.UseExceptionHandler();
 app.UseHttpsRedirection();
 
 app.UseCors("AllowFrontend");

@@ -17,6 +17,7 @@ Aplicación para planificar y registrar entrenamientos de fuerza / culturismo, c
 - [Módulos](#módulos)
 - [Tests](#tests)
 - [Convenciones](#convenciones)
+- [Deuda técnica](Doc/TechnicalDebt.md)
 
 ---
 
@@ -242,4 +243,5 @@ cd frontend/LightWeight && bun run test
 - **Base de datos:** un esquema por módulo (`auth`, `userprofile`, `training`, ...) y tablas con prefijo del módulo (`training_Programs`). Las migraciones son **FluentMigrator**, con versión `yyyyMMddHHmm`. No modifiques una migración ya aplicada: crea una nueva.
 - **Enums:** se guardan como texto en la base de datos.
 - **Casos de uso:** un comando o consulta por carpeta (`Commands/<Agregado>/<Accion>/`) con su `Command`, su `Handler` y su `Validator`, registrados en el `DependencyInjection.cs` del módulo.
+- **Errores:** `GlobalExceptionHandler` (`src/App/LightWeight.App/Exceptions`) convierte toda excepción en `ProblemDetails`. Las excepciones de cada módulo heredan de `BusinessException` (400); añade `INotFoundException` (404) o `IConflictException` (409) cuando corresponda. Los validadores dan 400 con `errors` por campo y `UnauthorizedAccessException` da 403, nunca 401, porque el front responde a los 401 renovando el token. Cualquier otra excepción es un fallo de programación: 500 sin detalles.
 - **Frontend:** componentes standalone, estado en stores con signals y navegación siempre con `routerLink` / `Router` (nunca `href`, que recarga la app).

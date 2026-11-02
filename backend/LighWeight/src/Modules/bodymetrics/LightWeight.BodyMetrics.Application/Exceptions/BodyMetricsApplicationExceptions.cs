@@ -1,6 +1,8 @@
+using LightWeight.shared.Exceptions;
+
 namespace LightWeight.BodyMetrics.Application.Exceptions;
 
-public abstract class BodyMetricsApplicationException : Exception
+public abstract class BodyMetricsApplicationException : BusinessException
 {
     protected BodyMetricsApplicationException(string message) : base(message)
     {
@@ -8,7 +10,7 @@ public abstract class BodyMetricsApplicationException : Exception
     }
 }
 
-public sealed class MeasurementNotFoundApplicationException : BodyMetricsApplicationException
+public sealed class MeasurementNotFoundApplicationException : BodyMetricsApplicationException, INotFoundException
 {
     public MeasurementNotFoundApplicationException() : base("Measurement not found")
     {

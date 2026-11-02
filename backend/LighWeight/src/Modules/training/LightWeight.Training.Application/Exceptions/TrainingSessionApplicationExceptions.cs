@@ -1,6 +1,8 @@
+using LightWeight.shared.Exceptions;
+
 namespace LightWeight.Training.Application.Exceptions;
 
-public sealed class TrainingSessionNotFoundApplicationException : TrainingApplicationException
+public sealed class TrainingSessionNotFoundApplicationException : TrainingApplicationException, INotFoundException
 {
     public TrainingSessionNotFoundApplicationException() : base("Training session not found")
     {
@@ -21,7 +23,7 @@ public sealed class TemplateSessionNotInCurrentWeekApplicationException : Traini
 
     }
 }
-public sealed class TrainingSessionAlreadyExistsApplicationException : TrainingApplicationException
+public sealed class TrainingSessionAlreadyExistsApplicationException : TrainingApplicationException, IConflictException
 {
     public TrainingSessionAlreadyExistsApplicationException() : base("This session has already been started this week")
     {
