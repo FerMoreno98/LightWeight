@@ -3,16 +3,16 @@ using LightWeight.UserProfile.Domain.Enum;
 namespace LightWeight.UserProfile.Application.Commands.UpdateProfile;
 
 
-public sealed class CompleteProfileCommandValidator : AbstractValidator<UpdateProfileCommand>
+public sealed class UpdateProfileCommandValidator : AbstractValidator<UpdateProfileCommand>
 {
-    public CompleteProfileCommandValidator()
+    public UpdateProfileCommandValidator()
     {
         RuleFor(x => x.UserId)
             .NotEmpty();
 
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(100);
+            .MaximumLength(50);
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty()

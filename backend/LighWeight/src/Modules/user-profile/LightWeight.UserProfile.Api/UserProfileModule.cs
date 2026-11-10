@@ -2,6 +2,7 @@
 using LightWeight.UserProfile.Api.DTOs;
 using LightWeight.UserProfile.Application.Commands.CompleteProfile;
 using LightWeight.UserProfile.Application.Commands.UpdateProfile;
+using LightWeight.UserProfile.Application.Queries.GetProfile;
 using LightWeight.shared.Mediator;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -16,10 +17,22 @@ public static class UserProfileModule
     {
         var group = app.MapGroup("/api/user-profile").RequireAuthorization();
 
+        group.MapGet("/",                 GetProfile);
         group.MapPost("/complete",        CompleteProfile);
         group.MapPut("/",                 UpdateProfile);
 
         return app;
+    }
+
+    /// <summary>404 while the onboarding is not done</summary>
+    private static async Task<IResult> GetProfile(
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct)
+    {
+        var profile = await mediator.QueryAsync<GetProfileQuery, ProfileResponse>(
+            new GetProfileQuery(GetUserId(httpContext)), ct);
+        return TypedResults.Ok(profile);
     }
 
     private static async Task<IResult> CompleteProfile(

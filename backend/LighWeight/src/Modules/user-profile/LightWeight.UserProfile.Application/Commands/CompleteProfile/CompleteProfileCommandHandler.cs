@@ -29,6 +29,9 @@ public sealed class CompleteProfileCommandHandler : ICommandHandler<CompleteProf
 
     public async Task HandleAsync(CompleteProfileCommand command, CancellationToken ct = default)
     {
+        if (await _userRepository.FindByIdAsync(command.UserId) is not null)
+            throw new UserProfileAlreadyCompletedException();
+
         var sex   = Enum.Parse<Sex>(command.Sex, ignoreCase: true);
         User user = User.Create
         (

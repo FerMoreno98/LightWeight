@@ -105,7 +105,7 @@ public class UserTests
     {
         var user = BuildUser(name: "Fernando");
 
-        user.Modify("Carlos", Sex.Male, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        user.Modify("Carlos", Sex.Male, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), FixedNow);
 
         Assert.Equal("Carlos", user.Name);
     }
@@ -115,7 +115,7 @@ public class UserTests
     {
         var user = BuildUser(sex: Sex.Male);
 
-        user.Modify("Fernando", Sex.Female, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        user.Modify("Fernando", Sex.Female, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), FixedNow);
 
         Assert.Equal(Sex.Female, user.Sex);
     }
@@ -126,7 +126,7 @@ public class UserTests
         var user   = BuildUser();
         var newDob = new DateTime(1995, 3, 20, 0, 0, 0, DateTimeKind.Utc);
 
-        user.Modify("Fernando", Sex.Male, newDob);
+        user.Modify("Fernando", Sex.Male, newDob, FixedNow);
 
         Assert.Equal(newDob, user.DateOfBirth);
     }
@@ -138,12 +138,32 @@ public class UserTests
     {
         var user = BuildUser(now: FixedNow);
 
-        user.Modify("Fernando", Sex.Male, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        user.Modify("Fernando", Sex.Male, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), FixedNow);
 
         Assert.Equal(FixedNow, user.StageStartedAt);
     }
 
+    // ─── Eventos con el sexo (porcentaje graso en el dashboard) ──────────────────
 
+    [Fact]
+    public void Create_DomainEvent_ContainsTheSex()
+    {
+        var user = BuildUser(sex: Sex.Female);
 
+        var domainEvent = user.DomainEvents.OfType<UserCompletedDomainEvent>().Single();
+        Assert.Equal(Sex.Female, domainEvent.Sex);
+    }
 
+    [Fact]
+    public void Modify_RaisesModifiedEventWithTheNewSexAndNow()
+    {
+        var user = BuildUser(sex: Sex.Male);
+        user.ClearDomainEvents();
+        var later = FixedNow.AddDays(3);
+
+        user.Modify("Fernando", Sex.Female, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), later);
+
+        var domainEvent = Assert.Single(user.DomainEvents.OfType<UserProfileModifiedDomainEvent>());
+        Assert.Equal(new UserProfileModifiedDomainEvent(FixedUserId, Sex.Female, later), domainEvent);
+    }
 }

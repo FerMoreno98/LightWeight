@@ -1,0 +1,38 @@
+<main class="min-h-screen px-4 py-10">
+  <div class="mx-auto max-w-md">
+    <h1 class="font-display mb-1 text-4xl leading-none font-bold text-fg uppercase">Tu perfil</h1>
+    <p class="mb-6 text-sm text-muted">Tus datos personales. El sexo se usa para estimar tu porcentaje graso.</p>
+
+    <div class="card p-6">
+      @switch (store.status()) {
+        @case ('complete') {
+          <app-profile-form
+            [initial]="store.profile()"
+            submitLabel="Guardar cambios"
+            busyLabel="Guardando..."
+            [busy]="store.isSaving()"
+            [error]="store.error()"
+            (save)="onSave($event)"
+          />
+          @if (saved()) {
+            <p class="mt-4 text-sm text-accent" role="status">Cambios guardados.</p>
+          }
+        }
+        @case ('error') {
+          <p class="alert-error" role="alert">No se ha podido cargar tu perfil. Recarga la página para intentarlo de nuevo.</p>
+        }
+        @default {
+          <div class="space-y-4" aria-hidden="true">
+            @for (i of [1, 2, 3]; track i) {
+              <div class="skeleton h-11"></div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    <button type="button" class="btn btn-secondary mt-6 w-full" [disabled]="loggingOut()" (click)="logout()">
+      {{ loggingOut() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
+    </button>
+  </div>
+</main>

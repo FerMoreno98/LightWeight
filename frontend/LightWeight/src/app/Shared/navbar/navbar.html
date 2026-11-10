@@ -4,18 +4,34 @@
     <div class="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 md:h-16">
       <a routerLink="/home" class="font-display text-2xl font-bold uppercase tracking-wide">LightWeight</a>
 
-      <nav class="hidden items-center gap-1 md:flex" aria-label="Navegación principal">
-        @for (section of sections; track section.key) {
-          <a
-            [routerLink]="section.link"
-            [attr.aria-current]="currentSection() === section.key ? 'page' : null"
-            class="relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors"
-            [class]="currentSection() === section.key ? 'text-fg bg-raised' : 'text-muted hover:text-fg hover:bg-raised'"
-          >
-            {{ section.label }}
-          </a>
-        }
-      </nav>
+      <div class="flex items-center gap-1">
+        <nav class="hidden items-center gap-1 md:flex" aria-label="Navegación principal">
+          @for (section of sections; track section.key) {
+            <a
+              [routerLink]="section.link"
+              [attr.aria-current]="currentSection() === section.key ? 'page' : null"
+              class="relative rounded-lg px-3 py-2 text-sm font-semibold transition-colors"
+              [class]="currentSection() === section.key ? 'text-fg bg-raised' : 'text-muted hover:text-fg hover:bg-raised'"
+            >
+              {{ section.label }}
+            </a>
+          }
+        </nav>
+
+        <!-- Profile: top right on mobile and desktop, out of the tab bar -->
+        <a
+          routerLink="/profile"
+          aria-label="Tu perfil"
+          title="Tu perfil"
+          [attr.aria-current]="currentSection() === 'profile' ? 'page' : null"
+          class="btn-icon"
+          [class]="currentSection() === 'profile' ? 'text-accent bg-raised' : 'text-muted hover:text-fg hover:bg-raised'"
+        >
+          <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true">
+            <path [attr.d]="profileIcon" />
+          </svg>
+        </a>
+      </div>
     </div>
   </header>
 

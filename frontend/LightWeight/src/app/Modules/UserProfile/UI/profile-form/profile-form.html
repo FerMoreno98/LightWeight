@@ -1,0 +1,62 @@
+<form #form="ngForm" (ngSubmit)="onSubmit()" class="flex flex-col gap-5" novalidate>
+  <div class="flex flex-col gap-2">
+    <label for="name" class="text-sm font-medium text-soft">Nombre</label>
+    <input
+      id="name"
+      name="name"
+      type="text"
+      autocomplete="name"
+      required
+      [maxlength]="nameMaxLength"
+      [(ngModel)]="name"
+      #nameModel="ngModel"
+      class="input"
+      [class.input-invalid]="nameModel.invalid && nameModel.touched"
+      [attr.aria-describedby]="nameModel.invalid && nameModel.touched ? 'name-error' : null"
+    />
+    @if (nameModel.invalid && nameModel.touched) {
+      <p id="name-error" class="text-xs text-danger">Escribe tu nombre (hasta {{ nameMaxLength }} caracteres).</p>
+    }
+  </div>
+
+  <fieldset class="flex flex-col gap-2">
+    <legend class="mb-2 text-sm font-medium text-soft">Sexo</legend>
+    <div class="grid grid-cols-2 gap-3">
+      @for (option of sexOptions; track option.value) {
+        <label
+          class="flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-3 text-sm font-semibold transition-colors has-focus-visible:ring-2 has-focus-visible:ring-accent/40"
+          [class]="sex === option.value ? 'border-accent bg-accent/10 text-fg' : 'border-line-strong text-muted hover:bg-raised hover:text-fg'"
+        >
+          <input type="radio" name="sex" required class="sr-only" [value]="option.value" [(ngModel)]="sex" />
+          {{ option.label }}
+        </label>
+      }
+    </div>
+    <p class="text-xs text-subtle">Se usa para estimar tu porcentaje graso a partir de los pliegues.</p>
+  </fieldset>
+
+  <div class="flex flex-col gap-2">
+    <label for="dateOfBirth" class="text-sm font-medium text-soft">Fecha de nacimiento</label>
+    <input
+      id="dateOfBirth"
+      name="dateOfBirth"
+      type="date"
+      autocomplete="bday"
+      required
+      [min]="minDate"
+      [max]="maxDate"
+      [(ngModel)]="dateOfBirth"
+      #dateModel="ngModel"
+      class="input"
+      [class.input-invalid]="dateModel.invalid && dateModel.touched"
+    />
+  </div>
+
+  @if (error(); as message) {
+    <p class="alert-error" role="alert">{{ message }}</p>
+  }
+
+  <button type="submit" [disabled]="form.invalid || busy()" class="btn btn-primary w-full">
+    {{ busy() ? busyLabel() : submitLabel() }}
+  </button>
+</form>

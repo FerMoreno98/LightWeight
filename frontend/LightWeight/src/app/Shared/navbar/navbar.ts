@@ -41,5 +41,7 @@ export class Navbar {
   );
 
   protected readonly currentSection = computed(() => this.url().split(/[/?#]/)[1] ?? '');
-  protected readonly visible = computed(() => this.currentSection() !== 'auth');
+  /** Hidden while logging in and in the onboarding: there is nowhere else to go yet */
+  protected readonly visible = computed(() => !['auth', 'onboarding'].includes(this.currentSection()));
+  protected readonly profileIcon = 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0';
 }

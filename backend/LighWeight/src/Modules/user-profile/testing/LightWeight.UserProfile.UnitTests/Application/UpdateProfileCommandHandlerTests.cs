@@ -1,4 +1,5 @@
 
+using LightWeight.shared.Types;
 using LightWeight.UserProfile.Application.Commands.UpdateProfile;
 using LightWeight.UserProfile.Application.Exceptions;
 using LightWeight.UserProfile.Domain.Aggregates;
@@ -21,7 +22,7 @@ public class UpdateProfileCommandHandlerTests
         new(2024, 6, 1, 10, 0, 0, DateTimeKind.Utc);
 
     private UpdateProfileCommandHandler BuildHandler() =>
-        new(_userRepository, _uow);
+        new(_userRepository, _uow, Substitute.For<IClock>());
 
     private static User BuildUser() =>
         User.Create(

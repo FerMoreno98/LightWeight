@@ -44,7 +44,7 @@ public sealed class User : AggregateRoot<Guid>
             dateOfBirth,
             now
         );
-        user.RaiseDomainEvent(new UserCompletedDomainEvent(UserId,now));
+        user.RaiseDomainEvent(new UserCompletedDomainEvent(UserId, sex, now));
         return user;
     }
 
@@ -52,13 +52,14 @@ public sealed class User : AggregateRoot<Guid>
     (
         string name, 
         Sex sex,
-        DateTime dateOfBirth 
+        DateTime dateOfBirth,
+        DateTime now
     )
     {
         this.Name = name;
         this.Sex = sex;
         this.DateOfBirth = dateOfBirth;
-
+        RaiseDomainEvent(new UserProfileModifiedDomainEvent(Id, sex, now));
     }
 
 

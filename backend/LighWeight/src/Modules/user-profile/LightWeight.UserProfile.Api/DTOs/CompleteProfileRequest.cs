@@ -1,8 +1,7 @@
 namespace LightWeight.UserProfile.Api.DTOs;
+
+/// <param name="Sex">Male or Female (case-insensitive)</param>
 public record CompleteProfileRequest(
-    Guid UserId,
     string FullName,
     DateTime BirthDate,
-    string Sex,
-    string Stage
-    );
+    string Sex);

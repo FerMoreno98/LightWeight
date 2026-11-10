@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../state/auth.store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DeviceService } from '../../../../Core/device.service';
+import { UserProfileStore } from '../../../UserProfile/state/user-profile.store';
 
 @Component({
   selector: 'app-verify-otp-page',
@@ -16,6 +17,7 @@ export class VerifyOtpPage {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private device = inject(DeviceService);
+  private profileStore = inject(UserProfileStore);
 
   code = '';
   email = '';
@@ -37,7 +39,9 @@ export class VerifyOtpPage {
       this.email,
     );
     if (success) {
-      console.log('Has iniciado sesion con exito');
+      // The profile in memory may be of a previous user. The guard of /home sends to the onboarding
+      // if this user has not completed it yet (first login)
+      this.profileStore.reset();
       this.router.navigate(['/home']);
     }
   }

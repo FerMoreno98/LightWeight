@@ -12,7 +12,7 @@ public sealed class CompleteProfileCommandValidator : AbstractValidator<Complete
 
         RuleFor(x => x.Name)
             .NotEmpty()
-            .MaximumLength(100);
+            .MaximumLength(50);
 
         RuleFor(x => x.DateOfBirth)
             .NotEmpty()

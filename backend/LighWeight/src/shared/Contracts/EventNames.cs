@@ -21,11 +21,8 @@ public static class EventNames
     /// <summary>Events emitted by the <b>userprofile</b> module.</summary>
     public static class UserProfile
     {
-        /// <summary><c>userprofile.profile.completed.v1</c></summary>
-        public const string ProfileCompleted = "userprofile.profile.completed.v1";
-
-        /// <summary><c>userprofile.stage.changed.v1</c></summary>
-        public const string StageChanged = "userprofile.stage.changed.v1";
+        /// <summary><c>userprofile.profile.recorded.v1</c> (completed, modified or republished on a rebuild)</summary>
+        public const string ProfileRecorded = "userprofile.profile.recorded.v1";
     }
 
     /// <summary>Events emitted by the <b>bodymetrics</b> module.</summary>

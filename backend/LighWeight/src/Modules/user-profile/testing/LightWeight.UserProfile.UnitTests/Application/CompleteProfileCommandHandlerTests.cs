@@ -1,6 +1,7 @@
 
 using LightWeight.shared.Types;
 using LightWeight.UserProfile.Application.Commands.CompleteProfile;
+using LightWeight.UserProfile.Application.Exceptions;
 using LightWeight.UserProfile.Domain.Aggregates;
 using LightWeight.UserProfile.Domain.Enum;
 using LightWeight.UserProfile.Domain.Repository;
@@ -30,8 +31,7 @@ public class CompleteProfileCommandHandlerTests
         Guid?    userId       = null,
         string   name         = "Fernando",
         DateTime? dateOfBirth = null,
-        string   sex          = "Male",
-        string   stage        = "Bulk") =>
+        string   sex          = "Male") =>
         new(
             UserId:       userId      ?? FixedUserId,
             Name:         name,
@@ -147,6 +147,38 @@ public class CompleteProfileCommandHandlerTests
         await handler.HandleAsync(BuildCommand());
 
         Assert.Equal(new[] { "add", "save" }, callLog);
+    }
+
+    // ─── Perfil ya completado ────────────────────────────────────────────────────
+
+    private void GivenProfileAlreadyExists()
+    {
+        var existing = User.Create(FixedUserId, "Fernando", Sex.Male,
+            new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), FixedNow);
+        _userRepository.FindByIdAsync(FixedUserId).Returns(existing);
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenProfileAlreadyExists_ThrowsAlreadyCompleted()
+    {
+        GivenProfileAlreadyExists();
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<UserProfileAlreadyCompletedException>(
+            () => handler.HandleAsync(BuildCommand(userId: FixedUserId)));
+    }
+
+    [Fact]
+    public async Task HandleAsync_WhenProfileAlreadyExists_DoesNotAddNorSave()
+    {
+        GivenProfileAlreadyExists();
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<UserProfileAlreadyCompletedException>(
+            () => handler.HandleAsync(BuildCommand(userId: FixedUserId)));
+
+        await _userRepository.DidNotReceive().AddAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
+        await _uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
     }
 
     // ─── Enum parsing ────────────────────────────────────────────────────────────
