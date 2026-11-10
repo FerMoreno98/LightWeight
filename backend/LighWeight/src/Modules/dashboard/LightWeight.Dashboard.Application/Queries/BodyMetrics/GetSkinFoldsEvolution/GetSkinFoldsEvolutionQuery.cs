@@ -5,7 +5,10 @@ namespace LightWeight.Dashboard.Application.Queries.BodyMetrics.GetSkinFoldsEvol
 /// <summary>Every measurement of skinfolds of the user, from the oldest</summary>
 public sealed record GetSkinFoldsEvolutionQuery(Guid UserId) : IQuery<List<SkinFoldsPoint>>;
 
-/// <summary>Skinfolds in mm; the ones not measured are null, and Summatory only exists with the six</summary>
+/// <summary>
+/// Skinfolds in mm; the ones not measured are null, and Summatory only exists with the six.
+/// FatPercentage (estimated, %) needs the summatory and the sex of the user: null while the profile is not completed
+/// </summary>
 public sealed record SkinFoldsPoint
 (
     DateTime MeasuredAt,
@@ -15,5 +18,6 @@ public sealed record SkinFoldsPoint
     decimal? Subscapular,
     decimal? Thigh,
     decimal? Calf,
-    decimal? Summatory
+    decimal? Summatory,
+    decimal? FatPercentage
 );

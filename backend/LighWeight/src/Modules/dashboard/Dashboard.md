@@ -86,7 +86,7 @@ All endpoints require authentication and work on the projections of the authenti
 | `POST` | `/rebuild` | — | 204 — projections of the user rebuilt from the sources |
 | `GET` | `/bodymetrics/weight` | — | `{ points: [{ measuredAt, weight }], weeklyAverages: [{ weekStart, average, count }] }` — whole history, from the oldest |
 | `GET` | `/bodymetrics/perimeters` | — | `[{ measuredAt, neck, …, leftCalf }]` — whole history, null if not measured |
-| `GET` | `/bodymetrics/skinfolds` | — | `[{ measuredAt, abdominal, …, calf, summatory }]` — whole history, summatory only with the six |
+| `GET` | `/bodymetrics/skinfolds` | — | `[{ measuredAt, abdominal, …, calf, summatory, fatPercentage }]` — whole history, summatory only with the six; fatPercentage also needs the sex of the user |
 | `GET` | `/training/volume` | — | `[{ microcycleId, weekNumber, startedAt, setsByMuscle: { "Chest": 12, … } }]` |
 | `GET` | `/training/sessions` | — | `[{ sessionId, name, startedAt, performance (% or null), comparedExercises, motivation, sleep, doms }]` |
 | `GET` | `/training/exercises` | — | `[{ exerciseId, name, lastPerformedAt, sessions, lastEstimatedOneRepMax, trend }]`, from the most recently trained |
@@ -118,5 +118,5 @@ Training charts:
 * **A failing subscriber does not fail the request.** `EventPublisher` logs the event, the handler and the exception, and continues with the next subscriber, because the data of the user is already saved. The projection stays behind until a call to `POST /rebuild`, and a rebuild with a partial failure answers 204 with the error in the log only.
 * **The rebuild is not atomic.** Emptying and refilling are separate writes; if it fails halfway, running it again leaves everything right.
 * **Range:** the charts show the whole history. Training projections already store their cycle ids, so the macrocycle/mesocycle filter will be an optional `?macrocycleId=`/`?mesocycleId=` on the training endpoints, with no change in training. Training will publish its cycle start/finish events for the selector and for the body measurement charts, where a cycle translates to its date range. Pending decision: whether, with a cycle filtered, the trend and the “previous time” only compare inside that cycle.
-* **Fat percentage:** needs the sex of the user, which would come from a UserProfile event.
+* **Fat percentage:** done. The dashboard keeps the sex from `userprofile.profile.recorded.v1` and calculates it when reading the skinfolds (`FatPercentage` in `GET /bodymetrics/skinfolds`), with the Yuhasz formula duplicated from bodymetrics.
 * **Future sources:** Nutrition (FatSecret data: calories and macros) and NEAT. Each one will publish its integration events and subscribe to `dashboard.rebuild.requested.v1`.

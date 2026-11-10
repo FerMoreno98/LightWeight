@@ -1,4 +1,5 @@
 using LightWeight.Dashboard.Application.Projections.BodyMetrics;
+using LightWeight.Dashboard.Application.Projections.UserProfile;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetPerimetersEvolution;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetSkinFoldsEvolution;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetWeightEvolution;
@@ -12,6 +13,7 @@ public class BodyMetricsEvolutionQueriesTests
     private static readonly DateTime Monday = new(2026, 10, 12, 8, 0, 0, DateTimeKind.Utc);
 
     private readonly InMemoryBodyMetricsProjectionStore _store = new();
+    private readonly InMemoryUserProfileProjectionStore _profiles = new();
     private readonly Guid _userId = Guid.CreateVersion7();
     private readonly Guid _otherUser = Guid.CreateVersion7();
 
@@ -59,20 +61,48 @@ public class BodyMetricsEvolutionQueriesTests
         Assert.Equal([38m, null], points.Select(p => p.Neck));
     }
 
-    [Fact]
-    public async Task SkinFoldsEvolution_ReturnsTheSkinFoldsAndTheSummatory()
-    {
-        // Arrange
-        _store.SkinFolds[Guid.CreateVersion7()] = new SkinFoldsProjection
+    private void AddSkinFolds(decimal? summatory)
+        => _store.SkinFolds[Guid.CreateVersion7()] = new SkinFoldsProjection
         {
             UserId = _userId, MeasuredAt = Monday,
-            Abdominal = 15m, Suprailiac = 12m, Tricipital = 9m, Subscapular = 10m, Thigh = 8m, Calf = 6m, Summatory = 60m
+            Abdominal = 15m, Suprailiac = 12m, Tricipital = 9m, Subscapular = 10m, Thigh = 8m, Calf = summatory is null ? null : 6m, Summatory = summatory
         };
+
+    [Fact]
+    public async Task SkinFoldsEvolution_ReturnsTheSkinFoldsTheSummatoryAndTheFatPercentage()
+    {
+        // Arrange
+        AddSkinFolds(60m);
+        _profiles.Profiles[_userId] = new UserProfileProjection { UserId = _userId, Sex = "Male" };
         // Act
-        var points = await new GetSkinFoldsEvolutionQueryHandler(_store).HandleAsync(new GetSkinFoldsEvolutionQuery(_userId));
+        var points = await new GetSkinFoldsEvolutionQueryHandler(_store, _profiles).HandleAsync(new GetSkinFoldsEvolutionQuery(_userId));
         // Assert
         SkinFoldsPoint point = Assert.Single(points);
-        Assert.Equal(new SkinFoldsPoint(Monday, 15m, 12m, 9m, 10m, 8m, 6m, 60m), point);
+        Assert.Equal(new SkinFoldsPoint(Monday, 15m, 12m, 9m, 10m, 8m, 6m, 60m, 8.89m), point);
+    }
+
+    [Fact]
+    public async Task SkinFoldsEvolution_WithoutTheSexOfTheUser_HasNoFatPercentage()
+    {
+        // Arrange: the profile of another user does not count
+        AddSkinFolds(60m);
+        _profiles.Profiles[_otherUser] = new UserProfileProjection { UserId = _otherUser, Sex = "Male" };
+        // Act
+        var points = await new GetSkinFoldsEvolutionQueryHandler(_store, _profiles).HandleAsync(new GetSkinFoldsEvolutionQuery(_userId));
+        // Assert
+        Assert.Null(Assert.Single(points).FatPercentage);
+    }
+
+    [Fact]
+    public async Task SkinFoldsEvolution_WithoutTheSixSkinFolds_HasNoFatPercentage()
+    {
+        // Arrange
+        AddSkinFolds(null);
+        _profiles.Profiles[_userId] = new UserProfileProjection { UserId = _userId, Sex = "Female" };
+        // Act
+        var points = await new GetSkinFoldsEvolutionQueryHandler(_store, _profiles).HandleAsync(new GetSkinFoldsEvolutionQuery(_userId));
+        // Assert
+        Assert.Null(Assert.Single(points).FatPercentage);
     }
 
     [Fact]
@@ -80,6 +110,6 @@ public class BodyMetricsEvolutionQueriesTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() => new GetWeightEvolutionQueryHandler(_store).HandleAsync(new GetWeightEvolutionQuery(Guid.Empty)));
         await Assert.ThrowsAsync<ArgumentException>(() => new GetPerimetersEvolutionQueryHandler(_store).HandleAsync(new GetPerimetersEvolutionQuery(Guid.Empty)));
-        await Assert.ThrowsAsync<ArgumentException>(() => new GetSkinFoldsEvolutionQueryHandler(_store).HandleAsync(new GetSkinFoldsEvolutionQuery(Guid.Empty)));
+        await Assert.ThrowsAsync<ArgumentException>(() => new GetSkinFoldsEvolutionQueryHandler(_store, _profiles).HandleAsync(new GetSkinFoldsEvolutionQuery(Guid.Empty)));
     }
 }

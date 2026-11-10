@@ -86,4 +86,4 @@ Bodies are flat: `{ "measuredAt": "2026-10-14T07:30:00Z", "weight": 82.4 }`, `{ 
 
 * **Error responses:** handled by the global exception handler of the host (see the conventions in the root `README.md`).
 * **Older measurements:** only the latest 10 are shown and can be corrected from the app. The rest stay stored and are part of the events; the Dashboard will show the whole evolution.
-* **Fat percentage:** available in the domain (`CalculateEstimatedFatPercentage`) but not exposed by the API yet, because it needs the sex of the user (UserProfile).
+* **Fat percentage:** available in the domain (`CalculateEstimatedFatPercentage`) but not exposed by this API. The dashboard calculates it with the same formula and the sex it receives from UserProfile: if the formula changes here, change `Dashboard/Application/Calculations/BodyFat.cs` too.

@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { provideCharts } from 'ng2-charts';
 import { Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
 import { BodyMetricsChartsStore } from '../../state/body-metrics-charts.store';
@@ -20,7 +21,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
 @Component({
     selector: 'app-body-metrics-charts',
     standalone: true,
-    imports: [LineChart, NgTemplateOutlet],
+    imports: [LineChart, NgTemplateOutlet, RouterLink],
     templateUrl: './body-metrics-charts.html',
     // Registered here and not in app.config: Chart.js is only downloaded when the charts are opened.
     // Only the pieces the line charts use, to keep the chunk small
@@ -91,6 +92,26 @@ export class BodyMetricsCharts implements OnInit {
         },
     ]);
     hasSummatory = computed(() => this.summatorySeries()[0].points.length > 0);
+
+    /** Estimated by the dashboard from the summatory and the sex of the profile: only where both exist */
+    fatSeries = computed<ChartSeries[]>(() => [
+        {
+            label: 'Grasa estimada',
+            color: SERIES_COLORS[0],
+            points: this.store.skinFolds()
+                .filter(p => p['fatPercentage'] != null)
+                .map(p => ({ x: Date.parse(p.measuredAt), y: p['fatPercentage'] as number })),
+        },
+    ]);
+    hasFat = computed(() => this.fatSeries()[0].points.length > 0);
+
+    /** Last estimation, for the header of the card */
+    lastFat = computed(() => {
+        const points = this.fatSeries()[0].points;
+        if (points.length === 0) return null;
+        const last = points[points.length - 1];
+        return `${number.format(last.y as number)} % el ${dayMonth.format(new Date(last.x))}`;
+    });
 
     skinFoldFields = computed(() => this.fieldsWithData(SKINFOLDS_CONFIG.fields, this.store.skinFolds()));
     private skinFoldSelection = new SeriesSelection(computed(() => this.skinFoldFields().map(f => f.key)), () => 'abdominal');

@@ -2,6 +2,7 @@ using FluentValidation;
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Projectors.BodyMetrics;
 using LightWeight.Dashboard.Application.Projectors.Training;
+using LightWeight.Dashboard.Application.Projectors.UserProfile;
 using LightWeight.Dashboard.Application.Calculations.Training;
 using LightWeight.Dashboard.Application.Queries.Training.GetExerciseProgress;
 using LightWeight.Dashboard.Application.Queries.Training.GetExercisesProgress;
@@ -13,6 +14,7 @@ using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetSkinFoldsEvolutio
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetWeightEvolution;
 using LightWeight.shared.Behavior;
 using LightWeight.shared.Contracts.BodyMetrics;
+using LightWeight.shared.Contracts.UserProfile;
 using LightWeight.shared.Mediator;
 using LightWeight.shared.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -47,6 +49,9 @@ public static class DependencyInjection
         services.AddScoped<IIntegrationEventHandler<PerimetersDeletedIntegrationEvent>, PerimetersProjector>();
         services.AddScoped<IIntegrationEventHandler<SkinFoldsRecordedIntegrationEvent>, SkinFoldsProjector>();
         services.AddScoped<IIntegrationEventHandler<SkinFoldsDeletedIntegrationEvent>, SkinFoldsProjector>();
+
+        // UserProfile: the sex, for the fat percentage of the skinfolds
+        services.AddScoped<IIntegrationEventHandler<ProfileRecordedIntegrationEvent>, UserProfileProjector>();
 
         // Training: projector of the finished sessions and the queries of the charts
         services.AddScoped<IIntegrationEventHandler<TrainingSessionFinishedIntegrationEvent>, TrainingSessionProjector>();

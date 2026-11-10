@@ -85,8 +85,30 @@
         }
       </article>
 
-      <!-- Each skinfold -->
+      <!-- Estimated fat percentage -->
       <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
+        <header class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-semibold text-fg">Porcentaje graso</h2>
+            <p class="mt-1 text-xs text-subtle">Estimado con los seis pliegues y tu sexo (fórmula de Yuhasz).</p>
+          </div>
+          @if (lastFat(); as last) {
+            <p class="text-sm text-muted">Último: <span class="font-medium text-fg">{{ last }}</span></p>
+          }
+        </header>
+        @if (hasFat()) {
+          <app-line-chart [series]="fatSeries()" unit="%" ariaLabel="Evolución del porcentaje graso estimado" />
+        } @else if (hasSummatory()) {
+          <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center text-sm text-muted">
+            Para calcularlo falta tu sexo. Revísalo en <a routerLink="/profile" class="font-semibold text-accent hover:underline">tu perfil</a>.
+          </div>
+        } @else {
+          <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'El porcentaje graso aparece cuando registras los seis pliegues en una misma medición.' }" />
+        }
+      </article>
+
+      <!-- Each skinfold -->
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20 lg:col-span-2">
         <header class="mb-4">
           <h2 class="text-lg font-semibold text-fg">Pliegues</h2>
           <p class="mt-1 text-xs text-subtle">Elige hasta {{ maxSeries }} a la vez.</p>

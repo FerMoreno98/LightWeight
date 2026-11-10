@@ -3,6 +3,7 @@ using FluentMigrator.Runner.Processors;
 using LightWeight.Dashboard.Application;
 using LightWeight.Dashboard.Application.Projections.BodyMetrics;
 using LightWeight.Dashboard.Application.Projections.Training;
+using LightWeight.Dashboard.Application.Projections.UserProfile;
 using LightWeight.Dashboard.Infrastructure.Persistence;
 using LightWeight.shared.Migrations;
 using LightWeight.shared.Types;
@@ -42,6 +43,7 @@ public static class DependencyInjection
 
         services.AddScoped<IBodyMetricsProjectionStore, BodyMetricsProjectionStore>();
         services.AddScoped<ITrainingProjectionStore, TrainingProjectionStore>();
+        services.AddScoped<IUserProfileProjectionStore, UserProfileProjectionStore>();
         services.TryAddSingleton<IClock, SystemClock>();
 
         return services;

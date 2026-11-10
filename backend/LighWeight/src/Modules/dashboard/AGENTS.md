@@ -2,7 +2,7 @@
 
 ## 1. Module purpose
 
-Read model of the application. It receives the integration events of the other modules and keeps them as projections ready to be charted. Today it projects **BodyMetrics** (weight, perimeters, skinfolds; charts in the "Evolución" tab of the BodyMetrics page) and **Training** (finished sessions with their sets; charts in the home and in the "Progreso" section). It can rebuild the projections of a user by asking the source modules to publish their state again. See `Dashboard.md` for the functional description.
+Read model of the application. It receives the integration events of the other modules and keeps them as projections ready to be charted. Today it projects **BodyMetrics** (weight, perimeters, skinfolds; charts in the "Evolución" tab of the BodyMetrics page), the **sex of the UserProfile** (for the fat percentage) and **Training** (finished sessions with their sets; charts in the home and in the "Progreso" section). It can rebuild the projections of a user by asking the source modules to publish their state again. See `Dashboard.md` for the functional description.
 
 ## 2. Shape of the module
 
@@ -21,7 +21,12 @@ Read model of the application. It receives the integration events of the other m
 
 ### Queries (`Application/Queries/BodyMetrics`)
 - `GetWeightEvolution` → `{ Points[{MeasuredAt, Weight}], WeeklyAverages[{WeekStart, Average, Count}] }`.
-- `GetPerimetersEvolution` / `GetSkinFoldsEvolution` → one point per measurement with every field (null if not measured; skinfolds include `Summatory`).
+- `GetPerimetersEvolution` / `GetSkinFoldsEvolution` → one point per measurement with every field (null if not measured; skinfolds include `Summatory` and `FatPercentage`).
+
+### UserProfile (`Projections/UserProfile`, `Projectors/UserProfile`)
+- `UserProfileProjection` (key `UserId`, `Sex`) and `IUserProfileProjectionStore` (`UpsertAsync`, `GetSexAsync`).
+- `UserProfileProjector`: `userprofile.profile.recorded.v1` → upsert.
+- `Calculations/BodyFat.EstimatePercentage(summatory, sex)`: Yuhasz, the same formula as `SkinFolds.CalculateEstimatedFatPercentage` in bodymetrics (`0.1051·Σ + 2.585` men, `0.1548·Σ + 3.580` women), rounded to 2 decimals; null without the six skinfolds or without the sex. **If the formula changes in bodymetrics, change it here too.** Calculated when reading with the current sex, so a change of sex recalculates the whole history.
 
 ### Training (`Projections/Training`, `Projectors/Training`, `Queries/Training`, `Calculations/Training`)
 - `TrainingSessionProjection` (key `SessionId`, with the cycle ids and the wellbeing) and `TrainingSetProjection` (key `SetId`, with what was performed and the facts of its planned set).
@@ -44,7 +49,8 @@ Read model of the application. It receives the integration events of the other m
 - **Effort zones are never mixed**: fatigue, trend and session performance only compare an exercise with itself **in the same zone**.
 - **Rebuild order matters**: `ClearUserAsync` first, then publish `RebuildRequestedIntegrationEvent`. Emptying afterwards would delete what the sources just published. The tests check the order (`Received.InOrder`).
 - **The dashboard does not know its sources.** The rebuild only publishes `dashboard.rebuild.requested.v1`; each source module subscribes and republishes its `…Recorded` events. Never query another module's tables or reference its assemblies.
-- **Projections only store what the event carries.** Calculations that need other data (e.g. fat percentage, which needs the user's sex) wait until that data arrives through an event.
+- **Projections only store what the event carries.** Calculations that need other data wait until that data arrives through an event (the fat percentage waited for the sex of UserProfile).
+- **The rebuild does not empty the profile projection**: a profile cannot be deleted, so nothing stale can stay. UserProfile answers the rebuild and the upsert overwrites it.
 - **Dates are UTC** (`timestamp with time zone`). They come already normalized from the source events.
 - **Time comes from `IClock`**, never `DateTime.UtcNow`.
 - **The shared mediator does not validate queries**: the query handlers check the user themselves.
@@ -62,9 +68,10 @@ Read model of the application. It receives the integration events of the other m
 | `dashboard_TrainingSessions` | `SessionId` (uuid PK), `UserId`, `MacrocycleId`, `MesocycleId`, `MicrocycleId`, `WeekNumber`, `Name`, `StartedAt`, `FinishedAt`, `Motivation`, `Sleep`, `Doms` | `Ix_TrainingSessions_UserId_StartedAt` |
 | `dashboard_TrainingSets` | `SetId` (uuid PK), `SessionId`, `UserId`, `Order`, `ExerciseId`, `ExerciseName`, `Repetitions`, `Weight` decimal(8,2), `Rpe` decimal(3,1), `IsBodyWeight`, `Technique?`, `IsPlanned`, `ExerciseMuscleGroups` text[], `PlannedMuscleGroups` text[]?, `PlannedMinReps?`, `PlannedMaxReps?` | `Ix_TrainingSets_UserId_ExerciseId`, `Ix_TrainingSets_SessionId` |
 | `dashboard_BodySkinFolds` | `MeasurementId` (PK), `UserId`, `MeasuredAt`, `Abdominal`, `Suprailiac`, `Tricipital`, `Subscapular`, `Thigh`, `Calf`, `Summatory` (decimal(5,2) null) | `Ix_BodySkinFolds_UserId_MeasuredAt` |
+| `dashboard_UserProfiles` | `UserId` (uuid PK), `Sex` varchar(20) | — |
 
 - Unlike bodymetrics, the skinfold **summatory is stored**: it is what the charts show.
-- **Migrations**: `Infrastructure/Migrations/2026101510xx_*` (bodymetrics) and `2026102310xx_*` (training). **Every module shares one FluentMigrator runner and the `VersionInfo` table**: keep using these ranges and following numbers for this module.
+- **Migrations**: `Infrastructure/Migrations/2026101510xx_*` (bodymetrics), `2026102310xx_*` (training) and `2026111011xx_*` (userprofile). **Every module shares one FluentMigrator runner and the `VersionInfo` table**: keep using these ranges and following numbers for this module.
 
 ## 5. Folder structure
 
@@ -98,16 +105,15 @@ Training: `UI/training-overview` (home: session performance as `UI/bar-chart` st
 
 - **Depends on**: `LightWeight.Shared` (mediator, messaging, `IClock`, contracts, migrations).
 - **Shared services**: `IMediator`, `IEventPublisher`, `IClock` and the validation pipeline are registered with `TryAdd`/existence checks, like in the other modules.
-- **Integration events consumed**: `bodymetrics.{weight,perimeters,skinfolds}.{recorded,deleted}.v1`, `training.session.finished.v1`.
-- **Integration events published**: `dashboard.rebuild.requested.v1` (answered by BodyMetrics and Training).
+- **Integration events consumed**: `bodymetrics.{weight,perimeters,skinfolds}.{recorded,deleted}.v1`, `training.session.finished.v1`, `userprofile.profile.recorded.v1`.
+- **Integration events published**: `dashboard.rebuild.requested.v1` (answered by BodyMetrics, Training and UserProfile).
 
 ## 7. Current state
 
-**Done:** BodyMetrics and Training projections, rebuild (answered by both sources), read queries and calculations (weekly averages; 1RM, zones, volume, fatigue, session performance, trend), host registration, unit tests, frontend charts (Evolución tab, home, Progreso).
+**Done:** BodyMetrics, Training and UserProfile projections, rebuild (answered by every source), read queries and calculations (weekly averages; fat percentage; 1RM, zones, volume, fatigue, session performance, trend), host registration, unit tests, frontend charts (Evolución tab with the fat percentage card, home, Progreso).
 
 **Pending:**
 - Macrocycle/mesocycle filter: optional `?macrocycleId=`/`?mesocycleId=` on the training endpoints (the ids are already stored), cycle events from Training for the selector, and their date ranges for the body measurement charts.
-- Fat percentage (needs the sex from UserProfile).
 
 ## 8. Things NOT to do in this module
 
