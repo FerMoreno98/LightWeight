@@ -52,12 +52,6 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 - **Qué pasa:** el archivo no incluye ningún proyecto, así que el `dotnet restore` del Dockerfile no restaura nada real y los tests se lanzan proyecto a proyecto.
 - **Cuándo retomarla:** cuando moleste al compilar o al montar CI.
 
-### Caché de `index.html`
-
-- **Qué pasa:** `nginx.conf` no define `Cache-Control`, y tras un build el navegador puede seguir usando la versión anterior.
-- **Cuándo retomarla:** antes de desplegar.
-- **Solución prevista:** añadir `Cache-Control: no-cache` para `/index.html`.
-
 ## Tests
 
 ### Cobertura de integración
