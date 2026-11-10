@@ -5,6 +5,9 @@ namespace LightWeight.Auth.Domain.Entities;
 
 public sealed class RefreshToken : Entity<Guid>
 {
+        /// <summary>Lifetime of a refresh token; the cookie that carries it lasts the same</summary>
+        public const int LifetimeDays = 30;
+
         private RefreshToken
         (
             Guid id, 
@@ -62,7 +65,7 @@ public sealed class RefreshToken : Entity<Guid>
                 Guid.CreateVersion7(),
                 DeviceUid,
                 token,
-                now.AddDays(30),
+                now.AddDays(LifetimeDays),
                 null,
                 null,
                 ip

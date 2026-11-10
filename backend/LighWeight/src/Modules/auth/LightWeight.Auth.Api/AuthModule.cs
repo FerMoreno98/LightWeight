@@ -10,6 +10,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using LightWeight.Auth.Domain.Entities;
 
 public static class AuthModule
 {
@@ -24,17 +27,24 @@ public static class AuthModule
 
         return app;
     }
+    private const string RefreshCookieName = "refresh_token";
+
+    private static CookieOptions RefreshCookieOptions(HttpContext httpContext) => new()
+    {
+        HttpOnly = true,
+        // Only over HTTPS. Auth:RefreshCookie:Secure is false only in Development (plain http on localhost);
+        // without the setting it is true, so production can never send it unencrypted by mistake
+        Secure = httpContext.RequestServices.GetRequiredService<IConfiguration>()
+            .GetValue("Auth:RefreshCookie:Secure", defaultValue: true),
+        SameSite = SameSiteMode.Strict,
+        Path = "/api/auth",         // la cookie solo se envía a rutas de auth, no a toda la app
+    };
+
     private static void SetRefreshTokenCookie(HttpContext httpContext, string refreshToken)
     {
-        // hardcodeando valores solo para probar, cambiarlos a variables de entorno en appsettings
-        httpContext.Response.Cookies.Append("refresh_token", refreshToken, new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = false,              // solo HTTPS (en dev con http, pon false o usa https local)
-            SameSite = SameSiteMode.Strict,
-            Path = "/api/auth",         // la cookie solo se envía a rutas de auth, no a toda la app
-            Expires = DateTimeOffset.UtcNow.AddDays(30) // según tu política de rotation
-        });
+        CookieOptions options = RefreshCookieOptions(httpContext);
+        options.Expires = DateTimeOffset.UtcNow.AddDays(RefreshToken.LifetimeDays);
+        httpContext.Response.Cookies.Append(RefreshCookieName, refreshToken, options);
     }
 
     private static async Task<IResult> SendOtpCode(
@@ -71,7 +81,7 @@ public static class AuthModule
         HttpContext httpContext,
         CancellationToken ct)
     {
-        if (!httpContext.Request.Cookies.TryGetValue("refresh_token", out var refreshToken))
+        if (!httpContext.Request.Cookies.TryGetValue(RefreshCookieName, out var refreshToken))
         {
             return TypedResults.Unauthorized();
         }
@@ -101,12 +111,12 @@ public static class AuthModule
                     ?? throw new UnauthorizedAccessException();
 
         // Without the cookie there is nothing to revoke: the front clears its token anyway
-        if (httpContext.Request.Cookies.TryGetValue("refresh_token", out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
+        if (httpContext.Request.Cookies.TryGetValue(RefreshCookieName, out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
         {
             await mediator.SendAsync(new LogoutCommand(Guid.Parse(id), refreshToken), ct);
         }
 
-        httpContext.Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/api/auth" });
+        httpContext.Response.Cookies.Delete(RefreshCookieName, RefreshCookieOptions(httpContext));
         return TypedResults.NoContent();
     }
 }

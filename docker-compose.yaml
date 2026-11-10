@@ -15,6 +15,8 @@ services:
       - Jwt__Issuer=LightWeight.Api
       - Jwt__Audience=LightWeight
       - Jwt__AccessTokenExpirationMinutes=15
+      # Plain http on localhost: the refresh cookie cannot be Secure here (true by default)
+      - Auth__RefreshCookie__Secure=false
     depends_on:
       db:
         condition: service_healthy
