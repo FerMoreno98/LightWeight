@@ -20,7 +20,10 @@ public sealed class OtpCode : Entity<Guid>
     public DateTime? UsedAt {get; private set;}
     public DateTime ExpiresAt {get;}
 
-    public static OtpCode Create(string hash,Guid userId, DateTime now, int minutesTtl = 10)
+    /// <summary>Minutes a code is valid; the email tells the user</summary>
+    public const int DefaultTtlMinutes = 10;
+
+    public static OtpCode Create(string hash,Guid userId, DateTime now, int minutesTtl = DefaultTtlMinutes)
     {
         
         return new OtpCode(Guid.CreateVersion7(),hash,userId,now,now.AddMinutes(minutesTtl));

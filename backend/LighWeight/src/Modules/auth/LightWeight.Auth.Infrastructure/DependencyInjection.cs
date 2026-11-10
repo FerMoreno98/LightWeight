@@ -46,7 +46,8 @@ public static class DependencyInjection
             services.AddScoped<IUserRepository,UserRepository>();
             services.AddScoped<IAuthUnitOfWork,AuthUnitOfWork>();
             services.AddScoped<ICodeHasher,CodeHasher>();
-            services.AddHttpClient<IEmailSender, EmailSender>();
+            services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.Section));
+            services.AddScoped<IEmailSender, EmailSender>();
             services.AddScoped<IJwtTokenGenerator,TokenProvider>();
             services.AddSingleton<IClock, SystemClock>();
             services.AddScoped<IEventDispatcher, EventDispatcher>();

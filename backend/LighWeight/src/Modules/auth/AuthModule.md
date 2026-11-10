@@ -43,6 +43,10 @@ Manages user identity and authentication via an **OTP-only flow** (no passwords)
 - **Access tokens are NOT revocable**: they are short-lived (configurable via `Jwt:AccessTokenExpirationMinutes`) and left to expire.
 - **JWT**: HMAC-SHA256 signed. Claims: `sub` (UserId), `email`.
 
+## Email
+
+The OTP is sent by SMTP with the `Smtp` settings: mailpit in development, Gmail with an app password in production (`.env.example` explains how to create it). Template in `Application/Commands/LoginOtp/SendOtpCode/OtpEmail.cs` (HTML + plain text).
+
 ## Database
 
 - **Schema**: `auth` (PostgreSQL)

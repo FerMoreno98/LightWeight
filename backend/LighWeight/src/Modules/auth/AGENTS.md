@@ -124,7 +124,8 @@ auth/
 - FluentMigrator migrations (4 tables in `auth` schema)
 - EF Core persistence with domain event dispatch via UnitOfWork
 - JWT token generation (HMAC-SHA256, configurable TTL)
-- Email sending via SMTP (MailHog at localhost:1025)
+- Email sending via SMTP, configured by the `Smtp` section (`SmtpOptions`): `Host`, `Port`, `EnableSsl`, `Username`, `Password`, `From`, `FromName`. Development: mailpit (`mailpit:1025` in docker, no SSL, no account). Production: Gmail (`smtp.gmail.com:587`, `EnableSsl=true`, the Gmail address as `Username` and `From`, an app password as `Password`; see `.env.example`). Only the environment variables change, never the code. Without `Username` it sends without logging in
+- OTP email: `OtpEmail` (Application) builds the subject (with the code), the HTML (tables and inline styles, dark like the app, no images nor web fonts) and the plain text version; both are sent. The code is generated with `RandomNumberGenerator` and lasts `OtpCode.DefaultTtlMinutes`
 
 **Pending / in progress:**
 - `DeviceTokenAddedDomainEvent` is defined but not yet raised — its handler may need to be implemented when cross-module concerns arise

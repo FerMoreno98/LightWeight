@@ -180,36 +180,45 @@ public class SendOtpCodeCommandHandlerTests
         await handler.HandleAsync(BuildCommand());
 
         await _emailSender.Received(1)
-            .Send("user@example.com", Arg.Any<string>(), Arg.Any<string>());
+            .Send("user@example.com", Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
     }
 
     [Fact]
-    public async Task HandleAsync_SendsEmailWithCorrectSubject()
+    public async Task HandleAsync_SendsEmailWithTheCodeInTheSubject()
     {
         _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
+        string? subject = null;
+        string? html = null;
+        await _emailSender.Send(
+            Arg.Any<string>(), Arg.Do<string>(s => subject = s),
+            Arg.Do<string>(h => html = h), Arg.Any<string>());
         var handler = BuildHandler();
 
         await handler.HandleAsync(BuildCommand());
 
-        await _emailSender.Received(1)
-            .Send(Arg.Any<string>(), "Verification code", Arg.Any<string>());
+        string code = System.Text.RegularExpressions.Regex.Match(html!, @"(?<![\w#])\d{6}(?!\w)").Value;
+        Assert.Equal(OtpEmail.Subject(code), subject);
     }
 
     [Fact]
     public async Task HandleAsync_SendsPlainCodeNotHashInEmail()
     {
         _userRepository.FindByEmailAsync("user@example.com").Returns((User?)null);
-        string? sentCode = null;
+        string? html = null;
+        string? text = null;
         await _emailSender.Send(
             Arg.Any<string>(), Arg.Any<string>(),
-            Arg.Do<string>(c => sentCode = c));
+            Arg.Do<string>(h => html = h), Arg.Do<string>(t => text = t));
         var handler = BuildHandler();
 
         await handler.HandleAsync(BuildCommand());
 
-        Assert.NotNull(sentCode);
-        Assert.DoesNotContain("hashed:", sentCode);
-        Assert.Equal(6, sentCode!.Length);
+        Assert.NotNull(html);
+        Assert.DoesNotContain("hashed:", html);
+        Assert.DoesNotContain("hashed:", text);
+        string code = System.Text.RegularExpressions.Regex.Match(text!, @"(?<![\w#])\d{6}(?!\w)").Value;
+        Assert.Equal(6, code.Length);
+        Assert.Contains(code, html);
     }
 
     // ─── SaveChanges y CancellationToken ─────────────────────────────────────────

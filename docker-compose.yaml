@@ -11,6 +11,8 @@ services:
       - Cors__AllowedOrigins__0=http://localhost:4200
       - Smtp__Host=mailpit
       - Smtp__Port=1025
+      # mailpit: no SSL and no account. Production uses Gmail (see .env.example)
+      - Smtp__From=noreply@lightweight.local
       - Jwt__Secret=${JWT_SECRET:?Define JWT_SECRET en el archivo .env (ver .env.example)}
       - Jwt__Issuer=LightWeight.Api
       - Jwt__Audience=LightWeight

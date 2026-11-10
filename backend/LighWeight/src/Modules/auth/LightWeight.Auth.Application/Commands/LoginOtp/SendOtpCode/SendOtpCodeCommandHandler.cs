@@ -53,11 +53,16 @@ public sealed class SendOtpCodeCommandHandler : ICommandHandler<SendOtpCodeComma
         } 
         
         await _uow.SaveChangesAsync(ct);
-        await _emailSender.Send(command.Email,"Verification code",code);
+        await _emailSender.Send(
+            command.Email,
+            OtpEmail.Subject(code),
+            OtpEmail.Html(code, OtpCode.DefaultTtlMinutes),
+            OtpEmail.Text(code, OtpCode.DefaultTtlMinutes));
     }
 
     public string GenerateCode()
     {
-        return Random.Shared.Next(0, 1_000_000).ToString("D6");
+        // Cryptographic generator: Random.Shared is predictable
+        return System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1_000_000).ToString("D6");
     }
 }
