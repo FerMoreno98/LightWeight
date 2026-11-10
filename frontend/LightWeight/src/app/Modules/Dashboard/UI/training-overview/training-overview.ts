@@ -6,7 +6,7 @@ import { SessionPerformance } from '../../data/dashboard-api.service';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
 import { BarChart } from '../bar-chart/bar-chart';
 import { ChartPoint, formatValue } from '../time-chart-options';
-import { MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
 import { SeriesSelection } from '../series-selection';
 import { MUSCLE_ORDER, muscleLabel, wellbeingLine } from '../training-labels';
 
@@ -22,7 +22,7 @@ const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'shor
     imports: [LineChart, BarChart],
     templateUrl: './training-overview.html',
     // Chart.js is only downloaded with the components that draw charts
-    providers: [provideCharts({ registerables: [LineController, LineElement, BarController, BarElement, PointElement, LinearScale, Tooltip, Legend] })],
+    providers: [provideCharts({ registerables: [LineController, LineElement, BarController, BarElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
 })
 export class TrainingOverview implements OnInit {
     store = inject(TrainingOverviewStore);

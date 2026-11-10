@@ -1,14 +1,14 @@
-<div class="flex min-h-screen items-center justify-center bg-gray-50">
-  <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
-    <h1 class="mb-6 text-center text-2xl font-bold text-gray-900">Iniciar sesión</h1>
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="card w-full max-w-sm p-8 shadow-lg shadow-black/30">
+    <h1 class="font-display uppercase leading-none mb-6 text-center text-4xl font-bold text-fg">Iniciar sesión</h1>
 
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 alert-error">{{ error() }}</div>
     }
 
     <form (ngSubmit)="onSubmit()" class="space-y-4">
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+        <label for="email" class="block text-sm font-medium text-fg">Email</label>
         <input
           id="email"
           type="email"
@@ -16,14 +16,14 @@
           name="email"
           required
           placeholder="tu@email.com"
-          class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-900 caret-indigo-600 outline-none transition placeholder:text-gray-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          class="input mt-1"
         />
       </div>
 
       <button
         type="submit"
         [disabled]="isLoading()"
-        class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        class="btn btn-primary w-full"
       >
         {{ isLoading() ? 'Enviando...' : 'Enviar código' }}
       </button>

@@ -1,3 +1,241 @@
-/* You can add global styles to this file, and also import other style files */
+/*
+ * LightWeight design system.
+ *
+ * Dark theme only. Colors are named by role, not by hue: templates use `bg-surface`, `text-muted`,
+ * `border-line`... never raw palette colors (slate, emerald...). To retune the look, change the
+ * values here and nothing else.
+ *
+ * Radii: controls `rounded-lg` (8px), cards and panels `rounded-xl` (12px), pills `rounded-full`.
+ */
 
 @import 'tailwindcss';
+
+/* ---------- Fonts (self-hosted, latin subset, SIL OFL: see public/fonts) ---------- */
+
+@font-face {
+  font-family: 'Figtree';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/figtree-variable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-500.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-600.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-700.woff2') format('woff2');
+}
+
+/* ---------- Tokens ---------- */
+
+/* `static`: every token is emitted as a CSS variable, so the charts (canvas) can read them too */
+@theme static {
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, sans-serif;
+  /* Titles and figures (weights, reps, measures) */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+
+  /* Surfaces: graphite with a slight green tint towards the accent */
+  --color-canvas: #0f1412; /* page background, inputs */
+  --color-surface: #161d1a; /* cards, panels, menus */
+  --color-raised: #1e2723; /* hover, skeletons, secondary fills */
+  --color-line: #2c3833; /* borders and dividers */
+  --color-line-strong: #3f4e48; /* input and secondary button borders */
+
+  /* Text. Contrast against canvas: fg 16:1, soft 11:1, muted 8.4:1, subtle 6.3:1 (minimum 4.5:1) */
+  --color-fg: #e9efec;
+  --color-soft: #c9d3ce;
+  --color-muted: #a3b1ab;
+  --color-subtle: #8a9993;
+
+  /* Accent: the main action, selection and "done" */
+  --color-accent: #3ddc97;
+  --color-accent-hover: #6ae8b0;
+  --color-accent-ink: #0b120f; /* text on top of the accent */
+
+  /* Semantic */
+  --color-danger: #ff7a70; /* errors, delete */
+  --color-warning: #f5c04a; /* in progress, techniques, replaced exercise */
+  --color-info: #7cc8f0; /* supersets */
+}
+
+/* ---------- Base ---------- */
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-fg antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  /* One visible focus ring for every control used with the keyboard */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  input,
+  select,
+  textarea {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ---------- Components ---------- */
+
+@layer components {
+  /* Buttons: one primary per screen; delete always `btn-danger` and always confirmed */
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-sm {
+    @apply min-h-9 px-3;
+  }
+  .btn-primary {
+    @apply bg-accent text-accent-ink hover:bg-accent-hover;
+  }
+  .btn-secondary {
+    @apply border-line-strong text-fg hover:bg-raised;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-raised hover:text-fg;
+  }
+  .btn-danger {
+    @apply border-danger/35 bg-danger/10 text-danger hover:bg-danger/20;
+  }
+  /* Only for the final "yes, delete" of a confirmation */
+  .btn-danger-solid {
+    @apply bg-danger text-accent-ink hover:bg-danger/85;
+  }
+
+  .card {
+    @apply rounded-xl border border-line bg-surface;
+  }
+
+  /* Text fields and selects */
+  .input {
+    @apply min-h-11 w-full rounded-lg border border-line-strong bg-canvas px-3 text-base text-fg transition-colors placeholder:text-subtle focus:border-accent focus:ring-2 focus:ring-accent/25 focus:outline-none sm:text-sm;
+  }
+  .input-invalid {
+    @apply border-danger focus:border-danger focus:ring-danger/25;
+  }
+
+  /* Small uppercase heading above a title or a block */
+  .eyebrow {
+    @apply text-xs font-semibold tracking-wider text-muted uppercase;
+  }
+
+  /* Status pills: the text always says the state, color only reinforces it */
+  .badge {
+    @apply inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+  .badge-accent {
+    @apply bg-accent/12 text-accent;
+  }
+  .badge-warning {
+    @apply bg-warning/12 text-warning;
+  }
+  .badge-info {
+    @apply bg-info/12 text-info;
+  }
+  .badge-danger {
+    @apply bg-danger/12 text-danger;
+  }
+  .badge-neutral {
+    @apply bg-raised text-muted;
+  }
+
+  .alert-error {
+    @apply rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-fg;
+  }
+
+  .empty-state {
+    @apply flex flex-col items-center gap-3 rounded-xl border border-dashed border-line-strong px-6 py-12 text-center;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-xl border border-line bg-surface;
+  }
+}
+
+/* ---------- Motion ---------- */
+
+@keyframes fade-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fade-slide-in {
+  animation: fade-slide-in 0.35s ease-out both;
+}
+
+.backdrop-fade {
+  animation: backdrop-fade 0.15s ease-out both;
+}
+
+.dialog-pop {
+  animation: dialog-pop 0.2s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

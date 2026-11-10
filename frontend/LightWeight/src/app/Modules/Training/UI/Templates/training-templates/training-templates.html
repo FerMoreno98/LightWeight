@@ -4,19 +4,19 @@
     <div class="fade-slide-in">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <h1 class="text-2xl font-bold text-white">Plantillas de entrenamiento</h1>
-          <p class="mt-1 text-sm text-slate-400">Gestiona y consulta tus rutinas guardadas.</p>
+          <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">Plantillas de entrenamiento</h1>
+          <p class="mt-1 text-sm text-muted">Gestiona y consulta tus rutinas guardadas.</p>
         </div>
         <div class="flex items-center gap-2">
           <a
             routerLink="/training/trainingtemplate"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+            class="btn btn-secondary"
           >
             Nueva plantilla
           </a>
           <a
             routerLink="/training/createprogram"
-            class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+            class="btn btn-primary"
           >
             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
               <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
@@ -27,63 +27,63 @@
       </div>
 
       @if (error()) {
-        <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+        <div class="mb-4 rounded-lg bg-danger/10 border border-danger/30 p-3 text-sm text-danger">{{ error() }}</div>
       }
 
       @if (isLoading()) {
         <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           @for (skeleton of [1, 2, 3]; track skeleton) {
-            <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-5">
-              <div class="h-5 w-2/3 rounded bg-slate-700"></div>
+            <div class="animate-pulse rounded-xl border border-line bg-surface/60 p-5">
+              <div class="h-5 w-2/3 rounded bg-raised"></div>
               <div class="mt-4 flex gap-2">
-                <div class="h-6 w-24 rounded-full bg-slate-700"></div>
-                <div class="h-6 w-20 rounded-full bg-slate-700"></div>
+                <div class="h-6 w-24 rounded-full bg-raised"></div>
+                <div class="h-6 w-20 rounded-full bg-raised"></div>
               </div>
-              <div class="mt-4 h-px w-full bg-slate-700/60"></div>
+              <div class="mt-4 h-px w-full bg-raised/60"></div>
               <div class="mt-4 flex gap-2">
-                <div class="h-6 w-16 rounded-full bg-slate-700"></div>
-                <div class="h-6 w-16 rounded-full bg-slate-700"></div>
+                <div class="h-6 w-16 rounded-full bg-raised"></div>
+                <div class="h-6 w-16 rounded-full bg-raised"></div>
               </div>
             </div>
           }
         </div>
       } @else if (programsWithTemplates().length === 0) {
-        <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-16 text-center">
-          <div class="rounded-full bg-slate-800 p-3">
-            <svg class="h-6 w-6 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+        <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-16 text-center">
+          <div class="rounded-full bg-surface p-3">
+            <svg class="h-6 w-6 text-muted" viewBox="0 0 20 20" fill="currentColor">
               <path fill-rule="evenodd" d="M4 4a2 2 0 0 1 2-2h6.5a1 1 0 0 1 .707.293l3.5 3.5A1 1 0 0 1 17 6.5V16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4Zm9 0v3a1 1 0 0 0 1 1h3l-4-4Z" clip-rule="evenodd" />
             </svg>
           </div>
-          <p class="text-sm font-medium text-slate-300">No hay programas todavía</p>
-          <p class="max-w-xs text-xs text-slate-500">Crea tu primer programa y añádele plantillas de entrenamiento para empezar a planificar tus rutinas.</p>
+          <p class="text-sm font-medium text-soft">No hay programas todavía</p>
+          <p class="max-w-xs text-xs text-subtle">Crea tu primer programa y añádele plantillas de entrenamiento para empezar a planificar tus rutinas.</p>
         </div>
       } @else {
         <div class="flex flex-col gap-10">
         @for (group of programsWithTemplates(); track group.program.id) {
         <section>
-          <div class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3">
             <div>
-              <h2 class="text-xl font-semibold text-white">{{ group.program.name }}</h2>
+              <h2 class="text-xl font-semibold text-fg">{{ group.program.name }}</h2>
               <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
-                <span class="rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 font-medium text-emerald-300">
+                <span class="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-medium text-accent">
                   {{ periodizationLabel(group.program) }}
                 </span>
                 @for (muscle of aimMuscleGroupLabels(group.program); track muscle) {
-                  <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">{{ muscle }}</span>
+                  <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-soft">{{ muscle }}</span>
                 }
               </div>
             </div>
             <a
               routerLink="/training/trainingtemplate"
               [queryParams]="{ programId: group.program.id }"
-              class="text-sm font-medium text-emerald-400 transition hover:text-emerald-300"
+              class="text-sm font-medium text-accent transition hover:text-accent"
             >
               + Añadir plantilla
             </a>
           </div>
 
           @if (group.templates.length === 0) {
-            <p class="rounded-xl border border-dashed border-slate-700 bg-slate-900/40 px-4 py-6 text-center text-xs text-slate-500">
+            <p class="rounded-xl border border-dashed border-line bg-canvas/40 px-4 py-6 text-center text-xs text-subtle">
               Este programa todavía no tiene plantillas.
             </p>
           } @else {
@@ -91,7 +91,7 @@
           @for (template of group.templates; track template.id) {
             <div
               (click)="goToSessions(template)"
-              class="group flex cursor-pointer flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60 hover:shadow-xl hover:shadow-emerald-500/10 focus-within:outline-none focus-within:ring-2 focus-within:ring-emerald-400/40"
+              class="group flex cursor-pointer flex-col rounded-xl border border-line bg-surface p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-accent/60 hover:shadow-xl hover:shadow-accent/10 focus-within:outline-none focus-within:ring-2 focus-within:ring-accent/40"
             >
               <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0 flex-1">
@@ -106,15 +106,15 @@
                       (keydown.escape)="cancelRename()"
                       (blur)="saveRename(template)"
                       aria-label="Nombre de la plantilla"
-                      class="w-full rounded-md border border-emerald-400 bg-slate-900 px-2 py-1 text-base font-semibold text-white outline-none ring-2 ring-emerald-400/20"
+                      class="w-full rounded-lg border border-accent bg-canvas px-2 py-1 text-base font-semibold text-fg outline-none ring-2 ring-accent/20"
                     />
                   } @else {
                     <div class="flex items-center gap-1.5">
-                      <h3 class="truncate text-lg font-semibold leading-tight text-white" [title]="template.name">{{ template.name }}</h3>
+                      <h3 class="truncate text-lg font-semibold leading-tight text-fg" [title]="template.name">{{ template.name }}</h3>
                       <button
                         type="button"
                         (click)="$event.stopPropagation(); startRename(template)"
-                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-500 opacity-0 transition hover:bg-slate-700 hover:text-emerald-400 focus:opacity-100 group-hover:opacity-100"
+                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-subtle opacity-0 transition hover:bg-raised hover:text-accent focus:opacity-100 group-hover:opacity-100"
                         aria-label="Renombrar plantilla"
                         title="Renombrar plantilla"
                       >
@@ -124,14 +124,14 @@
                       </button>
                     </div>
                   }
-                  <p class="mt-0.5 text-xs text-slate-400">{{ template.durationInDays }} días</p>
+                  <p class="mt-0.5 text-xs text-muted">{{ template.durationInDays }} días</p>
                 </div>
                 <div class="flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     (click)="$event.stopPropagation(); duplicateTemplate(template)"
                     [disabled]="duplicatingId() !== null"
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-emerald-950/50 hover:text-emerald-400 disabled:cursor-wait disabled:opacity-50"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-accent/10 hover:text-accent disabled:cursor-wait disabled:opacity-50"
                     aria-label="Duplicar plantilla"
                     title="Duplicar plantilla"
                   >
@@ -150,37 +150,37 @@
                   <button
                     type="button"
                     (click)="$event.stopPropagation(); deleteTemplate(template)"
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-red-950/50 hover:text-red-400"
+                    class="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-danger/10 hover:text-danger"
                     aria-label="Borrar plantilla"
                   >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
                     </svg>
                   </button>
-                  <svg class="h-4 w-4 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                  <svg class="h-4 w-4 text-subtle transition group-hover:translate-x-0.5 group-hover:text-accent" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
                   </svg>
                 </div>
               </div>
 
               <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
-                <span class="rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 font-medium text-emerald-300">
+                <span class="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-medium text-accent">
                   {{ volumeLandmarkLabel(template) }}
                 </span>
-                <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+                <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-soft">
                   {{ trainingDistributionLabel(template) }}
                 </span>
               </div>
 
-              <div class="mt-4 border-t border-slate-700/60 pt-3">
-                <p class="mb-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">Volumen total</p>
+              <div class="mt-4 border-t border-line/60 pt-3">
+                <p class="mb-2 text-xs font-medium uppercase tracking-wide text-subtle">Volumen total</p>
                 <div class="flex flex-wrap gap-1.5">
                   @for (entry of totalVolumeEntries(template); track entry[0]) {
-                    <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-xs text-slate-300">
-                      {{ entry[0] }}: <span class="font-semibold text-white">{{ entry[1] }}</span>
+                    <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs text-soft">
+                      {{ entry[0] }}: <span class="font-semibold text-fg">{{ entry[1] }}</span>
                     </span>
                   } @empty {
-                    <span class="text-xs text-slate-500">Sin series</span>
+                    <span class="text-xs text-subtle">Sin series</span>
                   }
                 </div>
               </div>

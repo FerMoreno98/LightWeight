@@ -45,7 +45,7 @@ export class ProgressList implements OnInit {
     }
 
     trendClass(value: number): string {
-        return value > 0 ? 'text-sky-400' : value < 0 ? 'text-rose-400' : 'text-slate-400';
+        return value > 0 ? 'text-info' : value < 0 ? 'text-danger' : 'text-muted';
     }
 }
 

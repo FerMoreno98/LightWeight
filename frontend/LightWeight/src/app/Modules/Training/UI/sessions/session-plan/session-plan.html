@@ -2,7 +2,7 @@
   <div class="mx-auto max-w-3xl">
 
     @if (error()) {
-      <div class="mb-4 rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error() }}</div>
+      <div class="mb-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{{ error() }}</div>
     }
 
     @if (focusView(); as view) {
@@ -23,7 +23,7 @@
       <div class="fade-slide-in">
         <a
           routerLink="/home"
-          class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+          class="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-fg"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
@@ -35,17 +35,17 @@
         <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
-              <h1 class="text-2xl font-bold text-white">{{ templateSession()?.name ?? 'Sesión' }}</h1>
+              <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">{{ templateSession()?.name ?? 'Sesión' }}</h1>
               @if (session()) {
                 @if (isFinished()) {
-                  <span class="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-300">Hecha · {{ durationLabel() }}</span>
+                  <span class="rounded-full border border-line-strong bg-canvas px-2.5 py-0.5 text-xs text-soft">Hecha · {{ durationLabel() }}</span>
                 } @else {
-                  <span class="rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">En curso · desde {{ startedAtLabel() }}</span>
+                  <span class="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">En curso · desde {{ startedAtLabel() }}</span>
                 }
               }
             </div>
             @if (templateSession(); as templateSession) {
-              <p class="mt-1 text-sm text-slate-400">
+              <p class="mt-1 text-sm text-muted">
                 {{ templateSession.exercisesCount }} {{ templateSession.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
                 · {{ templateSession.setsCount }} {{ templateSession.setsCount === 1 ? 'serie' : 'series' }}
               </p>
@@ -57,7 +57,7 @@
               <button
                 type="button"
                 (click)="isStartOpen.set(true)"
-                class="inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+                class="btn btn-primary"
               >
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.34-5.89a1.5 1.5 0 0 0 0-2.54L6.3 2.84Z" />
@@ -70,7 +70,7 @@
                   type="button"
                   (click)="isConfirmingDiscard.set(true)"
                   [disabled]="isDiscarding() || isFinishing()"
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/70 disabled:cursor-wait disabled:opacity-50"
+                  class="btn btn-danger disabled:cursor-wait"
                 >
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
@@ -81,7 +81,7 @@
                   type="button"
                   (click)="isConfirmingFinish.set(true)"
                   [disabled]="isFinishing() || isDiscarding()"
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-50"
+                  class="btn btn-secondary disabled:cursor-wait"
                 >
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
@@ -94,14 +94,14 @@
         </div>
 
         @if (completedWeek(); as weekNumber) {
-          <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-700 bg-emerald-950/40 p-4">
+          <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/10 p-4">
             <div>
-              <p class="text-sm font-semibold text-emerald-300">¡Semana {{ weekNumber }} completada!</p>
-              <p class="mt-0.5 text-sm text-slate-300">Has terminado todas sus sesiones, así que la semana se ha cerrado.</p>
+              <p class="text-sm font-semibold text-accent">¡Semana {{ weekNumber }} completada!</p>
+              <p class="mt-0.5 text-sm text-soft">Has terminado todas sus sesiones, así que la semana se ha cerrado.</p>
             </div>
             <a
               routerLink="/home"
-              class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+              class="btn btn-primary"
             >
               Planificar la siguiente
             </a>
@@ -109,7 +109,7 @@
         }
 
         @if (!isLoading() && !session() && !workout()?.canStart) {
-          <div class="mb-6 rounded-lg border border-slate-700 bg-slate-900/60 p-3 text-sm text-slate-400">
+          <div class="mb-6 rounded-lg border border-line bg-canvas/60 p-3 text-sm text-muted">
             Esta sesión no es de la semana en curso, así que solo puedes consultar su plan.
           </div>
         }
@@ -117,24 +117,24 @@
         @if (isLoading()) {
           <div class="flex flex-col gap-3">
             @for (skeleton of [1, 2, 3]; track skeleton) {
-              <div class="h-20 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+              <div class="h-20 animate-pulse rounded-xl border border-line bg-surface/60"></div>
             }
           </div>
         } @else if (items().length === 0) {
-          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-14 text-center">
-            <p class="text-sm font-medium text-slate-300">Esta sesión todavía no tiene series</p>
+          <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-14 text-center">
+            <p class="text-sm font-medium text-soft">Esta sesión todavía no tiene series</p>
           </div>
         } @else {
           <!-- Superset toolbar -->
           @if (canRecord() && items().length >= 2) {
             @if (isSelecting()) {
-              <div class="sticky top-2 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sky-800 bg-slate-900/95 p-4 shadow-lg shadow-black/30 backdrop-blur">
-                <p class="text-sm text-slate-300">Marca los ejercicios que vas a hacer alternando.</p>
+              <div class="sticky top-2 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-info/30 bg-canvas/95 p-4 shadow-lg shadow-black/30 backdrop-blur">
+                <p class="text-sm text-soft">Marca los ejercicios que vas a hacer alternando.</p>
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
                     (click)="cancelSelecting()"
-                    class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-800"
+                    class="btn btn-secondary"
                   >
                     Cancelar
                   </button>
@@ -142,7 +142,7 @@
                     type="button"
                     (click)="joinSelected()"
                     [disabled]="!canJoin() || isSavingSuperSet()"
-                    class="rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="rounded-lg bg-info px-4 py-2 text-sm font-semibold text-accent-ink transition hover:bg-info disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Juntar en superserie
                   </button>
@@ -153,7 +153,7 @@
                 <button
                   type="button"
                   (click)="startSelecting()"
-                  class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-sky-300 transition hover:bg-sky-950/50"
+                  class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-info transition hover:bg-info/10"
                 >
                   <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
@@ -172,20 +172,20 @@
                   <ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: unit.item, label: null }" />
                 } @else {
                   @let progress = supersetProgress(unit);
-                  <div class="rounded-2xl border border-sky-800/70 bg-sky-950/20 p-3">
+                  <div class="rounded-xl border border-info/30 bg-info/10 p-3">
                     <div class="mb-2 flex items-center justify-between gap-3 px-1">
                       <button
                         type="button"
                         (click)="openSuperSet(unit)"
                         [disabled]="!session() || isSelecting()"
-                        class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-sky-300 enabled:hover:text-sky-200 disabled:cursor-default"
+                        class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-info enabled:hover:text-info disabled:cursor-default"
                       >
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
                         </svg>
                         Superserie {{ unit.label }}
                         @if (session()) {
-                          <span class="font-normal normal-case tracking-normal text-slate-400">
+                          <span class="font-normal normal-case tracking-normal text-muted">
                             · {{ progress.done ? 'Completada' : 'Ronda ' + progress.round + '/' + progress.rounds }}
                           </span>
                         }
@@ -195,7 +195,7 @@
                           type="button"
                           (click)="separate(unit)"
                           [disabled]="isSavingSuperSet()"
-                          class="rounded-lg px-3 py-1 text-sm text-slate-400 transition hover:bg-slate-800 hover:text-white disabled:opacity-50"
+                          class="btn btn-ghost btn-sm"
                         >
                           Separar
                         </button>
@@ -214,7 +214,7 @@
 
           <!-- Extra exercises performed alone -->
           @if (extraItems().length || canRecord()) {
-            <h2 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Extra</h2>
+            <h2 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wider text-subtle">Extra</h2>
             <ul class="flex flex-col gap-3">
               @for (item of extraItems(); track item.key) {
                 <li>
@@ -226,7 +226,7 @@
               <button
                 type="button"
                 (click)="openPicker('extra')"
-                class="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-2xl border border-dashed border-slate-600 px-4 py-3 text-sm text-slate-300 transition hover:border-emerald-400/60 hover:text-white"
+                class="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-soft transition hover:border-accent/60 hover:text-fg"
               >
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
@@ -286,22 +286,22 @@
     type="button"
     (click)="openItem(item)"
     [disabled]="!session()"
-    class="group flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition enabled:hover:border-emerald-400/60 disabled:cursor-default"
+    class="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition enabled:hover:border-accent/60 disabled:cursor-default"
     [class]="item.kind === 'extra'
-      ? 'border-dashed border-slate-600 bg-slate-800/60'
-      : (session() && doneCount(item.block) === item.block.sets.length ? 'border-emerald-800/60 bg-slate-800/80' : 'border-slate-700 bg-slate-800/80')"
+      ? 'border-dashed border-line-strong bg-surface/60'
+      : (session() && doneCount(item.block) === item.block.sets.length ? 'border-accent/30 bg-surface/80' : 'border-line bg-surface/80')"
   >
     @if (isSelecting()) {
       <input
         type="checkbox"
         [checked]="isSelected(item)"
         tabindex="-1"
-        class="pointer-events-none h-5 w-5 shrink-0 rounded border-slate-600 bg-slate-900 accent-sky-500"
+        class="pointer-events-none h-5 w-5 shrink-0 rounded border-line-strong bg-canvas accent-info"
         [attr.aria-label]="'Seleccionar ' + itemExercise(item).exerciseName"
       />
     }
     @if (label) {
-      <span class="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-sky-900/60 px-2 text-sm font-bold text-sky-200">{{ label }}</span>
+      <span class="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-info/25 px-2 text-sm font-bold text-info">{{ label }}</span>
     }
 
     @if (item.kind === 'plan') {
@@ -311,7 +311,7 @@
       @if (!label) {
         <span
           class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-          [class]="complete && session() ? 'bg-emerald-500 text-slate-900' : 'bg-emerald-950/60 text-emerald-300'"
+          [class]="complete && session() ? 'bg-accent text-accent-ink' : 'bg-accent/10 text-accent'"
         >
           @if (complete && session()) {
             <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
@@ -323,37 +323,37 @@
         </span>
       }
       <div class="min-w-0 flex-1">
-        <p class="truncate text-base font-semibold text-white">
+        <p class="truncate text-base font-semibold text-fg">
           @if (replacementName(block); as replacement) {
-            <span class="text-slate-500 line-through">{{ block.exerciseName }}</span>
-            <span class="text-amber-300"> → {{ replacement }}</span>
+            <span class="text-subtle line-through">{{ block.exerciseName }}</span>
+            <span class="text-warning"> → {{ replacement }}</span>
           } @else {
             {{ block.exerciseName }}
           }
         </p>
-        <p class="mt-0.5 text-xs text-slate-400">
+        <p class="mt-0.5 text-xs text-muted">
           {{ block.sets.length }} × {{ block.sets[0].repetitionRangeMin }}–{{ block.sets[0].repetitionRangeMax }} @ RPE {{ block.sets[0].expectedRPE }}
           @if (techniqueLabel(block); as technique) { · {{ technique }} }
         </p>
         @if (lastPerformance(item); as last) {
-          <p class="mt-0.5 truncate text-xs text-slate-500">Última: {{ last }}</p>
+          <p class="mt-0.5 truncate text-xs text-subtle">Última: {{ last }}</p>
         }
       </div>
       @if (session()) {
-        <span class="shrink-0 text-sm font-semibold" [class]="complete ? 'text-emerald-300' : 'text-slate-400'">
+        <span class="shrink-0 text-sm font-semibold" [class]="complete ? 'text-accent' : 'text-muted'">
           {{ done }}/{{ block.sets.length }}
         </span>
       }
     } @else {
       <div class="min-w-0 flex-1">
-        <p class="truncate text-base font-semibold text-white">{{ item.group.exerciseName }}</p>
-        <p class="mt-0.5 truncate text-xs text-slate-400">{{ formatPerformedSet(item.group.sets[item.group.sets.length - 1]) }}</p>
+        <p class="truncate text-base font-semibold text-fg">{{ item.group.exerciseName }}</p>
+        <p class="mt-0.5 truncate text-xs text-muted">{{ formatPerformedSet(item.group.sets[item.group.sets.length - 1]) }}</p>
       </div>
-      <span class="shrink-0 text-sm font-semibold text-slate-400">{{ item.group.sets.length }} {{ item.group.sets.length === 1 ? 'serie' : 'series' }}</span>
+      <span class="shrink-0 text-sm font-semibold text-muted">{{ item.group.sets.length }} {{ item.group.sets.length === 1 ? 'serie' : 'series' }}</span>
     }
 
     @if (session() && !isSelecting()) {
-      <svg class="h-5 w-5 shrink-0 text-slate-500 transition group-hover:translate-x-0.5 group-hover:text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+      <svg class="h-5 w-5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-accent" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
       </svg>
     }

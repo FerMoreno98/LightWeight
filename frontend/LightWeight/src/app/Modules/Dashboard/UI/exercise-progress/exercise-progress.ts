@@ -5,7 +5,7 @@ import { provideCharts } from 'ng2-charts';
 import { Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
 import { ExerciseProgressStore } from '../../state/exercise-progress.store';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
-import { SERIES_COLORS } from '../chart-theme';
+import { CHART_DEFAULTS, SERIES_COLORS } from '../chart-theme';
 import { techniqueLabel, wellbeingLine, ZONE_LABELS, ZONE_ORDER } from '../training-labels';
 import { RepZone } from '../../data/dashboard-api.service';
 
@@ -22,7 +22,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
     imports: [LineChart, RouterLink],
     templateUrl: './exercise-progress.html',
     // Chart.js is only downloaded with the components that draw charts
-    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend] })],
+    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
 })
 export class ExerciseProgressPage implements OnInit {
     store = inject(ExerciseProgressStore);

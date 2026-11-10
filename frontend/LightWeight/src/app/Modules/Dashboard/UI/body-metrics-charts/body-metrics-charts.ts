@@ -5,7 +5,7 @@ import { Legend, LinearScale, LineController, LineElement, PointElement, Tooltip
 import { BodyMetricsChartsStore } from '../../state/body-metrics-charts.store';
 import { EvolutionPoint } from '../../data/dashboard-api.service';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
-import { MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
 import { SelectedField, SeriesSelection } from '../series-selection';
 import { MeasureField, PERIMETERS_CONFIG, SKINFOLDS_CONFIG } from '../../../BodyMetrics/UI/measurement-config';
 
@@ -24,7 +24,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
     templateUrl: './body-metrics-charts.html',
     // Registered here and not in app.config: Chart.js is only downloaded when the charts are opened.
     // Only the pieces the line charts use, to keep the chunk small
-    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend] })],
+    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
 })
 export class BodyMetricsCharts implements OnInit {
     store = inject(BodyMetricsChartsStore);

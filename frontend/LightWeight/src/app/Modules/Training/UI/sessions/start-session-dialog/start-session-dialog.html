@@ -4,20 +4,20 @@
 
     <form
       (ngSubmit)="confirm()"
-      class="dialog-pop relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-slate-700 bg-slate-800 p-6 shadow-2xl shadow-black/40 sm:rounded-2xl"
+      class="dialog-pop relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-line bg-surface p-6 shadow-2xl shadow-black/40 sm:rounded-xl"
       role="dialog"
       aria-modal="true"
       aria-labelledby="start-session-title"
     >
-      <h2 id="start-session-title" class="text-lg font-semibold text-white">Iniciar entrenamiento</h2>
-      <p class="mt-1 text-sm text-slate-400">{{ sessionName() }} · ¿Cómo llegas hoy?</p>
+      <h2 id="start-session-title" class="text-lg font-semibold text-fg">Iniciar entrenamiento</h2>
+      <p class="mt-1 text-sm text-muted">{{ sessionName() }} · ¿Cómo llegas hoy?</p>
 
       <div class="mt-6 flex flex-col gap-5">
         @for (field of fields; track field.key) {
           <fieldset>
             <div class="flex items-baseline justify-between gap-2">
-              <legend class="text-sm font-medium text-slate-200">{{ field.label }}</legend>
-              <span class="text-xs text-slate-500">{{ field.hint }}</span>
+              <legend class="text-sm font-medium text-fg">{{ field.label }}</legend>
+              <span class="text-xs text-subtle">{{ field.hint }}</span>
             </div>
             <div class="mt-2 grid grid-cols-10 gap-1">
               @for (level of levels; track level) {
@@ -25,10 +25,10 @@
                   type="button"
                   (click)="select(field.key, level)"
                   [attr.aria-pressed]="values()[field.key] === level"
-                  class="h-9 rounded-md border text-sm font-semibold transition"
+                  class="h-9 rounded-lg border text-sm font-semibold transition"
                   [class]="values()[field.key] === level
-                    ? 'border-emerald-400 bg-emerald-500 text-slate-900'
-                    : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-slate-500'"
+                    ? 'border-accent bg-accent text-accent-ink'
+                    : 'border-line bg-canvas text-soft hover:border-line-strong'"
                 >
                   {{ level }}
                 </button>
@@ -38,14 +38,14 @@
         }
 
         <label class="block">
-          <span class="text-sm font-medium text-slate-200">Comentarios <span class="font-normal text-slate-500">(opcional)</span></span>
+          <span class="text-sm font-medium text-fg">Comentarios <span class="font-normal text-subtle">(opcional)</span></span>
           <textarea
             [(ngModel)]="comments"
             name="comments"
             rows="3"
             maxlength="1000"
             placeholder="Molestias, cómo te encuentras, cambios de gimnasio..."
-            class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            class="mt-2 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-fg placeholder:text-subtle focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           ></textarea>
         </label>
       </div>
@@ -55,14 +55,14 @@
           type="button"
           (click)="cancel()"
           [disabled]="busy()"
-          class="rounded-lg border border-slate-600 px-4 py-2 text-sm text-slate-200 transition hover:bg-slate-700 disabled:opacity-50"
+          class="btn btn-secondary"
         >
           Cancelar
         </button>
         <button
           type="submit"
           [disabled]="busy()"
-          class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-wait disabled:opacity-60"
+          class="btn btn-primary disabled:cursor-wait"
         >
           @if (busy()) {
             <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">

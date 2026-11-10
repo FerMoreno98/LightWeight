@@ -1,15 +1,15 @@
-<div class="flex min-h-screen items-center justify-center bg-gray-50">
-  <div class="w-full max-w-sm rounded-xl bg-white p-8 shadow-lg">
-    <h1 class="mb-2 text-center text-2xl font-bold text-gray-900">Verificar código</h1>
-    <p class="mb-6 text-center text-sm text-gray-500">Te enviamos un código a <span class="font-medium text-gray-700">{{ email }}</span></p>
+<div class="flex min-h-screen items-center justify-center px-4">
+  <div class="card w-full max-w-sm p-8 shadow-lg shadow-black/30">
+    <h1 class="font-display uppercase leading-none mb-2 text-center text-4xl font-bold text-fg">Verificar código</h1>
+    <p class="mb-6 text-center text-sm text-muted">Te enviamos un código a <span class="font-medium text-fg">{{ email }}</span></p>
 
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error() }}</div>
+      <div class="mb-4 alert-error">{{ error() }}</div>
     }
 
     <form (ngSubmit)="onSubmit()" class="space-y-4">
       <div>
-        <label for="code" class="block text-sm font-medium text-gray-700">Código</label>
+        <label for="code" class="block text-sm font-medium text-fg">Código</label>
         <input
           id="code"
           type="text"
@@ -20,14 +20,14 @@
           autocomplete="one-time-code"
           maxlength="6"
           placeholder="123456"
-          class="mt-1 w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-center font-mono text-lg tracking-[0.5em] text-gray-900 caret-indigo-600 outline-none transition placeholder:text-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+          class="input mt-1 text-center font-display text-2xl! font-semibold tracking-[0.5em]"
         />
       </div>
 
       <button
         type="submit"
         [disabled]="isLoading()"
-        class="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+        class="btn btn-primary w-full"
       >
         {{ isLoading() ? 'Verificando...' : 'Verificar código' }}
       </button>

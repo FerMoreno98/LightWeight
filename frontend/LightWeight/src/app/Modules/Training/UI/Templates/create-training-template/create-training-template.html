@@ -1,17 +1,17 @@
 <div class="flex min-h-screen items-center justify-center px-4 py-10">
-  <div class="w-full max-w-sm rounded-2xl bg-slate-800 border border-slate-700 p-8 shadow-xl">
-    <h1 class="mb-6 text-center text-2xl font-bold text-white">Nueva plantilla de entrenamiento</h1>
+  <div class="w-full max-w-sm rounded-xl bg-surface border border-line p-8 shadow-xl">
+    <h1 class="font-display uppercase leading-none mb-6 text-center text-3xl font-bold text-fg">Nueva plantilla de entrenamiento</h1>
 
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+      <div class="mb-4 rounded-lg bg-danger/10 border border-danger/30 p-3 text-sm text-danger">{{ error() }}</div>
     }
 
     @if (!isLoading() && programs().length === 0) {
       <div class="flex flex-col items-center gap-3 text-center">
-        <p class="text-sm text-slate-300">Las plantillas pertenecen a un programa y todavía no tienes ninguno.</p>
+        <p class="text-sm text-soft">Las plantillas pertenecen a un programa y todavía no tienes ninguno.</p>
         <a
           routerLink="/training/createprogram"
-          class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+          class="btn btn-primary"
         >
           Crear programa
         </a>
@@ -20,15 +20,15 @@
       <form #templateForm="ngForm" (ngSubmit)="onSubmit()" class="space-y-4">
         <div>
           <div class="flex items-center justify-between">
-            <label for="programId" class="block text-sm font-medium text-slate-300">Programa</label>
-            <a routerLink="/training/createprogram" class="text-xs font-medium text-emerald-400 transition hover:text-emerald-300">+ Nuevo programa</a>
+            <label for="programId" class="block text-sm font-medium text-soft">Programa</label>
+            <a routerLink="/training/createprogram" class="text-xs font-medium text-accent transition hover:text-accent">+ Nuevo programa</a>
           </div>
           <select
             id="programId"
             [(ngModel)]="programId"
             name="programId"
             required
-            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            class="input mt-1"
           >
             <option value="" disabled>Selecciona un programa</option>
             @for (program of programs(); track program.id) {
@@ -38,7 +38,7 @@
         </div>
 
         <div>
-          <label for="name" class="block text-sm font-medium text-slate-300">Nombre</label>
+          <label for="name" class="block text-sm font-medium text-soft">Nombre</label>
           <input
             id="name"
             type="text"
@@ -47,18 +47,18 @@
             required
             maxlength="200"
             placeholder="Ej: Hipertrofia base, Deload..."
-            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            class="input mt-1"
           />
         </div>
 
         <div>
-          <label for="volumeLandmark" class="block text-sm font-medium text-slate-300">Volume landmark</label>
+          <label for="volumeLandmark" class="block text-sm font-medium text-soft">Volume landmark</label>
           <select
             id="volumeLandmark"
             [(ngModel)]="volumeLandmark"
             name="volumeLandmark"
             required
-            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            class="input mt-1"
           >
             <option value="" disabled selected>Selecciona un volume landmark</option>
             <option value="MV">MV — Maintenance Volume</option>
@@ -69,13 +69,13 @@
         </div>
 
         <div>
-          <label for="trainingDistribution" class="block text-sm font-medium text-slate-300">Distribución del entrenamiento</label>
+          <label for="trainingDistribution" class="block text-sm font-medium text-soft">Distribución del entrenamiento</label>
           <select
             id="trainingDistribution"
             [(ngModel)]="trainingDistribution"
             name="trainingDistribution"
             required
-            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            class="input mt-1"
           >
             <option value="" disabled selected>Selecciona una distribución</option>
             <option value="PushPullLegs">Push Pull Legs</option>
@@ -88,7 +88,7 @@
         </div>
 
         <div>
-          <label for="durationInDays" class="block text-sm font-medium text-slate-300">Duración (días)</label>
+          <label for="durationInDays" class="block text-sm font-medium text-soft">Duración (días)</label>
           <input
             id="durationInDays"
             type="number"
@@ -96,14 +96,14 @@
             name="durationInDays"
             required
             min="1"
-            class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-4 py-2 text-sm text-white outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20"
+            class="input mt-1"
           />
         </div>
 
         <button
           type="submit"
           [disabled]="isLoading() || templateForm.invalid || !name.trim() || !durationInDays || durationInDays < 1"
-          class="w-full rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+          class="btn btn-primary w-full"
         >
           {{ isLoading() ? 'Creando...' : 'Crear plantilla' }}
         </button>

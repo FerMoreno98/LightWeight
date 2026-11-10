@@ -2,21 +2,21 @@
   <div class="mx-auto max-w-4xl">
 
     @if (error()) {
-      <div class="mb-4 rounded-lg bg-red-950/50 border border-red-900 p-3 text-sm text-red-400">{{ error() }}</div>
+      <div class="mb-4 rounded-lg bg-danger/10 border border-danger/30 p-3 text-sm text-danger">{{ error() }}</div>
     }
 
     @if (!mesocycle()) {
       @if (isLoading()) {
-        <div class="animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60 p-6">
-          <div class="h-6 w-1/3 rounded bg-slate-700"></div>
-          <div class="mt-3 h-4 w-1/4 rounded bg-slate-700"></div>
+        <div class="animate-pulse rounded-xl border border-line bg-surface/60 p-6">
+          <div class="h-6 w-1/3 rounded bg-raised"></div>
+          <div class="mt-3 h-4 w-1/4 rounded bg-raised"></div>
         </div>
       }
     } @else if (!isAdding) {
       <div class="fade-slide-in">
         <a
           [routerLink]="['/training/macrocycle', mesocycle()!.macrocycleId]"
-          class="mb-4 inline-flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+          class="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-fg"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
@@ -28,26 +28,26 @@
         <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div class="flex items-center gap-2">
-              <h1 class="text-2xl font-bold text-white">Mesociclo · {{ mesocycle()!.programName }}</h1>
+              <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">Mesociclo · {{ mesocycle()!.programName }}</h1>
               @if (isFinished()) {
-                <span class="rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-400">Finalizado</span>
+                <span class="rounded-full border border-line-strong bg-canvas px-2.5 py-0.5 text-xs text-muted">Finalizado</span>
               } @else {
-                <span class="rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">En curso</span>
+                <span class="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">En curso</span>
               }
             </div>
-            <p class="mt-1 text-sm text-slate-400">{{ period() }}</p>
+            <p class="mt-1 text-sm text-muted">{{ period() }}</p>
             <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
-              <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+              <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-soft">
                 Motivación {{ mesocycle()!.motivationLevel }}/10
               </span>
               @if (mesocycle()!.injuries) {
-                <span class="rounded-full border border-amber-800/60 bg-amber-950/40 px-2.5 py-1 text-amber-300">
+                <span class="rounded-full border border-warning/30 bg-warning/10 px-2.5 py-1 text-warning">
                   Lesiones: {{ mesocycle()!.injuries }}
                 </span>
               }
             </div>
             @if (mesocycle()!.comments) {
-              <p class="mt-3 max-w-2xl text-sm text-slate-300">{{ mesocycle()!.comments }}</p>
+              <p class="mt-3 max-w-2xl text-sm text-soft">{{ mesocycle()!.comments }}</p>
             }
           </div>
           @if (!isFinished()) {
@@ -55,7 +55,7 @@
               type="button"
               (click)="askFinishMesocycle()"
               [disabled]="isFinishing()"
-              class="inline-flex items-center gap-1.5 rounded-lg border border-red-900 bg-red-950/40 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-950/70 disabled:cursor-wait disabled:opacity-50"
+              class="btn btn-danger disabled:cursor-wait"
             >
               {{ isFinishing() ? 'Finalizando...' : 'Finalizar mesociclo' }}
             </button>
@@ -64,14 +64,14 @@
 
         <!-- Weeks -->
         <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 class="text-lg font-semibold text-white">Semanas</h2>
+          <h2 class="text-lg font-semibold text-fg">Semanas</h2>
           @if (!isFinished()) {
             @if (activeWeek(); as week) {
               <button
                 type="button"
                 (click)="askFinishWeek()"
                 [disabled]="isFinishingWeek()"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800 disabled:cursor-wait disabled:opacity-50"
+                class="btn btn-secondary disabled:cursor-wait"
               >
                 <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
@@ -82,7 +82,7 @@
               <button
                 type="button"
                 (click)="showAddWeek()"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-emerald-400"
+                class="btn btn-primary"
               >
                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                   <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
@@ -94,37 +94,37 @@
         </div>
 
         @if (mesocycle()!.microcycles.length === 0) {
-          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
-            <p class="text-sm font-medium text-slate-300">Este mesociclo todavía no tiene semanas</p>
+          <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center">
+            <p class="text-sm font-medium text-soft">Este mesociclo todavía no tiene semanas</p>
             @if (!isFinished()) {
-              <p class="max-w-xs text-xs text-slate-500">Añade la primera eligiendo una de las plantillas del programa.</p>
+              <p class="max-w-xs text-xs text-subtle">Añade la primera eligiendo una de las plantillas del programa.</p>
             }
           </div>
         } @else {
-          <ol class="flex flex-col divide-y divide-slate-700/60 overflow-hidden rounded-2xl border border-slate-700 bg-slate-800/80">
+          <ol class="flex flex-col divide-y divide-line/60 overflow-hidden rounded-xl border border-line bg-surface/80">
             @for (microcycle of mesocycle()!.microcycles; track microcycle.id) {
               <li class="flex items-center gap-4 px-5 py-4">
                 <span
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold"
                   [class]="microcycle.finishedAt
-                    ? 'border-slate-700 bg-slate-900 text-slate-400'
-                    : 'border-emerald-800/60 bg-emerald-950/40 text-emerald-300'"
+                    ? 'border-line bg-canvas text-muted'
+                    : 'border-accent/30 bg-accent/10 text-accent'"
                 >
                   {{ microcycle.weekNumber }}
                 </span>
                 <div class="min-w-0 flex-1">
-                  <p class="text-sm font-medium text-white">Semana {{ microcycle.weekNumber }}</p>
+                  <p class="text-sm font-medium text-fg">Semana {{ microcycle.weekNumber }}</p>
                   @if (microcycle.templateName) {
-                    <p class="truncate text-xs text-slate-400">{{ microcycle.templateName }} · {{ microcycle.durationInDays }} días</p>
+                    <p class="truncate text-xs text-muted">{{ microcycle.templateName }} · {{ microcycle.durationInDays }} días</p>
                   } @else {
-                    <p class="text-xs italic text-slate-500">Plantilla eliminada</p>
+                    <p class="text-xs italic text-subtle">Plantilla eliminada</p>
                   }
-                  <p class="mt-0.5 text-xs text-slate-500">{{ weekPeriod(microcycle) }}</p>
+                  <p class="mt-0.5 text-xs text-subtle">{{ weekPeriod(microcycle) }}</p>
                 </div>
                 @if (microcycle.finishedAt) {
-                  <span class="shrink-0 rounded-full border border-slate-600 bg-slate-900 px-2.5 py-0.5 text-xs text-slate-400">Finalizada</span>
+                  <span class="shrink-0 rounded-full border border-line-strong bg-canvas px-2.5 py-0.5 text-xs text-muted">Finalizada</span>
                 } @else {
-                  <span class="shrink-0 rounded-full border border-emerald-700 bg-emerald-950/60 px-2.5 py-0.5 text-xs font-medium text-emerald-300">En curso</span>
+                  <span class="shrink-0 rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">En curso</span>
                 }
               </li>
             }
@@ -137,7 +137,7 @@
         <button
           type="button"
           (click)="backToWeeks()"
-          class="mb-4 flex items-center gap-2 text-sm text-slate-400 transition hover:text-white"
+          class="mb-4 flex items-center gap-2 text-sm text-muted transition hover:text-fg"
         >
           <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
@@ -145,16 +145,16 @@
           Volver a las semanas
         </button>
 
-        <h1 class="text-2xl font-bold text-white">Semana {{ nextWeek() }}</h1>
-        <p class="mt-1 mb-8 text-sm text-slate-400">Elige qué plantilla de <span class="text-slate-200">{{ mesocycle()!.programName }}</span> vas a seguir esta semana.</p>
+        <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">Semana {{ nextWeek() }}</h1>
+        <p class="mt-1 mb-8 text-sm text-muted">Elige qué plantilla de <span class="text-fg">{{ mesocycle()!.programName }}</span> vas a seguir esta semana.</p>
 
         @if (mesocycle()!.availableTemplates.length === 0) {
-          <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center">
-            <p class="text-sm font-medium text-slate-300">Este programa todavía no tiene plantillas</p>
+          <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center">
+            <p class="text-sm font-medium text-soft">Este programa todavía no tiene plantillas</p>
             <a
               routerLink="/training/trainingtemplate"
               [queryParams]="{ programId: mesocycle()!.programId }"
-              class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-emerald-400"
+              class="btn btn-primary"
             >
               Crear una plantilla
             </a>
@@ -166,23 +166,23 @@
                 type="button"
                 (click)="addWeek(template)"
                 [disabled]="addingTemplateId() !== null"
-                class="flex flex-col rounded-2xl border border-slate-700 bg-gradient-to-b from-slate-800 to-slate-800/80 p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-emerald-400/60 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
+                class="flex flex-col rounded-xl border border-line bg-surface p-5 text-left shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:border-accent/60 disabled:cursor-wait disabled:opacity-60 disabled:hover:translate-y-0"
               >
                 <div class="flex items-start justify-between gap-2">
-                  <h3 class="text-lg font-semibold leading-tight text-white">{{ template.name }}</h3>
+                  <h3 class="text-lg font-semibold leading-tight text-fg">{{ template.name }}</h3>
                   @if (addingTemplateId() === template.id) {
-                    <svg class="h-4 w-4 shrink-0 animate-spin text-emerald-400" fill="none" viewBox="0 0 24 24">
+                    <svg class="h-4 w-4 shrink-0 animate-spin text-accent" fill="none" viewBox="0 0 24 24">
                       <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                       <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
                     </svg>
                   }
                 </div>
-                <p class="mt-0.5 text-xs text-slate-400">{{ template.durationInDays }} días</p>
+                <p class="mt-0.5 text-xs text-muted">{{ template.durationInDays }} días</p>
                 <div class="mt-3 flex flex-wrap gap-1.5 text-xs">
-                  <span class="rounded-full border border-emerald-800/60 bg-emerald-950/40 px-2.5 py-1 font-medium text-emerald-300">
+                  <span class="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-medium text-accent">
                     {{ volumeLandmarkLabel(template) }}
                   </span>
-                  <span class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+                  <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-soft">
                     {{ trainingDistributionLabel(template) }}
                   </span>
                 </div>

@@ -1,9 +1,10 @@
 /**
- * Colors of the charts. Canvas cannot read CSS classes, so they live here.
+ * Colors of the charts. Canvas cannot read CSS classes, so the chrome reads the design tokens of
+ * styles.css as CSS variables (the values after `??` are only a fallback in case they are not loaded).
  *
- * Series: categorical palette in a fixed order, validated against the card surface (slate-800) for
- * color blindness. Only the first four are used at once: they are the ones that pass every check
- * together, so a selector never shows more than four series.
+ * Series: categorical palette in a fixed order, validated for color blindness against a dark card
+ * surface. Only the first four are used at once: they are the ones that pass every check together,
+ * so a selector never shows more than four series.
  */
 export const SERIES_COLORS = ['#3987e5', '#d95926', '#199e70', '#c98500'] as const;
 
@@ -19,14 +20,24 @@ export const DIVERGING = {
     negative: '#e66767',
 } as const;
 
+function token(name: string, fallback: string): string {
+    if (typeof document === 'undefined') return fallback;
+    return getComputedStyle(document.documentElement).getPropertyValue(`--color-${name}`).trim() || fallback;
+}
+
 export const CHART_CHROME = {
-    /** Card background (slate-800): ring around the points so overlapping ones stay apart */
-    surface: '#1e293b',
-    /** Axis labels and ticks (slate-400) */
-    muted: '#94a3b8',
-    /** Legend and tooltip text (slate-200) */
-    text: '#e2e8f0',
-    grid: 'rgba(148, 163, 184, 0.12)',
-    tooltipBackground: '#0f172a',
-    tooltipBorder: '#334155',
+    /** Card background: ring around the points so overlapping ones stay apart */
+    surface: token('surface', '#161d1a'),
+    /** Axis labels and ticks */
+    muted: token('muted', '#a3b1ab'),
+    /** Legend and tooltip text */
+    text: token('fg', '#e9efec'),
+    grid: 'rgba(163, 177, 171, 0.12)',
+    tooltipBackground: token('canvas', '#0f1412'),
+    tooltipBorder: token('line-strong', '#3f4e48'),
 } as const;
+
+/** Same text font as the rest of the app (the canvas does not inherit it from CSS) */
+export const CHART_DEFAULTS = {
+    font: { family: "'Figtree', 'Segoe UI', system-ui, sans-serif" },
+};

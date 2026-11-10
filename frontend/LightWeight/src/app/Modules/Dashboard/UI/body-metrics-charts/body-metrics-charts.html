@@ -1,13 +1,13 @@
 <section class="space-y-4" aria-label="Evolución de las medidas">
   <div class="flex flex-wrap items-center justify-between gap-3">
-    <p class="text-sm text-slate-400">Todo tu histórico. Pasa el dedo o el ratón por la gráfica para ver cada medida.</p>
+    <p class="text-sm text-muted">Todo tu histórico. Pasa el dedo o el ratón por la gráfica para ver cada medida.</p>
     <!-- Hidden: POST /api/dashboard/rebuild is kept as a repair tool, see Dashboard.md
     <button
       type="button"
       (click)="rebuild()"
       [disabled]="store.rebuilding() || store.loading()"
       title="Vuelve a generar las gráficas a partir de tus medidas, por si alguna no aparece"
-      class="rounded-lg border border-slate-600 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-800 disabled:opacity-50"
+      class="btn btn-secondary btn-sm"
     >
       {{ store.rebuilding() ? 'Recalculando…' : 'Recalcular' }}
     </button>
@@ -15,22 +15,22 @@
   </div>
 
   @if (store.error(); as error) {
-    <p class="rounded-lg border border-red-900 bg-red-950/50 p-3 text-sm text-red-400">{{ error }}</p>
+    <p class="rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{{ error }}</p>
   }
 
   @if (!store.loaded()) {
     @if (store.loading()) {
       @for (i of [1, 2, 3]; track i) {
-        <div class="h-80 animate-pulse rounded-2xl border border-slate-800 bg-slate-800/60"></div>
+        <div class="h-80 animate-pulse rounded-xl border border-line bg-surface/60"></div>
       }
     }
   } @else {
     <!-- Weight -->
-    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+    <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
       <header class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="text-lg font-semibold text-white">Peso</h2>
+        <h2 class="text-lg font-semibold text-fg">Peso</h2>
         @if (lastWeight(); as last) {
-          <p class="text-sm text-slate-400">Último: <span class="font-medium text-slate-200">{{ last }}</span></p>
+          <p class="text-sm text-muted">Último: <span class="font-medium text-fg">{{ last }}</span></p>
         }
       </header>
       @if (store.weight().points.length > 0) {
@@ -41,10 +41,10 @@
     </article>
 
     <!-- Perimeters -->
-    <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+    <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
       <header class="mb-4">
-        <h2 class="text-lg font-semibold text-white">Perímetros</h2>
-        <p class="mt-1 text-xs text-slate-500">Elige hasta {{ maxSeries }} a la vez.</p>
+        <h2 class="text-lg font-semibold text-fg">Perímetros</h2>
+        <p class="mt-1 text-xs text-subtle">Elige hasta {{ maxSeries }} a la vez.</p>
       </header>
       @if (perimeterFields().length > 0) {
         <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Perímetros a mostrar">
@@ -56,7 +56,7 @@
               [attr.aria-pressed]="color !== null"
               [disabled]="color === null && selectedPerimeters().length >= maxSeries"
               class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-              [class]="color !== null ? 'border-slate-500 bg-slate-700 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'"
+              [class]="color !== null ? 'border-line-strong bg-raised text-fg' : 'border-line text-muted hover:border-line-strong hover:text-fg'"
             >
               @if (color !== null) {
                 <span class="h-2 w-2 rounded-full" [style.background-color]="color"></span>
@@ -73,10 +73,10 @@
 
     <div class="grid gap-4 lg:grid-cols-2">
       <!-- Summatory of skinfolds -->
-      <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
         <header class="mb-4">
-          <h2 class="text-lg font-semibold text-white">Sumatorio de pliegues</h2>
-          <p class="mt-1 text-xs text-slate-500">Solo las mediciones con los seis pliegues.</p>
+          <h2 class="text-lg font-semibold text-fg">Sumatorio de pliegues</h2>
+          <p class="mt-1 text-xs text-subtle">Solo las mediciones con los seis pliegues.</p>
         </header>
         @if (hasSummatory()) {
           <app-line-chart [series]="summatorySeries()" [unit]="skinFoldUnit" ariaLabel="Evolución del sumatorio de los seis pliegues" />
@@ -86,10 +86,10 @@
       </article>
 
       <!-- Each skinfold -->
-      <article class="rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-lg shadow-black/20">
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
         <header class="mb-4">
-          <h2 class="text-lg font-semibold text-white">Pliegues</h2>
-          <p class="mt-1 text-xs text-slate-500">Elige hasta {{ maxSeries }} a la vez.</p>
+          <h2 class="text-lg font-semibold text-fg">Pliegues</h2>
+          <p class="mt-1 text-xs text-subtle">Elige hasta {{ maxSeries }} a la vez.</p>
         </header>
         @if (skinFoldFields().length > 0) {
           <div class="mb-4 flex flex-wrap gap-2" role="group" aria-label="Pliegues a mostrar">
@@ -101,7 +101,7 @@
                 [attr.aria-pressed]="color !== null"
                 [disabled]="color === null && selectedSkinFolds().length >= maxSeries"
                 class="flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-40"
-                [class]="color !== null ? 'border-slate-500 bg-slate-700 text-white' : 'border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-200'"
+                [class]="color !== null ? 'border-line-strong bg-raised text-fg' : 'border-line text-muted hover:border-line-strong hover:text-fg'"
               >
                 @if (color !== null) {
                   <span class="h-2 w-2 rounded-full" [style.background-color]="color"></span>
@@ -120,7 +120,7 @@
 </section>
 
 <ng-template #empty let-message>
-  <div class="rounded-2xl border border-dashed border-slate-700 bg-slate-900/40 px-6 py-12 text-center text-sm text-slate-400">
+  <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center text-sm text-muted">
     {{ message }}
   </div>
 </ng-template>
