@@ -13,7 +13,7 @@
           Volver a plantillas
         </a>
 
-        <div class="mb-8 flex items-center justify-between">
+        <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">Sesiones de la plantilla</h1>
             <p class="mt-1 text-sm text-muted">Organiza las sesiones que componen esta plantilla.</p>
@@ -70,7 +70,7 @@
                     <button
                       type="button"
                       (click)="$event.stopPropagation(); deleteSession(session)"
-                      class="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-danger/10 hover:text-danger"
+                      class="btn-icon text-subtle hover:bg-danger/10 hover:text-danger"
                       aria-label="Borrar sesión"
                     >
                       <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

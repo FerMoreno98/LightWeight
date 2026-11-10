@@ -110,12 +110,12 @@
                       class="w-full rounded-lg border border-accent bg-canvas px-2 py-1 text-base font-semibold text-fg outline-none ring-2 ring-accent/20"
                     />
                   } @else {
-                    <div class="flex items-center gap-1.5">
-                      <h3 class="truncate text-lg font-semibold leading-tight text-fg" [title]="template.name">{{ template.name }}</h3>
+                    <div class="flex items-start gap-1">
+                      <h3 class="line-clamp-2 break-words pt-2.5 text-lg font-semibold leading-tight text-fg" [title]="template.name">{{ template.name }}</h3>
                       <button
                         type="button"
                         (click)="$event.stopPropagation(); startRename(template)"
-                        class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-subtle opacity-0 transition hover:bg-raised hover:text-accent focus:opacity-100 group-hover:opacity-100"
+                        class="btn-icon text-subtle pointer-fine:opacity-0 hover:bg-raised hover:text-accent focus:opacity-100 pointer-fine:group-hover:opacity-100"
                         aria-label="Renombrar plantilla"
                         title="Renombrar plantilla"
                       >
@@ -132,7 +132,7 @@
                     type="button"
                     (click)="$event.stopPropagation(); duplicateTemplate(template)"
                     [disabled]="duplicatingId() !== null"
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-accent/10 hover:text-accent disabled:cursor-wait disabled:opacity-50"
+                    class="btn-icon text-subtle hover:bg-accent/10 hover:text-accent disabled:cursor-wait disabled:opacity-50"
                     aria-label="Duplicar plantilla"
                     title="Duplicar plantilla"
                   >
@@ -151,7 +151,7 @@
                   <button
                     type="button"
                     (click)="$event.stopPropagation(); deleteTemplate(template)"
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-subtle transition hover:bg-danger/10 hover:text-danger"
+                    class="btn-icon text-subtle hover:bg-danger/10 hover:text-danger"
                     aria-label="Borrar plantilla"
                   >
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

@@ -112,10 +112,15 @@
 @layer components {
   /* Buttons: one primary per screen; delete always `btn-danger` and always confirmed */
   .btn {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-lg border border-transparent px-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
+  /* Narrower, same 44px height: every control stays thumb-sized */
   .btn-sm {
-    @apply min-h-9 px-3;
+    @apply px-3;
+  }
+  /* Round icon-only button (delete, duplicate, close...). Always give it an aria-label */
+  .btn-icon {
+    @apply inline-flex size-11 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply bg-accent text-accent-ink hover:bg-accent-hover;
