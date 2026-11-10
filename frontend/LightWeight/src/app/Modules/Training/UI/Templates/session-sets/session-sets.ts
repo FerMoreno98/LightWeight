@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { Set } from '../../../data/training-api.service';
 import { TECHNIQUE_LABELS } from '../../shared/cycle-format';
+import { muscleGroupLabel } from '../../shared/muscle-groups';
 import { ExerciseRun, SuperSetUnit, buildUnits, groupConsecutive } from '../../shared/superset';
 
 /** Consecutive planned sets of one exercise, with a stable key to select it */
@@ -20,6 +21,8 @@ export interface ExerciseSetGroup extends ExerciseRun<Set> {
   styleUrl: './session-sets.css',
 })
 export class SessionSets {
+  readonly muscleLabel = muscleGroupLabel;
+
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);

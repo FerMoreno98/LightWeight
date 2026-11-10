@@ -2,19 +2,8 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MuscleGroup, SeriesPerGroupPerSession } from '../../../data/training-api.service';
-
-const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  Shoulder: 'Hombro',
-  Back: 'Espalda',
-  Chest: 'Pecho',
-  Biceps: 'Bíceps',
-  Triceps: 'Tríceps',
-  Glutes: 'Glúteos',
-  Quads: 'Cuádriceps',
-  Hamstring: 'Isquios',
-  Calves: 'Gemelos',
-};
+import { SeriesPerGroupPerSession } from '../../../data/training-api.service';
+import { muscleGroupLabel } from '../../shared/muscle-groups';
 
 @Component({
   selector: 'app-create-session-template',
@@ -66,7 +55,7 @@ export class CreateSessionTemplate {
   }
 
   seriesEntries(session: SeriesPerGroupPerSession): [string, number][] {
-    return Object.entries(session.series).map(([group, count]) => [MUSCLE_GROUP_LABELS[group as MuscleGroup] ?? group, count]);
+    return Object.entries(session.series).map(([group, count]) => [muscleGroupLabel(group), count]);
   }
 
   async onSubmit(values:{

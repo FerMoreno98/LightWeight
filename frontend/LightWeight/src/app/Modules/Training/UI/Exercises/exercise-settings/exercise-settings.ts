@@ -1,16 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Exercise } from '../../../data/training-api.service';
-
-const MUSCLE_GROUP_LABELS = ['Hombro', 'Espalda', 'Pecho', 'Bíceps', 'Tríceps', 'Glúteos', 'Cuádriceps', 'Isquios', 'Gemelos'];
-const MUSCLE_GROUP_NAMES = ['Shoulder', 'Back', 'Chest', 'Biceps', 'Triceps', 'Glutes', 'Quads', 'Hamstring', 'Calves'];
+import { MUSCLE_GROUPS, muscleGroupLabel } from '../../shared/muscle-groups';
 
 @Component({
   selector: 'app-exercise-settings',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './exercise-settings.html',
   styleUrl: './exercise-settings.css',
 })
@@ -61,14 +59,14 @@ export class ExerciseSettings {
         this.isCluster = set.technique === 'Cluster';
         this.isMyoRep = set.technique === 'MyoRep';
         this.emphasizedMuscleGroups = set.aimMuscleGroups
-          .map(muscle => MUSCLE_GROUP_NAMES.indexOf(muscle))
+          .map(muscle => (MUSCLE_GROUPS as string[]).indexOf(muscle))
           .filter(index => index !== -1);
       }
     }
   }
 
   muscleGroupLabel(group: number): string {
-    return MUSCLE_GROUP_LABELS[group] ?? 'Otro';
+    return muscleGroupLabel(group);
   }
 
   selectExercise(exercise: Exercise){
@@ -107,7 +105,7 @@ export class ExerciseSettings {
     const emphasizedGroups = this.emphasizedMuscleGroups.length
       ? this.emphasizedMuscleGroups
       : this.selectedExercise.aimMuscleGroups;
-    const aimMuscleGroups = emphasizedGroups.map(group => MUSCLE_GROUP_NAMES[group]);
+    const aimMuscleGroups = emphasizedGroups.map(group => MUSCLE_GROUPS[group]);
 
     const success = this.isEditMode
       ? await this.store.UpdateTemplateSet(

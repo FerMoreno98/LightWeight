@@ -3,7 +3,8 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { TrainingTabs } from '../../shared/training-tabs/training-tabs';
-import { MuscleGroup, Periodization, Program, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
+import { muscleGroupLabel } from '../../shared/muscle-groups';
+import { Periodization, Program, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
 
 const VOLUME_LANDMARK_LABELS: Record<VolumeLandmark, string> = {
   MV: 'MV — Maintenance Volume',
@@ -26,18 +27,6 @@ const PERIODIZATION_LABELS: Record<Periodization, string> = {
   Ondulating: 'Ondulante',
   block: 'Bloques',
   MikeIsraetel: 'Mike Israetel',
-};
-
-const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  Shoulder: 'Hombro',
-  Back: 'Espalda',
-  Chest: 'Pecho',
-  Biceps: 'Bíceps',
-  Triceps: 'Tríceps',
-  Glutes: 'Glúteos',
-  Quads: 'Cuádriceps',
-  Hamstring: 'Isquios',
-  Calves: 'Gemelos',
 };
 
 export interface ProgramWithTemplates {
@@ -87,7 +76,7 @@ export class TrainingTemplates {
   }
 
   aimMuscleGroupLabels(program: Program): string[] {
-    return program.aimMuscleGroups.map(group => MUSCLE_GROUP_LABELS[group] ?? group);
+    return program.aimMuscleGroups.map(group => muscleGroupLabel(group));
   }
 
   volumeLandmarkLabel(template: TrainingTemplate): string {
@@ -99,7 +88,7 @@ export class TrainingTemplates {
   }
 
   totalVolumeEntries(template: TrainingTemplate): [string, number][] {
-    return Object.entries(template.totalVolume).map(([group, count]) => [MUSCLE_GROUP_LABELS[group as MuscleGroup] ?? group, count]);
+    return Object.entries(template.totalVolume).map(([group, count]) => [muscleGroupLabel(group), count]);
   }
 
   goToSessions(template: TrainingTemplate) {

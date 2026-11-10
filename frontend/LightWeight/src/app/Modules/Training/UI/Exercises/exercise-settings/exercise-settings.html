@@ -3,6 +3,15 @@
 
     @if (!selectedExercise) {
       <div class="fade-slide-in">
+        <a
+          [routerLink]="['/training/sessionsets', TemplateId, SessionId]"
+          class="mb-2 inline-flex min-h-11 items-center gap-2 text-sm text-muted transition hover:text-fg"
+        >
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Volver a series
+        </a>
         <h1 class="font-display uppercase leading-none mb-6 text-3xl font-bold text-fg">Selecciona un ejercicio</h1>
 
         @if (error()) {

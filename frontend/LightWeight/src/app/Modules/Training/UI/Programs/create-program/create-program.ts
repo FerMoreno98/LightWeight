@@ -4,18 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { MuscleGroup } from '../../../data/training-api.service';
-
-const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  Shoulder: 'Hombro',
-  Back: 'Espalda',
-  Chest: 'Pecho',
-  Biceps: 'Bíceps',
-  Triceps: 'Tríceps',
-  Glutes: 'Glúteos',
-  Quads: 'Cuádriceps',
-  Hamstring: 'Isquios',
-  Calves: 'Gemelos',
-};
+import { MUSCLE_GROUPS, MUSCLE_GROUP_LABELS } from '../../shared/muscle-groups';
 
 @Component({
   selector: 'app-create-program',
@@ -34,7 +23,7 @@ export class CreateProgram {
   isLoading = this.store.isLoading;
   error = this.store.error;
 
-  muscleGroups = Object.keys(MUSCLE_GROUP_LABELS) as MuscleGroup[];
+  muscleGroups = MUSCLE_GROUPS;
 
   name = '';
   periodization = '';
