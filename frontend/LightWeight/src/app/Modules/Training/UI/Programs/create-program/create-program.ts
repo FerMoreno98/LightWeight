@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
@@ -26,6 +27,9 @@ const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
 export class CreateProgram {
   private store = inject(TrainingStore);
   private router = inject(Router);
+  private location = inject(Location);
+  /** Whether the user arrived here from another page of the app (so Cancel can go back to it) */
+  private hasPreviousPage = !!this.router.lastSuccessfulNavigation()?.previousNavigation;
 
   isLoading = this.store.isLoading;
   error = this.store.error;
@@ -62,7 +66,12 @@ export class CreateProgram {
     }
   }
 
+  /** Returns to the page that opened the form (templates list as fallback on direct access) */
   cancel() {
-    this.router.navigate(['/training/trainingtemplates']);
+    if (this.hasPreviousPage) {
+      this.location.back();
+    } else {
+      this.router.navigate(['/training/trainingtemplates']);
+    }
   }
 }

@@ -19,7 +19,10 @@
     } @else {
       <form #templateForm="ngForm" (ngSubmit)="onSubmit()" class="space-y-4">
         <div>
-          <label for="programId" class="block text-sm font-medium text-slate-300">Programa</label>
+          <div class="flex items-center justify-between">
+            <label for="programId" class="block text-sm font-medium text-slate-300">Programa</label>
+            <a routerLink="/training/createprogram" class="text-xs font-medium text-emerald-400 transition hover:text-emerald-300">+ Nuevo programa</a>
+          </div>
           <select
             id="programId"
             [(ngModel)]="programId"
