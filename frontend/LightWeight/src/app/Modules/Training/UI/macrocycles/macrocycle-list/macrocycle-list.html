@@ -1,5 +1,6 @@
 <div class="min-h-screen px-4 py-10">
   <div class="mx-auto max-w-5xl fade-slide-in">
+    <app-training-tabs />
 
     <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
       <div>
@@ -8,7 +9,8 @@
       </div>
       @if (activeMacrocycle()) {
         <span
-          class="inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg bg-accent/40 px-4 py-2 text-sm font-semibold text-accent-ink/70"
+          class="btn btn-primary cursor-not-allowed opacity-50 hover:bg-accent"
+          aria-disabled="true"
           title="Finaliza el macrociclo activo para empezar otro"
         >
           Nuevo macrociclo

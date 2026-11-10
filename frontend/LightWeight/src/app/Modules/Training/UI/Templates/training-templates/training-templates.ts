@@ -2,6 +2,7 @@ import { Component, ElementRef, computed, effect, inject, signal, viewChild } fr
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
+import { TrainingTabs } from '../../shared/training-tabs/training-tabs';
 import { MuscleGroup, Periodization, Program, TrainingDistribution, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
 
 const VOLUME_LANDMARK_LABELS: Record<VolumeLandmark, string> = {
@@ -47,7 +48,7 @@ export interface ProgramWithTemplates {
 @Component({
   selector: 'app-training-templates',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, TrainingTabs],
   templateUrl: './training-templates.html',
   styleUrl: './training-templates.css',
 })

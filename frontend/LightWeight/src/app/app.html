@@ -1,3 +1,5 @@
-
-<app-navbar></app-navbar>
-<router-outlet />
+<app-navbar />
+<!-- Bottom space for the mobile tab bar -->
+<div class="pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+  <router-outlet />
+</div>

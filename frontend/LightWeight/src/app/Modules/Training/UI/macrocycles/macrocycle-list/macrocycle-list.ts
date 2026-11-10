@@ -3,11 +3,12 @@ import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { MacrocycleSummary } from '../../../data/training-api.service';
 import { TRAINING_STAGE_LABELS, formatCyclePeriod } from '../../shared/cycle-format';
+import { TrainingTabs } from '../../shared/training-tabs/training-tabs';
 
 @Component({
   selector: 'app-macrocycle-list',
   standalone: true,
-  imports: [RouterLink],
+  imports: [RouterLink, TrainingTabs],
   templateUrl: './macrocycle-list.html',
   styleUrl: './macrocycle-list.css',
 })
