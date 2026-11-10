@@ -100,6 +100,11 @@ export class ExerciseFocus {
     this.update(field, Math.min(max, Math.max(min, Math.round((current + delta) * 100) / 100)));
   }
 
+  /** 2.5 -> "2,5" */
+  formatStep(step: number): string {
+    return step.toLocaleString('es-ES');
+  }
+
   submit() {
     if (this.isValid() && !this.busy() && !this.view().readOnly) this.save.emit(this.form());
   }
