@@ -40,13 +40,6 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 
 ## Validación
 
-### Email inválido en el login devuelve 500
-
-- **Qué pasa:** `POST /api/auth/otp/send` no valida el formato del email. Con un valor como `nope`, salta un `FormatException` al enviar el correo y se responde 500 en lugar de 400.
-- **Por qué se dejó:** apareció al probar el manejador global de excepciones, y no forma parte de ese cambio.
-- **Cuándo retomarla:** antes de desplegar.
-- **Solución prevista:** añadir un validador a `SendOtpCodeCommand`.
-
 ### Excepciones genéricas
 
 - **Qué pasa:** cualquier excepción que no sea `BusinessException` se responde como 500, incluidos los `ArgumentException` de los conversores de training. Es correcto si son fallos de programación, pero cualquiera que dependa de la entrada del usuario debería tener validador.
@@ -58,11 +51,6 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 
 - **Qué pasa:** el archivo no incluye ningún proyecto, así que el `dotnet restore` del Dockerfile no restaura nada real y los tests se lanzan proyecto a proyecto.
 - **Cuándo retomarla:** cuando moleste al compilar o al montar CI.
-
-### Vulnerabilidad en `System.Security.Cryptography.Pkcs` 9.0.0
-
-- **Qué pasa:** NuGet avisa de una vulnerabilidad de gravedad alta y otra moderada al compilar `LightWeight.Shared`.
-- **Cuándo retomarla:** antes de desplegar.
 
 ### Caché de `index.html`
 
