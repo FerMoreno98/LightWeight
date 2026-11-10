@@ -33,7 +33,7 @@ Manages user identity and authentication via an **OTP-only flow** (no passwords)
 | POST | `/api/auth/otp/send` | Anonymous | Sends 6-digit OTP via email; creates User on first visit |
 | POST | `/api/auth/otp/verify` | Anonymous | Verifies OTP, registers device, returns access + refresh tokens |
 | POST | `/api/auth/refresh` | Anonymous | Rotates refresh token, returns new token pair |
-| POST | `/api/auth/logout` | Authorized | Revokes the specific refresh token |
+| POST | `/api/auth/logout` | Authorized | Revokes the refresh token of the cookie (no body) and deletes the cookie |
 
 ## Key business rules
 

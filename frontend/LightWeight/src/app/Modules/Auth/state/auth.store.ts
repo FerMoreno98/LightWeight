@@ -45,9 +45,15 @@ export class AuthStore {
     }
   }
 
+  // Aunque falle la llamada (sin red, token caducado) la sesión se cierra en este dispositivo
   async logout(): Promise<void> {
-    await firstValueFrom(this.api.logout());
-    this.tokenStorage.clear();
+    try {
+      await firstValueFrom(this.api.logout());
+    } catch {
+      // El refresh token caducará solo
+    } finally {
+      this.tokenStorage.clear();
+    }
   }
 
   // Se llama al arrancar la app: si hay cookie de refresh, recupera el access token

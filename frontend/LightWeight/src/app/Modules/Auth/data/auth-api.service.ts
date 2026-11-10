@@ -25,7 +25,8 @@ export class AuthApiService {
     }
     logout() : Observable<void>
     {
-        return this.http.post<void>(`${this.baseUrl}/logout`,{});
+        // con withCredentials se envía la cookie que hay que revocar
+        return this.http.post<void>(`${this.baseUrl}/logout`, {}, { withCredentials: true });
     }
     refreshToken(): Observable<string>
     {

@@ -92,7 +92,6 @@ public static class AuthModule
     }
 
     private static async Task<IResult> Logout(
-        LogoutRequest request,
         IMediator mediator,
         HttpContext httpContext,
         CancellationToken ct)
@@ -101,9 +100,11 @@ public static class AuthModule
         string? id = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
                     ?? throw new UnauthorizedAccessException();
 
-        httpContext.Request.Cookies.TryGetValue("refresh_token", out var refreshToken);
-
-        await mediator.SendAsync(new LogoutCommand(Guid.Parse(id), refreshToken), ct);
+        // Without the cookie there is nothing to revoke: the front clears its token anyway
+        if (httpContext.Request.Cookies.TryGetValue("refresh_token", out var refreshToken) && !string.IsNullOrEmpty(refreshToken))
+        {
+            await mediator.SendAsync(new LogoutCommand(Guid.Parse(id), refreshToken), ct);
+        }
 
         httpContext.Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/api/auth" });
         return TypedResults.NoContent();

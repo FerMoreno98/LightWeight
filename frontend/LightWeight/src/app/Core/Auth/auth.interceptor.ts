@@ -40,15 +40,15 @@ async function refreshAccessToken(): Promise<string | null> {
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const tokenStorage = inject(TokenStorageService);
 
-  // Las rutas de /auth no necesitan token y un 401 suyo no debe disparar refresh
-  if (req.url.includes('/auth/')) {
-    return next(req);
-  }
-
   const token = tokenStorage.getAccessToken();
   const authReq = token
     ? req.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
     : req;
+
+  // Las rutas de /auth no disparan refresh con un 401. Llevan el token igualmente: logout lo necesita
+  if (req.url.includes('/auth/')) {
+    return next(authReq);
+  }
 
   return next(authReq).pipe(
     catchError((error: HttpErrorResponse) => {

@@ -105,7 +105,7 @@ auth/
 | POST | `/api/auth/otp/send` | `SendOtpCodeCommand` | Anonymous | Generates 6-digit OTP and emails it; creates User on first visit |
 | POST | `/api/auth/otp/verify` | `VerifyOtpCodeCommand` | Anonymous | Verifies OTP hash, registers device, issues access+refresh tokens |
 | POST | `/api/auth/refresh` | `LoginWithRefreshTokenCommand` | Anonymous | Rotates refresh token, returns new token pair |
-| POST | `/api/auth/logout` | `LogoutCommand` | **Authorized** | Revokes the specific refresh token |
+| POST | `/api/auth/logout` | `LogoutCommand` | **Authorized** | Revokes the refresh token of the cookie (no body) and deletes the cookie; 204 even without cookie |
 
 ## 7. Dependencies
 
