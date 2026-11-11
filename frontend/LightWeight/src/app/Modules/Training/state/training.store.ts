@@ -1,6 +1,13 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram } from "../data/training-api.service";
+import { HttpErrorResponse } from "@angular/common/http";
 import { firstValueFrom } from "rxjs";
+
+/** Result of opening a share link: the preview, or why it cannot be shown */
+export type SharedProgramResult =
+    | { status: 'ok'; program: SharedProgram }
+    | { status: 'not-found' }
+    | { status: 'error' };
 
 @Injectable({ providedIn: 'root' })
 export class TrainingStore{
@@ -368,6 +375,66 @@ export class TrainingStore{
         }finally{
             this._isLoading.set(false);
         }
+    }
+
+    /** Shares a program and stores its token in the list. Returns the token (the current one if it was already shared) */
+    async ShareProgram(programId : string) : Promise<string | null>{
+        this._error.set(null);
+        try{
+            const { token } = await firstValueFrom(this.api.ShareProgram(programId));
+            this._programs.update(pp => pp.map(p => p.id === programId ? { ...p, shareToken: token } : p));
+            return token;
+        }catch{
+            this._error.set('No se ha podido compartir el programa');
+            return null;
+        }
+    }
+
+    /** Stops sharing a program: its link stops working (copies already made are kept) */
+    async RevokeProgramShare(programId : string) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.RevokeProgramShare(programId));
+            this._programs.update(pp => pp.map(p => p.id === programId ? { ...p, shareToken: null } : p));
+            return true;
+        }catch{
+            this._error.set('No se ha podido dejar de compartir el programa');
+            return false;
+        }
+    }
+
+    /** Preview of a shared program. A 404 means the link never existed or was revoked */
+    async GetSharedProgram(shareToken : string) : Promise<SharedProgramResult>{
+        try{
+            const program = await firstValueFrom(this.api.GetSharedProgram(shareToken));
+            return { status: 'ok', program };
+        }catch(error){
+            return error instanceof HttpErrorResponse && error.status === 404
+                ? { status: 'not-found' }
+                : { status: 'error' };
+        }
+    }
+
+    /** Copies a shared program into the programs of the user, then reloads programs and templates */
+    async CopySharedProgram(shareToken : string) : Promise<string | null>{
+        this._error.set(null);
+        let copyId : string;
+        try{
+            copyId = (await firstValueFrom(this.api.CopySharedProgram(shareToken))).id;
+        }catch{
+            this._error.set('No se ha podido copiar el programa');
+            return null;
+        }
+        // The copy is already saved: if the reload fails, the list page loads it again
+        try{
+            const [templates, programs] = await Promise.all([
+                firstValueFrom(this.api.GetUserTrainingTemplates()),
+                firstValueFrom(this.api.GetUserPrograms()),
+            ]);
+            this._trainingTemplates.set(templates);
+            this._programs.set(programs);
+        }catch{ /* reloaded by the list page */ }
+        return copyId;
     }
 
     async GetUserPrograms() : Promise<boolean>{

@@ -65,6 +65,16 @@
           <div class="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-line pb-3">
             <div>
               <h2 class="text-xl font-semibold text-fg">{{ group.program.name }}</h2>
+              @if (group.program.isCopy) {
+                <p class="mt-0.5 flex items-center gap-1 text-xs text-muted">
+                  @if (group.program.copiedFromAuthorName; as author) {
+                    Copiado de <span class="font-medium text-soft">{{ author }}</span>
+                    <app-info-tooltip [text]="copiedFromInfo" label="Sobre el autor del programa" />
+                  } @else {
+                    Copiado de otro usuario
+                  }
+                </p>
+              }
               <div class="mt-2 flex flex-wrap gap-1.5 text-xs">
                 <span class="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 font-medium text-accent">
                   {{ periodizationLabel(group.program) }}
@@ -74,14 +84,64 @@
                 }
               </div>
             </div>
-            <a
-              routerLink="/training/trainingtemplate"
-              [queryParams]="{ programId: group.program.id }"
-              class="text-sm font-medium text-accent transition hover:text-accent"
-            >
-              + Añadir plantilla
-            </a>
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+              @if (group.program.shareToken) {
+                <span class="inline-flex items-center gap-1.5 rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
+                  <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
+                  Compartido
+                </span>
+                <button
+                  type="button"
+                  (click)="askRevoke(group.program)"
+                  class="text-sm font-medium text-muted transition hover:text-danger"
+                >
+                  Dejar de compartir
+                </button>
+              }
+              <button
+                type="button"
+                (click)="shareProgram(group.program)"
+                [disabled]="sharingId() !== null"
+                class="inline-flex items-center gap-1.5 text-sm font-medium text-accent transition hover:text-accent-hover disabled:cursor-wait disabled:opacity-50"
+              >
+                @if (linkCopiedId() === group.program.id) {
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+                  </svg>
+                  Enlace copiado
+                } @else {
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                    <path stroke-linecap="round" d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4" />
+                  </svg>
+                  {{ group.program.shareToken ? 'Copiar enlace' : 'Compartir' }}
+                }
+              </button>
+              <a
+                routerLink="/training/trainingtemplate"
+                [queryParams]="{ programId: group.program.id }"
+                class="text-sm font-medium text-accent transition hover:text-accent-hover"
+              >
+                + Añadir plantilla
+              </a>
+            </div>
           </div>
+          <span class="sr-only" aria-live="polite">{{ linkCopiedId() === group.program.id ? 'Enlace copiado' : '' }}</span>
+          @if (manualLink()?.programId === group.program.id) {
+            <div class="-mt-2 mb-4 rounded-lg border border-line bg-canvas p-3">
+              <label class="mb-1.5 block text-xs text-muted" [for]="'share-link-' + group.program.id">
+                No se ha podido copiar automáticamente. Copia el enlace:
+              </label>
+              <input
+                [id]="'share-link-' + group.program.id"
+                type="text"
+                readonly
+                [value]="manualLink()!.url"
+                (focus)="$any($event.target).select()"
+                class="w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-fg"
+              />
+            </div>
+          }
 
           @if (group.templates.length === 0) {
             <p class="rounded-xl border border-dashed border-line bg-canvas/40 px-4 py-6 text-center text-xs text-subtle">
@@ -197,3 +257,13 @@
 
   </div>
 </div>
+
+<app-confirm-dialog
+  [open]="revokeTarget() !== null"
+  title="Dejar de compartir"
+  [message]="'El enlace de “' + (revokeTarget()?.name ?? '') + '” dejará de funcionar. Las copias que ya se hayan hecho no se borran.'"
+  confirmLabel="Dejar de compartir"
+  [busy]="isRevoking()"
+  (confirmed)="confirmRevoke()"
+  (cancelled)="cancelRevoke()"
+/>

@@ -30,9 +30,11 @@ public sealed record GetSharedProgramSessionResponse
     IReadOnlyCollection<GetSharedProgramSetResponse> Sets
 );
 
+/// <param name="ExerciseId">Id in the global exercise catalog (lets the client group the consecutive sets of an exercise)</param>
 /// <param name="ExerciseName">Empty when the exercise no longer exists</param>
 public sealed record GetSharedProgramSetResponse
 (
+    Guid ExerciseId,
     string ExerciseName,
     int RepetitionRangeMin,
     int RepetitionRangeMax,

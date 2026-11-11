@@ -31,7 +31,44 @@ export interface Program{
     name : string,
     periodization : Periodization,
     aimMuscleGroups : MuscleGroup[],
-    trainingTemplatesCount : number
+    trainingTemplatesCount : number,
+    /** Token of the share link, null while the program is not shared */
+    shareToken : string | null,
+    /** The program was copied from a program shared by another user */
+    isCopy : boolean,
+    /** Current name of the author of the original program. Null if it is not a copy or the name is not known yet */
+    copiedFromAuthorName : string | null
+}
+/** Read only preview of a program shared by another user (no ids of the program or its author) */
+export interface SharedProgram{
+    name : string,
+    periodization : Periodization,
+    aimMuscleGroups : MuscleGroup[],
+    /** Current name of the author. Null while it is not known */
+    authorName : string | null,
+    templates : SharedTemplate[]
+}
+export interface SharedTemplate{
+    name : string,
+    durationInDays : number,
+    volumeLandmark : VolumeLandmark,
+    trainingDistribution : TrainingDistribution,
+    sessions : SharedSession[]
+}
+export interface SharedSession{
+    name : string,
+    sets : SharedSet[]
+}
+export interface SharedSet{
+    exerciseId : string,
+    /** Empty when the exercise no longer exists */
+    exerciseName : string,
+    repetitionRangeMin : number,
+    repetitionRangeMax : number,
+    expectedRPE : number,
+    technique : AdvancedTechnique | null,
+    superSetGroupId : string | null,
+    aimMuscleGroups : MuscleGroup[]
 }
 export type TrainingDistribution =
     | 'PushPullLegs' | 'UpperLower' | 'Weider' | 'Phat' | 'FullBody' | 'Other';
@@ -230,6 +267,18 @@ export class TrainingApiService {
     }
     GetUserPrograms () : Observable<Program[]>{
         return this.http.get<Program[]>(`${this.baseUrl}/programs`);
+    }
+    ShareProgram(programId : string) : Observable<{token: string}>{
+        return this.http.post<{token: string}>(`${this.baseUrl}/program/${programId}/share`, {});
+    }
+    RevokeProgramShare(programId : string) : Observable<void>{
+        return this.http.delete<void>(`${this.baseUrl}/program/${programId}/share`);
+    }
+    GetSharedProgram(shareToken : string) : Observable<SharedProgram>{
+        return this.http.get<SharedProgram>(`${this.baseUrl}/shared-programs/${encodeURIComponent(shareToken)}`);
+    }
+    CopySharedProgram(shareToken : string) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/shared-programs/${encodeURIComponent(shareToken)}/copy`, {});
     }
     CreateMesocycle
     (

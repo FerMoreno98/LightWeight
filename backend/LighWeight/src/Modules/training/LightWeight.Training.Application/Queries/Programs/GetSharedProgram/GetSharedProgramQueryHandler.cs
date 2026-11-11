@@ -9,7 +9,7 @@ namespace LightWeight.Training.Application.Queries.Programs.GetSharedProgram;
 
 /// <summary>
 /// The only query that reads a program of another user: it is reached through the share token, never through the id,
-/// and it exposes no ids of the program or its author
+/// and it exposes no ids of the program or its author (only the ids of the global exercise catalog)
 /// </summary>
 public sealed class GetSharedProgramQueryHandler : IQueryHandler<GetSharedProgramQuery, GetSharedProgramResponse>
 {
@@ -67,6 +67,7 @@ public sealed class GetSharedProgramQueryHandler : IQueryHandler<GetSharedProgra
                             s.TemplateExercises
                                 .Select(set => new GetSharedProgramSetResponse
                                 (
+                                    set.ExerciseId,
                                     exerciseNames.GetValueOrDefault(set.ExerciseId, string.Empty),
                                     set.RepetitionRange.Min,
                                     set.RepetitionRange.Max,
