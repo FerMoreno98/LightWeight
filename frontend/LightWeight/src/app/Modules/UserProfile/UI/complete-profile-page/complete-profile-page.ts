@@ -1,5 +1,6 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RETURN_URL_PARAM, safeReturnUrl } from '../../../../Core/Navigation/return-url';
 import { ProfileData } from '../../data/user-profile-api.service';
 import { UserProfileStore } from '../../state/user-profile.store';
 import { ProfileForm } from '../profile-form/profile-form';
@@ -14,6 +15,7 @@ import { ProfileForm } from '../profile-form/profile-form';
 export class CompleteProfilePage implements OnInit {
     store = inject(UserProfileStore);
     private router = inject(Router);
+    private route = inject(ActivatedRoute);
 
     ngOnInit() {
         this.store.clearError();
@@ -21,7 +23,9 @@ export class CompleteProfilePage implements OnInit {
 
     async onSave(data: ProfileData) {
         if (await this.store.Complete(data)) {
-            this.router.navigate(['/home']);
+            // Back to the page the user wanted before the login (e.g. a shared program)
+            const returnUrl = safeReturnUrl(this.route.snapshot.queryParamMap.get(RETURN_URL_PARAM));
+            this.router.navigateByUrl(returnUrl ?? '/home');
         }
     }
 }

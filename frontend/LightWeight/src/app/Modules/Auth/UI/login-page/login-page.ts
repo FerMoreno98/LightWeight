@@ -1,7 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthStore } from '../../state/auth.store';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { RETURN_URL_PARAM, returnUrlParams } from '../../../../Core/Navigation/return-url';
 
 @Component({
   selector: 'app-login-page',
@@ -13,6 +14,7 @@ import { Router } from '@angular/router';
 export class LoginPage {
   private authStore = inject(AuthStore);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   email = '';
   isLoading = this.authStore.isLoading;
@@ -21,7 +23,9 @@ export class LoginPage {
   async onSubmit() {
     const success = await this.authStore.requestOtp(this.email);
     if (success) {
-      this.router.navigate(['/auth/verify'], { queryParams: { email: this.email } });
+      // The page the user wanted (e.g. a shared program) goes on to the verification
+      const returnUrl = this.route.snapshot.queryParamMap.get(RETURN_URL_PARAM);
+      this.router.navigate(['/auth/verify'], { queryParams: { email: this.email, ...returnUrlParams(returnUrl) } });
     }
   }
 

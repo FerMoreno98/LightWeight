@@ -4,6 +4,7 @@ import { AuthStore } from '../../state/auth.store';
 import { ActivatedRoute, Router } from '@angular/router';
 import { DeviceService } from '../../../../Core/device.service';
 import { UserProfileStore } from '../../../UserProfile/state/user-profile.store';
+import { RETURN_URL_PARAM, safeReturnUrl } from '../../../../Core/Navigation/return-url';
 
 @Component({
   selector: 'app-verify-otp-page',
@@ -21,12 +22,14 @@ export class VerifyOtpPage {
 
   code = '';
   email = '';
+  private returnUrl: string | null = null;
   isLoading = this.authStore.isLoading;
   error = this.authStore.error;
 
   constructor() {
     this.route.queryParams.subscribe(params => {
       this.email = params['email'] || '';
+      this.returnUrl = safeReturnUrl(params[RETURN_URL_PARAM]);
     });
   }
 
@@ -39,10 +42,10 @@ export class VerifyOtpPage {
       this.email,
     );
     if (success) {
-      // The profile in memory may be of a previous user. The guard of /home sends to the onboarding
-      // if this user has not completed it yet (first login)
+      // The profile in memory may be of a previous user. The guard of the destination sends to the onboarding
+      // if this user has not completed it yet (first login), keeping the page the user wanted
       this.profileStore.reset();
-      this.router.navigate(['/home']);
+      this.router.navigateByUrl(this.returnUrl ?? '/home');
     }
   }
 }
