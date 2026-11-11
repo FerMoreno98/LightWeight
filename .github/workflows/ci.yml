@@ -1,0 +1,81 @@
+# CI: on every push to main and every pull request, build and pass all the tests.
+# If this fails, nothing should be deployed (the CD workflow will depend on it).
+#
+# Actions are pinned by commit SHA, not by tag: a tag can be moved to other code, a SHA cannot.
+# The comment next to each SHA says which version it is. To update one, take the SHA of the new
+# release tag (git ls-remote https://github.com/<owner>/<repo>.git refs/tags/<tag>) once the
+# release is at least two weeks old.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Read-only token: CI does not publish anything
+permissions:
+  contents: read
+
+# A new push to the same branch cancels the run that is still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (.NET)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/LighWeight
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # The host references every module: if it builds, the whole API builds
+      - name: Build API
+        run: dotnet build src/App/LightWeight.App/LightWeight.App.csproj -c Release
+
+      # One test project per module (LightWeight.slnx is empty, so they are run one by one)
+      - name: Tests
+        run: |
+          set -e
+          for project in src/Modules/*/testing/*/*.csproj; do
+            echo "::group::$project"
+            dotnet test "$project" -c Release
+            echo "::endgroup::"
+          done
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/LightWeight
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # bun installs the packages (bun.lock); Node runs Angular, as in local development.
+      # The Angular CLI refuses Node below 24.15
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          # Same as "packageManager" in package.json and the image in the Dockerfile
+          bun-version: 1.4.4
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.x
+
+      # Exactly what bun.lock says: fails if package.json and bun.lock disagree
+      - name: Install
+        run: bun install --frozen-lockfile
+
+      - name: Tests
+        run: ./node_modules/.bin/ng test --watch=false
+
+      # Production build: the same one the Docker image makes (budgets and fileReplacements included)
+      - name: Build
+        run: ./node_modules/.bin/ng build
