@@ -43,6 +43,10 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTraining
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
 using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
+using LightWeight.Training.Application.Commands.Programs.ShareProgram;
+using LightWeight.Training.Application.Commands.Programs.RevokeProgramShare;
+using LightWeight.Training.Application.Commands.Programs.CopySharedProgram;
+using LightWeight.Training.Application.Queries.Programs.GetSharedProgram;
 
 public static class TrainingModule
 {
@@ -62,6 +66,10 @@ public static class TrainingModule
         group.MapPost("/microcycle/{microcycleId:guid}/finish", FinishMicrocycle).RequireAuthorization();
         group.MapPost("/program", CreateProgram).RequireAuthorization();
         group.MapGet("/programs", GetUserPrograms).RequireAuthorization();
+        group.MapPost("/program/{programId:guid}/share", ShareProgram).RequireAuthorization();
+        group.MapDelete("/program/{programId:guid}/share", RevokeProgramShare).RequireAuthorization();
+        group.MapGet("/shared-programs/{shareToken}", GetSharedProgram).RequireAuthorization();
+        group.MapPost("/shared-programs/{shareToken}/copy", CopySharedProgram).RequireAuthorization();
         group.MapPost("/training-template", CreateTrainingTemplate).RequireAuthorization();
         group.MapPost("/template-session", CreateTemplateSession).RequireAuthorization();
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
@@ -695,5 +703,58 @@ public static class TrainingModule
             request.AimMuscleGroups
         ),ct);
         return TypedResults.Ok();
+    }
+
+    private static async Task<IResult> ShareProgram(
+        IMediator mediator,
+        Guid programId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        var token = await mediator.SendAsync<ShareProgramCommand, string>(
+            new ShareProgramCommand(programId, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(new { token });
+    }
+    private static async Task<IResult> RevokeProgramShare(
+        IMediator mediator,
+        Guid programId,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new RevokeProgramShareCommand(programId, Guid.Parse(userId)), ct);
+        return TypedResults.NoContent();
+    }
+    /// <summary>Preview of a program shared by any user. Only reachable through the share token</summary>
+    private static async Task<IResult> GetSharedProgram(
+        IMediator mediator,
+        string shareToken,
+        CancellationToken ct
+    )
+    {
+        var program = await mediator.QueryAsync<GetSharedProgramQuery, GetSharedProgramResponse>(
+            new GetSharedProgramQuery(shareToken), ct
+        );
+        return TypedResults.Ok(program);
+    }
+    private static async Task<IResult> CopySharedProgram(
+        IMediator mediator,
+        string shareToken,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        var id = await mediator.SendAsync<CopySharedProgramCommand, Guid>(
+            new CopySharedProgramCommand(shareToken, Guid.Parse(userId)), ct
+        );
+        return TypedResults.Ok(new { id });
     }
 }

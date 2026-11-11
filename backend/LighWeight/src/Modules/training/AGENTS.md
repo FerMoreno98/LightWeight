@@ -46,7 +46,7 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **DB table**: `training_Sets` (FK → TrainingSession cascade, FK → Exercise, FK → TemplateSet restrict; technique stored as `AdvanceTrainingTechniques_IsDropSet/IsCluster/IsMyoRep`)
 
 ### `Program` (AggregateRoot)
-- **Properties**: `UserId`, `Name`, `Periodization`, `AimMuscleGroups` (List\<MuscleGroups\>)
+- **Properties**: `UserId`, `Name`, `Periodization`, `AimMuscleGroups` (List\<MuscleGroups\>), `ShareToken?`, `CopiedFromProgramId?`, `CopiedFromUserId?`
 - **Invariants**:
   - Belongs to a single user (`UserId`, cannot be empty → `UserIdEmptyDomainException`)
   - `Name` cannot be empty → `NameEmptyDomainException`
@@ -56,6 +56,8 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **Behaviour methods**:
   - `AddTrainingTemplate(TrainingTemplate)`
   - `DeleteTrainingTemplate(Guid trainingTemplateId, DateTime now)`: soft deletes the template and its whole hierarchy
+  - `Share()`: generates the share token (12 chars Base64Url, 72 random bits) or returns the current one. `RevokeShare()`: sets it to null (a new `Share()` gives a different token)
+  - `CopyFor(Guid userId)`: new program of another user with a copy of the planning (see "Sharing programs")
 - **Domain events it emits**: None
 
 ### `TrainingTemplate` (Entity, child of `Program`)
@@ -107,6 +109,14 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **Rebuild**: on `dashboard.rebuild.requested.v1`, `RebuildRequestedIntegrationEventHandler` republishes every finished session of the user (`GetFinishedOfAUserAsync`). Keep it read only.
 - **`RepetitionRange.Create` silently swaps values**: If `max < min`, the values are swapped instead of throwing. A `DomainException` may be more appropriate for invalid input.
 
+- **Sharing programs**: a program is shared through a link with its `ShareToken` (`/share/{token}` in the front), never with its id.
+  - Only the author shares (`POST /program/{id}/share`) and revokes (`DELETE /program/{id}/share`). The token does not expire and copying does not consume it, so several users can copy with the same link.
+  - Any authenticated user with the token can preview it (`GET /shared-programs/{token}`, the only query that reads a program of another user; it exposes no ids) and copy it (`POST /shared-programs/{token}/copy`). An unknown and a revoked token give the same 404.
+  - **The copy is a snapshot of the planning only** (`TrainingTemplate` → `TemplateSession` → `TemplateSet`): same names, new ids (supersets too), relative order kept, soft deleted items and the token skipped. Never cycles or real sessions. It reuses `TrainingTemplate.Duplicate(name)`.
+  - The copy keeps its origin (`CopiedFromProgramId`, `CopiedFromUserId`, no FKs). The author name is **not** stored in the copy: it is read from `training_UserNames` when reading, so it shows the current name.
+  - Exercise ids are copied as they are because the catalog is global. When custom exercises exist, `CopySharedProgramCommandHandler` must also copy them and remap the ids.
+- **User names projection**: `training_UserNames` (`UserId`, `Name`) is upserted by `UserProfileProjector` from `userprofile.profile.recorded.v1`, through `IUserNameProjectionStore` (`Application/Projections/UserNames`, a read model like the dashboard ones). It starts empty: existing users are filled in by the rebuild. Null name → the front shows "otro usuario".
+
 ## 4. Database schema
 
 - **Schema**: `training` (PostgreSQL, managed by FluentMigrator and EF Core)
@@ -119,7 +129,8 @@ This module handles strength and bodybuilding training planning and logging. It 
 | `training_Microcycles` | `Id` (guid PK), `MesocycleId`, `UserId`, `TrainingTemplateId`, `WeekNumber`, `StartedAt`, `FinishedAt?` | `MesocycleId` → Mesocycles (cascade), `TrainingTemplateId` → TrainingTemplates |
 | `training_TrainingSessions` | `Id` (guid PK), `MicrocycleId`, `UserId`, `TemplateSessionId?`, `Name` (200), `StartAt`, `FinishedAt?`, `Duration` (interval), `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` | `MicrocycleId` → Microcycles (cascade), `TemplateSessionId` → TemplateSessions |
 | `training_Sets` | `Id` (guid PK), `TrainingSessionId`, `ExerciseId`, `TemplateSetId?`, `Repetitions`, `IsBodyWeight`, `Weight` (decimal 8,2), `RPE` (decimal 3,1), `SuperSetGroupId?`, `AdvanceTrainingTechniques_IsDropSet/IsCluster/IsMyoRep` | `TrainingSessionId` → TrainingSessions (cascade), `ExerciseId` → Exercises, `TemplateSetId` → TemplateSets |
-| `training_Programs` | `Id` (guid PK), `UserId`, `Name` (200), `Periodization` (varchar 20), `AimMuscleGroups` (jsonb) | — |
+| `training_Programs` | `Id` (guid PK), `UserId`, `Name` (200), `Periodization` (varchar 20), `AimMuscleGroups` (jsonb), `ShareToken?` (varchar 12, partial unique index `Ux_Program_ShareToken`), `CopiedFromProgramId?`, `CopiedFromUserId?` | — |
+| `training_UserNames` | `UserId` (guid PK), `Name` (200) — projection of userprofile | — |
 | `training_TrainingTemplates` | `Id` (guid PK), `ProgramId`, `TrainingDistribution` (varchar 20), `VolumeLandmark`, `DurationInDays`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `ProgramId` → Programs (cascade) |
 | `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200), `IsDeleted` (bool, default false), `DeletedAt?` | `TrainingTemplateId` → TrainingTemplates (cascade) |
 | `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRPE` (decimal 3,1), `SuperSetGroupId?`, `AimMuscleGroups` (jsonb), `RepetitionRange_Min`, `RepetitionRange_Max`, `AdvanceTrainingTechniques`, `IsDeleted` (bool, default false), `DeletedAt?` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
@@ -147,7 +158,8 @@ training/
 │   ├── Commands/        # Macrocycles, Mesocycles, Microcycles, Programs, TrainingTemplates, TemplateSessions,
 │   │                    # TemplateSets, TemplateSuperSets, TrainingSessions (command + validator + handler)
 │   ├── Queries/         # current week, cycles detail, programs/templates, session workout, previous performance...
-│   ├── Events/          # domain event → integration event (mapper + factory), rebuild handler
+│   ├── Events/          # domain event → integration event (mapper + factory), rebuild handler, UserProfileProjector
+│   ├── Projections/     # read models fed by other modules (UserNames)
 │   └── DependencyInjection.cs
 ├── LightWeight.Training.Infrastructure/
 │   ├── Configurations/  # EF Core configurations
@@ -163,14 +175,15 @@ training/
 - **Depends on**: `LightWeight.Shared` (AggregateRoot, Entity, ValueObject, IDomainEvent, ICommand, IQuery, IMediator, etc.)
 - **Depended by**: Dashboard (through integration events only)
 - **Integration events it publishes**: `training.session.finished.v1`
-- **Integration events it listens to**: `dashboard.rebuild.requested.v1` (republishes the finished sessions of the user)
+- **Integration events it listens to**: `dashboard.rebuild.requested.v1` (republishes the finished sessions of the user), `userprofile.profile.recorded.v1` (projects the user name)
 
 ## 7. Current state
 
-**Done:** planning (programs, templates, sessions, sets, supersets, soft delete), sequential cycles with the current week in the home, real session registration (focus mode, substitutions, extra sets, supersets, automatic week close, discard), `training.session.finished.v1` for the Dashboard and the answer to its rebuild, API, unit tests.
+**Done:** planning (programs, templates, sessions, sets, supersets, soft delete), sharing programs by link and copying them, sequential cycles with the current week in the home, real session registration (focus mode, substitutions, extra sets, supersets, automatic week close, discard), `training.session.finished.v1` for the Dashboard and the answer to its rebuild, API, unit tests.
 
 **Pending:**
 - Cycle events (macro/mesocycle started and finished) for the Dashboard filter by macrocycle.
+- Searching users and copying their programs without a link.
 
 ## 8. Things NOT to do in this module
 

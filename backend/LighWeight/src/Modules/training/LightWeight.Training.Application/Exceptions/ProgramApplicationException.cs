@@ -9,3 +9,12 @@ public sealed class ProgramNotFoundApplicationException : TrainingApplicationExc
 
     }
 }
+
+/// <summary>No program is shared with the token: it never existed or it was revoked (both give the same 404)</summary>
+public sealed class SharedProgramNotFoundApplicationException : TrainingApplicationException, INotFoundException
+{
+    public SharedProgramNotFoundApplicationException() : base("The link does not correspond to any shared program")
+    {
+
+    }
+}

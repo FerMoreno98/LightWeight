@@ -12,6 +12,7 @@ using LightWeight.Training.Domain.Exceptions;
 using LightWeight.Training.Application.Commands.Programs.CreateProgram;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Queries.Programs.GetUserPrograms;
+using LightWeight.Training.Application.Projections.UserNames;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using LightWeight.Training.Domain.Enum;
@@ -895,7 +896,7 @@ public class ProgramAndCyclesTests
         program.AddTrainingTemplate(template2);
         program.DeleteTrainingTemplate(template2.Id, DateTime.UtcNow);
         _programRepository.GetAllProgramsOfAUserAsync(userId).Returns(new List<Program> { program });
-        GetUserProgramsQueryHandler queryHandler = new GetUserProgramsQueryHandler(_programRepository);
+        GetUserProgramsQueryHandler queryHandler = new GetUserProgramsQueryHandler(_programRepository, Substitute.For<IUserNameProjectionStore>());
         // Act
         var result = await queryHandler.HandleAsync(new GetUserProgramsQuery(userId),default);
         // Assert

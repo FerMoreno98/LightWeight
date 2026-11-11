@@ -17,7 +17,7 @@ The analysis of the history (volume, progression, fatigue, performance against w
 |-----------|-----------|----------------|----------|
 | `Macrocycle` | `UserId`, `StartedAt`, `FinishedAt?`, `Stage` (enum), `Comments?` | `Mesocycle` → `Microcycle` | `training_Macrocycles` |
 | `TrainingSession` | `MicrocycleId`, `UserId`, `TemplateSessionId?`, `Name`, `StartAt`, `FinishedAt?`, `Duration`, `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` (1-10) | `Set` | `training_TrainingSessions` |
-| `Program` | `UserId`, `Name`, `Periodization` (enum), `AimMuscleGroups` (jsonb) | `TrainingTemplate` → `TemplateSession` → `TemplateSet` | `training_Programs` |
+| `Program` | `UserId`, `Name`, `Periodization` (enum), `AimMuscleGroups` (jsonb), `ShareToken?`, `CopiedFromProgramId?`, `CopiedFromUserId?` | `TrainingTemplate` → `TemplateSession` → `TemplateSet` | `training_Programs` |
 | `Exercise` | `Name`, `IsBilateral`, `AimMuscleGroups` (jsonb) — global catalog, seeded | None | `training_Exercises` |
 
 ### Entities (child of aggregates)
@@ -83,12 +83,14 @@ Contract: `shared/Contracts/Training/TrainingIntegrationEvents.cs`, name in `Eve
 | Integration event | Name | Origin | Action |
 |---|---|---|---|
 | `RebuildRequestedIntegrationEvent` | `dashboard.rebuild.requested.v1` | Dashboard | Publishes again a `training.session.finished.v1` for **every finished session** of the user, built from the current tables (`ITrainingSessionRepository.GetFinishedOfAUserAsync`) |
+| `ProfileRecordedIntegrationEvent` | `userprofile.profile.recorded.v1` | UserProfile | Upserts the name of the user in `training_UserNames` (author of shared and copied programs) |
 
 Sessions finished before the event existed reach the dashboard this way: after deploying, one call to `POST /api/dashboard/rebuild` loads the whole history (the "Recalcular" button is commented out).
 
 ## Key Design Decisions
 
 - Exercises are a global catalog (seeded), not per user.
+- Programs are shared with a revocable random token, never with their id. Copying makes a snapshot of the planning for the other user; the copy only keeps who the author was (`CopiedFromUserId`) and shows the author's current name from the `training_UserNames` projection.
 - Supersets use `SuperSetGroupId` (nullable GUID), not a boolean flag.
 - `AdvanceTrainingTechniques` enforces at most one technique per set.
 - `RepetitionRange.Create` silently swaps min/max if max < min (doesn't throw).
