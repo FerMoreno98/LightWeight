@@ -423,6 +423,10 @@ export class TrainingApiService {
     CreateTemplateSuperSet(templateSessionId : string, templateSetIds : string[]) : Observable<{id: string}>{
         return this.http.post<{id: string}>(`${this.baseUrl}/template-session/${templateSessionId}/supersets`, { templateSetIds });
     }
+    /** New order of the planned sets of a session: every active set of the session, in order */
+    ReorderTemplateSets(templateSessionId : string, templateSetIds : string[]) : Observable<void>{
+        return this.http.put<void>(`${this.baseUrl}/template-session/${templateSessionId}/sets/order`, { templateSetIds });
+    }
     RemoveTemplateSuperSet(templateSessionId : string, superSetGroupId : string) : Observable<void>{
         return this.http.delete<void>(`${this.baseUrl}/template-session/${templateSessionId}/supersets/${superSetGroupId}`);
     }

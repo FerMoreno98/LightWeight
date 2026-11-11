@@ -289,6 +289,25 @@ export class TrainingStore{
         return this.GetSetsFromASessionTemplate(trainingTemplateId, templateSessionId);
     }
 
+    /**
+     * Changes the order of the sets of a session (drag and drop). The list is reordered at once and goes back
+     * to the previous order if the server rejects it
+     */
+    async ReorderTemplateSets(templateSessionId : string, orderedSetIds : string[]) : Promise<boolean>{
+        this._error.set(null);
+        const previous = this._sets();
+        const position = new Map(orderedSetIds.map((id, index) => [id, index]));
+        this._sets.set([...previous].sort((a, b) => (position.get(a.id) ?? 0) - (position.get(b.id) ?? 0)));
+        try{
+            await firstValueFrom(this.api.ReorderTemplateSets(templateSessionId, orderedSetIds));
+            return true;
+        }catch{
+            this._sets.set(previous);
+            this._error.set('No se ha podido cambiar el orden');
+            return false;
+        }
+    }
+
     /** Separates a superset of a session and reloads its sets */
     async RemoveTemplateSuperSet(trainingTemplateId : string, templateSessionId : string, superSetGroupId : string) : Promise<boolean>{
         this._error.set(null);

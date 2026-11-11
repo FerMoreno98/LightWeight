@@ -1,11 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
+import { CdkDrag, CdkDragDrop, CdkDragHandle, CdkDropList, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { Set } from '../../../data/training-api.service';
 import { TECHNIQUE_LABELS } from '../../shared/cycle-format';
 import { muscleGroupLabel } from '../../shared/muscle-groups';
-import { ExerciseRun, SuperSetUnit, buildUnits, groupConsecutive } from '../../shared/superset';
+import { ExerciseRun, SuperSetUnit, buildUnits, groupConsecutive, orderedSetIds } from '../../shared/superset';
 
 /** Consecutive planned sets of one exercise, with a stable key to select it */
 export interface ExerciseSetGroup extends ExerciseRun<Set> {
@@ -16,7 +17,7 @@ export interface ExerciseSetGroup extends ExerciseRun<Set> {
 @Component({
   selector: 'app-session-sets',
   standalone: true,
-  imports: [NgTemplateOutlet],
+  imports: [NgTemplateOutlet, CdkDropList, CdkDrag, CdkDragHandle],
   templateUrl: './session-sets.html',
   styleUrl: './session-sets.css',
 })
@@ -104,6 +105,29 @@ export class SessionSets {
 
   backToSessions(){
     this.router.navigate(['/training/sessiontemplate', this.TemplateId]);
+  }
+
+  // ---------------------------------------------------------------- Reorder (drag and drop)
+
+  /** True while the new order is being saved: dragging is disabled meanwhile */
+  isReordering = signal(false);
+
+  /** Stable identity of a unit for the @for, so the cards are moved instead of redrawn */
+  unitKey(unit: SuperSetUnit<ExerciseSetGroup>): string {
+    return unit.kind === 'single' ? `set-${unit.item.sets[0].id}` : `superset-${unit.groupId}`;
+  }
+
+  /** A unit (an exercise with its sets, or a whole superset) was dropped in another position */
+  async onDrop(event: CdkDragDrop<unknown>) {
+    if (event.previousIndex === event.currentIndex || !this.SessionId) return;
+    const units = [...this.units()];
+    moveItemInArray(units, event.previousIndex, event.currentIndex);
+    this.isReordering.set(true);
+    try {
+      await this.store.ReorderTemplateSets(this.SessionId, orderedSetIds(units));
+    } finally {
+      this.isReordering.set(false);
+    }
   }
 
   // ---------------------------------------------------------------- Supersets

@@ -66,3 +66,12 @@ export function supersetLetter(index: number): string {
   } while (n >= 0);
   return label;
 }
+
+/**
+ * Ids of every set in the order of the units (an exercise with its sets, or a superset with its exercises).
+ * Used after dragging a unit: its sets move together, and a superset ends up with its exercises side by side
+ */
+export function orderedSetIds<T extends { sets: { id: string }[] }>(units: SuperSetUnit<T>[]): string[] {
+  return units.flatMap(unit =>
+    unit.kind === 'single' ? unit.item.sets.map(s => s.id) : unit.items.flatMap(item => item.sets.map(s => s.id)));
+}
