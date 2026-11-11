@@ -169,10 +169,10 @@
       <div class="flex flex-wrap items-center gap-2 py-2">
         <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent">{{ i + 1 }}</span>
         <span class="rounded-lg border border-line bg-canvas px-2.5 py-1 text-xs text-soft">
-          <span class="text-subtle">Reps</span> <span class="font-semibold text-fg">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</span>
+          <span class="mr-1 text-subtle">Reps</span><span class="font-semibold text-fg">{{ set.repetitionRangeMin }}–{{ set.repetitionRangeMax }}</span>
         </span>
         <span class="rounded-lg border border-line bg-canvas px-2.5 py-1 text-xs text-soft">
-          <span class="text-subtle">RPE</span> <span class="font-semibold text-fg">{{ set.expectedRPE }}</span>
+          <span class="mr-1 text-subtle">RPE</span><span class="font-semibold text-fg">{{ set.expectedRPE }}</span>
         </span>
         @if (techniqueLabel(set); as technique) {
           <span class="rounded-full border border-warning/30 bg-warning/10 px-2.5 py-1 text-xs text-warning">{{ technique }}</span>
