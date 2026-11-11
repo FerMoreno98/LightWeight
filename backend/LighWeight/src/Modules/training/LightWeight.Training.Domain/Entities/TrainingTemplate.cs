@@ -141,19 +141,20 @@ public sealed class TrainingTemplate : Entity<Guid>
     }
 
     /// <summary>
-    /// Creates a deep copy of this template with new ids, named "{Name} (copia)".
+    /// Creates a deep copy of this template with new ids and the given name.
     /// Soft deleted sessions are not copied. Its order is assigned when it is added to the Program
     /// </summary>
-    internal TrainingTemplate Duplicate()
+    /// <param name="name">Name of the copy: "{Name} (copia)" when duplicating inside a program, the same name when copying a whole program</param>
+    internal TrainingTemplate Duplicate(string name)
     {
-        var copy = Create(CopyName(), VolumeLandmark, TrainingDistribution, DurationInDays);
+        var copy = Create(name, VolumeLandmark, TrainingDistribution, DurationInDays);
         foreach (var session in TemplateSessions)
             copy.AddSessionTemplate(session.Duplicate());
         return copy;
     }
 
     /// <summary>Name of the copy; the original name is shortened if needed so the suffix always fits</summary>
-    private string CopyName()
+    internal string CopyName()
     {
         int maxBaseLength = NameMaxLength - CopySuffix.Length;
         string baseName = Name.Length > maxBaseLength ? Name[..maxBaseLength].TrimEnd() : Name;

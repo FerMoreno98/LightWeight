@@ -32,6 +32,15 @@ public class ProgramConfiguration : IEntityTypeConfiguration<Program>
             .HasColumnType("jsonb")
             .IsRequired()
             .HasConversion(_aimMuscleGroupsConverter);
+        // Sharing: the token is unique while set (partial unique index Ux_Program_ShareToken, created in the migration)
+        builder.Property(p => p.ShareToken).HasColumnName("ShareToken").HasMaxLength(Program.ShareTokenLength);
+        builder.HasIndex(p => p.ShareToken)
+            .HasDatabaseName("Ux_Program_ShareToken")
+            .IsUnique()
+            .HasFilter("\"ShareToken\" IS NOT NULL");
+        // Origin of a copied program. No FKs: the original program (or its author) can be deleted
+        builder.Property(p => p.CopiedFromProgramId).HasColumnName("CopiedFromProgramId");
+        builder.Property(p => p.CopiedFromUserId).HasColumnName("CopiedFromUserId");
         builder.Ignore(p => p.DomainEvents);
 
         builder.HasMany(p => p.trainingTemplates)

@@ -15,6 +15,8 @@ public interface IProgramRepository
     Task<Program?> GetByTrainingTemplateIdAsync(Guid TrainingTemplateId);
     Task<Program?> GetByTemplateSessionIdAsync(Guid TemplateSessionId);
     Task<Program?> GetByTemplateSetIdAsync(Guid TemplateSetId);
+    /// <summary>Program currently shared with the given token (null if no program is shared with it)</summary>
+    Task<Program?> GetByShareTokenAsync(string ShareToken);
     /// <summary>
     /// Data of the given planned sets, <b>including the ones deleted afterwards</b>: a finished session keeps
     /// referring to the planned sets it followed even if the template is edited later

@@ -65,6 +65,12 @@ public class ProgramRepository : IProgramRepository
                     .Any(ts => ts.TemplateExercises.Any(te => te.Id == TemplateSetId))));
     }
 
+    public async Task<Program?> GetByShareTokenAsync(string ShareToken)
+    {
+        return await ProgramsWithTemplates
+            .SingleOrDefaultAsync(p => p.ShareToken == ShareToken);
+    }
+
     public async Task<List<PlannedSetData>> GetPlannedSetsIncludingDeletedAsync(IReadOnlyCollection<Guid> TemplateSetIds)
     {
         if(TemplateSetIds.Count == 0) return new();
