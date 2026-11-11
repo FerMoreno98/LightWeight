@@ -13,6 +13,11 @@ public sealed class TemplateSession : Entity<Guid>
     public bool IsDeleted { get; private set; }
     /// <summary>Date the session was soft deleted (null while active)</summary>
     public DateTime? DeletedAt { get; private set; }
+    /// <summary>
+    /// Position inside its template (1, 2...). Assigned by the template when the session is added, so the order
+    /// does not depend on the ids (several ids created in the same millisecond do not sort in creation order)
+    /// </summary>
+    public int Order { get; private set; }
 
     private TemplateSession
     (
@@ -23,8 +28,8 @@ public sealed class TemplateSession : Entity<Guid>
         Name = name;
     }
 
-    /// <summary>Planned sets for this session (soft deleted sets are excluded)</summary>
-    public IReadOnlyCollection<TemplateSet> TemplateExercises => _templateExercises.Where(s => !s.IsDeleted).ToList().AsReadOnly();
+    /// <summary>Planned sets for this session in their order (soft deleted sets are excluded)</summary>
+    public IReadOnlyCollection<TemplateSet> TemplateExercises => _templateExercises.Where(s => !s.IsDeleted).OrderBy(s => s.Order).ToList().AsReadOnly();
 
     /// <summary>Creates a new template session</summary>
     /// <param name="name">Session name</param>
@@ -42,9 +47,19 @@ public sealed class TemplateSession : Entity<Guid>
         );
     }
 
+    /// <summary>Adds a planned set at the end of the session</summary>
     public void AddSet(TemplateSet set)
     {
+        // Deleted sets count too, so an order is never reused
+        int nextOrder = _templateExercises.Count == 0 ? 1 : _templateExercises.Max(s => s.Order) + 1;
+        set.SetOrder(nextOrder);
         _templateExercises.Add(set);
+    }
+
+    /// <summary>Sets the position of the session inside its template. Only the TrainingTemplate decides it</summary>
+    internal void SetOrder(int order)
+    {
+        Order = order;
     }
 
     public Dictionary<MuscleGroups,int> GetNumberOfSeriesPerGroupPerSession()
@@ -131,7 +146,7 @@ public sealed class TemplateSession : Entity<Guid>
             set.MarkAsDeleted(now);
     }
 
-    /// <summary>Creates a copy of this session and its active sets with new ids</summary>
+    /// <summary>Creates a copy of this session and its active sets with new ids, keeping the order of the sets</summary>
     internal TemplateSession Duplicate()
     {
         var copy = Create(Name);

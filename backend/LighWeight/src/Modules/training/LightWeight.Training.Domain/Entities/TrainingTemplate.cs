@@ -44,8 +44,8 @@ public sealed class TrainingTemplate : Entity<Guid>
         DurationInDays = durationInDays;
     }
 
-    /// <summary>Sessions defined in this template (soft deleted sessions are excluded)</summary>
-    public IReadOnlyCollection<TemplateSession> TemplateSessions => _templateSessions.Where(s => !s.IsDeleted).ToList().AsReadOnly();
+    /// <summary>Sessions defined in this template in their order (soft deleted sessions are excluded)</summary>
+    public IReadOnlyCollection<TemplateSession> TemplateSessions => _templateSessions.Where(s => !s.IsDeleted).OrderBy(s => s.Order).ToList().AsReadOnly();
 
     /// <summary>Creates a new training template. Its order is assigned when it is added to a Program</summary>
     /// <param name="name">Name of the template</param>
@@ -93,8 +93,12 @@ public sealed class TrainingTemplate : Entity<Guid>
         Order = order;
     }
 
+    /// <summary>Adds a session at the end of the template</summary>
     public void AddSessionTemplate(TemplateSession session)
     {
+        // Deleted sessions count too, so an order is never reused
+        int nextOrder = _templateSessions.Count == 0 ? 1 : _templateSessions.Max(s => s.Order) + 1;
+        session.SetOrder(nextOrder);
         _templateSessions.Add(session);
     }
 

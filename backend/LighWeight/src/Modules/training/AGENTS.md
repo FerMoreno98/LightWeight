@@ -82,14 +82,14 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **DB table**: `training_Exercises` (`_aimMuscleGroups` stored as `jsonb`)
 
 ### `TemplateSession` (Entity, child of `TrainingTemplate`)
-- **Properties**: `Name`, `IsDeleted`, `DeletedAt?`
+- **Properties**: `Name`, `Order`, `IsDeleted`, `DeletedAt?`
 - Represents a planned session within a template
 - Contains a collection of `TemplateSet` (`TemplateExercises` only exposes non-deleted sets)
 - `DeleteTemplateSet(Guid templateSetId, DateTime now)`: soft deletes a set
 - **DB table**: `training_TemplateSessions` (FK → TrainingTemplate)
 
 ### `TemplateSet` (Entity, child of `TemplateSession`)
-- **Properties**: `ExerciseId`, `RepetitionRange` (ValueObject: Min/Max), `ExpectedRPE`, `AdvanceTrainingTechniques`, `SuperSetGroupId?`, `AimMuscleGroups`, `IsDeleted`, `DeletedAt?`
+- **Properties**: `ExerciseId`, `RepetitionRange` (ValueObject: Min/Max), `ExpectedRPE`, `AdvanceTrainingTechniques`, `SuperSetGroupId?`, `AimMuscleGroups`, `Order`, `IsDeleted`, `DeletedAt?`
 - Uses `RepetitionRange` (min-max) instead of a fixed rep count to allow autoregulation
 - **DB table**: `training_TemplateSets` (FK → TemplateSession, FK → Exercise; `RepetitionRange` and `AdvanceTrainingTechniques` columns embedded)
 
@@ -100,6 +100,7 @@ This module handles strength and bodybuilding training planning and logging. It 
   - **Real**: the client sends the group each set was performed in (planned, improvised in the session or none) and `TrainingSession.AssignSuperSet` regroups recorded sets. No minimum of exercises is enforced, because sets are recorded one by one.
 - **At most one advanced technique per set**: `AdvanceTrainingTechniques` enforces that only one of `IsDropSet`, `IsCluster`, or `IsMyoRep` can be `true`. Attempting to create with more than one active throws `AdvanceTrainingTechniquesExceptions`.
 - **Template vs. real sessions**: `TrainingTemplate`, `TemplateSession`, and `TemplateSet` are planning aggregates and never reference real session IDs. Real `TrainingSession` and its `Set` are created independently, possibly copying structure from a template.
+- **Sessions and planned sets are sorted by `Order`, never by id**: `TrainingTemplate.AddSessionTemplate` and `TemplateSession.AddSet` assign max + 1 (deleted items included, so an order is never reused) and the public collections return them sorted. Version 7 guids created in the same millisecond (duplicating, copying a program, several series at once) do not sort in creation order. `Order` is also the base for reordering them in the future.
 - **Templates use soft delete**: `TrainingTemplate`, `TemplateSession` and `TemplateSet` are never physically deleted. `Microcycle.TrainingTemplateId`, `TrainingSession.TemplateSessionId` and `Set.TemplateSetId` point to these inner entities of the `Program` aggregate, so a hard delete would leave dangling references in the training history.
   - Deleting goes through the parent (`Program.DeleteTrainingTemplate`, `TrainingTemplate.DeleteSessionTemplate`, `TemplateSession.DeleteTemplateSet`), which sets `IsDeleted`/`DeletedAt`. `MarkAsDeleted` is `internal` and cascades down the hierarchy.
   - **Never remove an item from the private collections** (`_trainingTemplates`, `_templateSessions`, `_templateExercises`): with the required FK + cascade configuration EF Core would physically delete the row.
@@ -132,8 +133,8 @@ This module handles strength and bodybuilding training planning and logging. It 
 | `training_Programs` | `Id` (guid PK), `UserId`, `Name` (200), `Periodization` (varchar 20), `AimMuscleGroups` (jsonb), `ShareToken?` (varchar 12, partial unique index `Ux_Program_ShareToken`), `CopiedFromProgramId?`, `CopiedFromUserId?` | — |
 | `training_UserNames` | `UserId` (guid PK), `Name` (200) — projection of userprofile | — |
 | `training_TrainingTemplates` | `Id` (guid PK), `ProgramId`, `TrainingDistribution` (varchar 20), `VolumeLandmark`, `DurationInDays`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `ProgramId` → Programs (cascade) |
-| `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200), `IsDeleted` (bool, default false), `DeletedAt?` | `TrainingTemplateId` → TrainingTemplates (cascade) |
-| `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRPE` (decimal 3,1), `SuperSetGroupId?`, `AimMuscleGroups` (jsonb), `RepetitionRange_Min`, `RepetitionRange_Max`, `AdvanceTrainingTechniques`, `IsDeleted` (bool, default false), `DeletedAt?` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
+| `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200), `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `TrainingTemplateId` → TrainingTemplates (cascade) |
+| `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRPE` (decimal 3,1), `SuperSetGroupId?`, `AimMuscleGroups` (jsonb), `RepetitionRange_Min`, `RepetitionRange_Max`, `AdvanceTrainingTechniques`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
 | `training_Exercises` | `Id` (guid PK), `Name` (200), `IsBilateral`, `AimMuscleGroups` (jsonb) | — |
 
 - **Migrations**: located in `Infrastructure/Migrations/`, naming convention `{yyyyMMddHHmm}_{Description}.cs` (soft delete columns added in `202607291213_AddSoftDeleteToTemplates`)

@@ -24,6 +24,11 @@ public sealed class TemplateSet : Entity<Guid>
     public bool IsDeleted { get; private set; }
     /// <summary>Date the set was soft deleted (null while active)</summary>
     public DateTime? DeletedAt { get; private set; }
+    /// <summary>
+    /// Position inside its session (1, 2...). Assigned by the session when the set is added, so the order
+    /// does not depend on the ids (several ids created in the same millisecond do not sort in creation order)
+    /// </summary>
+    public int Order { get; private set; }
 
     private TemplateSet
     (
@@ -87,6 +92,12 @@ public sealed class TemplateSet : Entity<Guid>
     }
 
     /// <summary>Joins the set to a superset, or takes it out with null. Only the TemplateSession calls it</summary>
+    /// <summary>Sets the position of the set inside its session. Only the TemplateSession decides it</summary>
+    internal void SetOrder(int order)
+    {
+        Order = order;
+    }
+
     internal void SetSuperSet(Guid? superSetGroupId)
     {
         SuperSetGroupId = superSetGroupId;

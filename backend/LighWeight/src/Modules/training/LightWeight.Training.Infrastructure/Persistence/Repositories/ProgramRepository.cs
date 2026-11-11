@@ -8,7 +8,8 @@ namespace LightWeight.Training.Infrastructure.Persistence.Repositories;
 /// <summary>
 /// Always loads the whole aggregate (templates, sessions and sets).
 /// Soft deleted rows are excluded by the global query filters.
-/// Sessions and sets are loaded in creation order (ids are version 7 guids, which PostgreSQL sorts by time)
+/// Sessions and sets are loaded by their Order (not by id: version 7 guids created in the same millisecond,
+/// as when duplicating or copying, do not sort in creation order)
 /// </summary>
 public class ProgramRepository : IProgramRepository
 {
@@ -22,8 +23,8 @@ public class ProgramRepository : IProgramRepository
     private IQueryable<Program> ProgramsWithTemplates =>
         _dbContext.Programs
             .Include(p => p.trainingTemplates)
-                .ThenInclude(t => t.TemplateSessions.OrderBy(ts => ts.Id))
-                    .ThenInclude(ts => ts.TemplateExercises.OrderBy(s => s.Id))
+                .ThenInclude(t => t.TemplateSessions.OrderBy(ts => ts.Order))
+                    .ThenInclude(ts => ts.TemplateExercises.OrderBy(s => s.Order))
             .AsSplitQuery();
 
     public async Task AddAsync(Program program, CancellationToken cancellationToken)
