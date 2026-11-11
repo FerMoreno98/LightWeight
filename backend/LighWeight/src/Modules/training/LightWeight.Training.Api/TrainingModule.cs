@@ -21,6 +21,7 @@ using LightWeight.Training.Application.Commands.TemplateSessions.CreateTemplateS
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSuperSets.CreateTemplateSuperSet;
 using LightWeight.Training.Application.Commands.TemplateSuperSets.RemoveTemplateSuperSet;
+using LightWeight.Training.Application.Commands.TemplateSets.ReorderTemplateSets;
 using LightWeight.Training.Application.Commands.TrainingSessions.AssignSuperSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.CreateTrainingSession;
 using LightWeight.Training.Application.Commands.TrainingSessions.DiscardTrainingSession;
@@ -75,6 +76,7 @@ public static class TrainingModule
         group.MapPost("/template-set", CreateTemplateSet).RequireAuthorization();
         group.MapPost("/template-session/{templateSessionId:guid}/supersets", CreateTemplateSuperSet).RequireAuthorization();
         group.MapDelete("/template-session/{templateSessionId:guid}/supersets/{superSetGroupId:guid}", RemoveTemplateSuperSet).RequireAuthorization();
+        group.MapPut("/template-session/{templateSessionId:guid}/sets/order", ReorderTemplateSets).RequireAuthorization();
         group.MapPost("/training-session", CreateTrainingSession).RequireAuthorization();
         group.MapGet("/training-session/workout/{templateSessionId:guid}", GetSessionWorkout).RequireAuthorization();
         group.MapGet("/training-session/previous", GetPreviousPerformance).RequireAuthorization();
@@ -515,6 +517,21 @@ public static class TrainingModule
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
         await mediator.SendAsync(new RemoveTemplateSuperSetCommand(templateSessionId, Guid.Parse(userId), superSetGroupId), ct);
+        return TypedResults.NoContent();
+    }
+
+    private static async Task<IResult> ReorderTemplateSets
+    (
+        Guid templateSessionId,
+        ReorderTemplateSetsRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(new ReorderTemplateSetsCommand(templateSessionId, Guid.Parse(userId), request.TemplateSetIds), ct);
         return TypedResults.NoContent();
     }
 

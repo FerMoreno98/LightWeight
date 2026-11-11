@@ -16,3 +16,11 @@ public sealed class SessionNotFoundDomainException : TrainingDomainException, IN
         
     }
 }
+/// <summary>A new order of the sets of a session must list every active set of the session exactly once</summary>
+public sealed class InvalidSetOrderDomainException : TrainingDomainException
+{
+    public InvalidSetOrderDomainException() : base("The new order must contain every set of the session exactly once")
+    {
+
+    }
+}

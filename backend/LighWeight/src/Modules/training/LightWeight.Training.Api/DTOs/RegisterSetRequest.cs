@@ -17,6 +17,9 @@ public sealed record AssignSuperSetRequest(List<Guid> SetIds, Guid? SuperSetGrou
 
 public sealed record CreateTemplateSuperSetRequest(List<Guid> TemplateSetIds);
 
+/// <summary>Every active planned set of the session, in the new order</summary>
+public sealed record ReorderTemplateSetsRequest(List<Guid> TemplateSetIds);
+
 public sealed record UpdateSetRequest
 (
     Guid ExerciseId,

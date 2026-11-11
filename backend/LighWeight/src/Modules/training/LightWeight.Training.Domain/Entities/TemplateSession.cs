@@ -56,6 +56,25 @@ public sealed class TemplateSession : Entity<Guid>
         _templateExercises.Add(set);
     }
 
+    /// <summary>
+    /// Changes the order of the planned sets of this session (e.g. dragging an exercise or a superset).
+    /// Supersets are kept: they are identified by their SuperSetGroupId, not by being next to each other.
+    /// Deleted sets keep their old order, which is harmless: they are never shown and new sets go after all of them
+    /// </summary>
+    /// <param name="templateSetIds">Every active set of this session exactly once, in the new order</param>
+    public void ReorderSets(IReadOnlyList<Guid> templateSetIds)
+    {
+        IReadOnlyCollection<TemplateSet> active = TemplateExercises;
+        if (templateSetIds.Count != active.Count || templateSetIds.Distinct().Count() != templateSetIds.Count)
+            throw new InvalidSetOrderDomainException();
+        Dictionary<Guid, TemplateSet> byId = active.ToDictionary(s => s.Id);
+        if (templateSetIds.Any(id => !byId.ContainsKey(id)))
+            throw new InvalidSetOrderDomainException();
+
+        for (int i = 0; i < templateSetIds.Count; i++)
+            byId[templateSetIds[i]].SetOrder(i + 1);
+    }
+
     /// <summary>Sets the position of the session inside its template. Only the TrainingTemplate decides it</summary>
     internal void SetOrder(int order)
     {

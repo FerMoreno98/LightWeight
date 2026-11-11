@@ -18,6 +18,7 @@ using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateS
 using LightWeight.Training.Application.Commands.TemplateSets.CreateTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSets.DeleteTemplateSet;
 using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
+using LightWeight.Training.Application.Commands.TemplateSets.ReorderTemplateSets;
 using LightWeight.Training.Application.Commands.TemplateSuperSets.CreateTemplateSuperSet;
 using LightWeight.Training.Application.Commands.TemplateSuperSets.RemoveTemplateSuperSet;
 using LightWeight.Training.Application.Commands.TrainingSessions.AssignSuperSet;
@@ -103,6 +104,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DuplicateTrainingTemplateCommand, Guid>,DuplicateTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<RenameTrainingTemplateCommand>,RenameTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTemplateSetCommand>,UpdateTemplateSetCommandHandler>();
+        services.AddScoped<ICommandHandler<ReorderTemplateSetsCommand>,ReorderTemplateSetsCommandHandler>();
 
         // Domain events -> integration events. They are dispatched by the module's UnitOfWork after saving
         services.AddScoped<TrainingSessionEventFactory>();
