@@ -20,7 +20,7 @@ This module manages the user's static personal data (name, sex, date of birth). 
 
 - **Profile is independent of Auth registration**: the `UserCreatedIntegrationEvent` handler is a no-op. The profile is created only when the user submits the onboarding (`POST /complete`).
 - **The front decides the onboarding with `GET /api/user-profile`**: 404 means "not completed yet". The guards of the front (`Modules/UserProfile/profile.guards.ts`) send the user to `/onboarding` until it is completed.
-- **Published as a "Recorded" event**: both domain events become `ProfileRecordedIntegrationEvent(UserId, Sex, OccurredAtUtc)` (`userprofile.profile.recorded.v1`), with the current value, so consumers just upsert. `Modify` raises it even if the sex did not change: repeating it is harmless.
+- **Published as a "Recorded" event**: both domain events become `ProfileRecordedIntegrationEvent(UserId, Name, Sex, OccurredAtUtc)` (`userprofile.profile.recorded.v1`), with the current value, so consumers just upsert. `Modify` raises it even if nothing changed: repeating it is harmless.
 - **Answers the dashboard rebuild**: `RebuildRequestedIntegrationEventHandler` publishes the profile again (nothing if the user has no profile).
 - **Enums stored as strings**: `Sex` is varchar(20). Parsing is case-insensitive.
 - **UserId comes from the JWT claim `ClaimTypes.NameIdentifier`**. The request DTOs do not carry it.
@@ -83,7 +83,7 @@ All endpoints require JWT authorization.
 
 - **Depends on**: `LightWeight.Shared` (building blocks, mediator, messaging, contracts).
 - **Integration events it listens to**: `auth.user.created.v1` (no-op), `dashboard.rebuild.requested.v1` (publishes the profile again).
-- **Integration events it publishes**: `userprofile.profile.recorded.v1` (consumed by the dashboard).
+- **Integration events it publishes**: `userprofile.profile.recorded.v1` (consumed by the dashboard and training).
 - **Shared services** (`IMediator`, `IEventPublisher`, validation pipeline) are registered with `TryAdd`/existence checks.
 
 ## 8. Current state

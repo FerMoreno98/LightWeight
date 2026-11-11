@@ -33,7 +33,7 @@ Does **not** handle authentication, device data, time-varying metrics (weight, b
 |-------|------|--------------------|
 | `auth.user.created.v1` | Listened | No-op: the profile is not auto-created |
 | `dashboard.rebuild.requested.v1` | Listened | Publishes `userprofile.profile.recorded.v1` again |
-| `userprofile.profile.recorded.v1` (`UserId`, `Sex`, `OccurredAtUtc`) | Published on complete, modify and rebuild | Dashboard (fat percentage) |
+| `userprofile.profile.recorded.v1` (`UserId`, `Name`, `Sex`, `OccurredAtUtc`) | Published on complete, modify and rebuild | Dashboard (fat percentage), Training (author name of shared programs) |
 
 ## Endpoints
 

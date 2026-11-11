@@ -19,7 +19,7 @@ public class UserProfileProjectionTests
     public async Task ProfileRecorded_StoresTheSex()
     {
         // Act
-        await new UserProfileProjector(_store).HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Female", Now));
+        await new UserProfileProjector(_store).HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Fernando", "Female", Now));
         // Assert
         UserProfileProjection row = Assert.Single(_store.Profiles.Values);
         Assert.Equal(_userId, row.UserId);
@@ -31,8 +31,8 @@ public class UserProfileProjectionTests
     {
         var projector = new UserProfileProjector(_store);
         // Act
-        await projector.HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Female", Now));
-        await projector.HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Male", Now.AddDays(1)));
+        await projector.HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Fernando", "Female", Now));
+        await projector.HandleAsync(new ProfileRecordedIntegrationEvent(_userId, "Fernando", "Male", Now.AddDays(1)));
         // Assert
         UserProfileProjection row = Assert.Single(_store.Profiles.Values);
         Assert.Equal("Male", row.Sex);

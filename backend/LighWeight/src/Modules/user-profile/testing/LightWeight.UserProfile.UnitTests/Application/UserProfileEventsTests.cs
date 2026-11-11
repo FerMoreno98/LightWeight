@@ -27,25 +27,25 @@ public class UserProfileEventsTests
     }
 
     [Fact]
-    public async Task Completed_PublishesProfileRecordedWithTheSex()
+    public async Task Completed_PublishesProfileRecordedWithTheNameAndSex()
     {
         var handler = new UserProfileDomainEventsHandler(_publisher);
 
-        await handler.HandleAsync(new UserCompletedDomainEvent(UserId, Sex.Female, Now));
+        await handler.HandleAsync(new UserCompletedDomainEvent(UserId, "Fernando", Sex.Female, Now));
 
         await _publisher.Received(1).PublishAsync(
-            new ProfileRecordedIntegrationEvent(UserId, "Female", Now), Arg.Any<CancellationToken>());
+            new ProfileRecordedIntegrationEvent(UserId, "Fernando", "Female", Now), Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Modified_PublishesProfileRecordedWithTheSex()
+    public async Task Modified_PublishesProfileRecordedWithTheNameAndSex()
     {
         var handler = new UserProfileDomainEventsHandler(_publisher);
 
-        await handler.HandleAsync(new UserProfileModifiedDomainEvent(UserId, Sex.Male, Now));
+        await handler.HandleAsync(new UserProfileModifiedDomainEvent(UserId, "Fernando", Sex.Male, Now));
 
         await _publisher.Received(1).PublishAsync(
-            new ProfileRecordedIntegrationEvent(UserId, "Male", Now), Arg.Any<CancellationToken>());
+            new ProfileRecordedIntegrationEvent(UserId, "Fernando", "Male", Now), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -58,7 +58,7 @@ public class UserProfileEventsTests
         await handler.HandleAsync(new RebuildRequestedIntegrationEvent(UserId, Now));
 
         await _publisher.Received(1).PublishAsync(
-            new ProfileRecordedIntegrationEvent(UserId, "Female", Now), Arg.Any<CancellationToken>());
+            new ProfileRecordedIntegrationEvent(UserId, "Fernando", "Female", Now), Arg.Any<CancellationToken>());
     }
 
     [Fact]

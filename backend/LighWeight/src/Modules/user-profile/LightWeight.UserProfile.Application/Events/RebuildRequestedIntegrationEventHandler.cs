@@ -29,6 +29,6 @@ public sealed class RebuildRequestedIntegrationEventHandler : IIntegrationEventH
         if (user is null)
             return;
 
-        await _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(user.Id, user.Sex.ToString(), _clock.UtcNow), ct);
+        await _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(user.Id, user.Name, user.Sex.ToString(), _clock.UtcNow), ct);
     }
 }

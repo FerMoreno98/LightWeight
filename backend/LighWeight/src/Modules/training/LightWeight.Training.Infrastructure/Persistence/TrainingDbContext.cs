@@ -1,5 +1,6 @@
 namespace LightWeight.Training.Infrastructure.Persistence;
 
+using LightWeight.Training.Application.Projections.UserNames;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ public class TrainingDbContext(DbContextOptions<TrainingDbContext> options) : Db
     public DbSet<Program> Programs => Set<Program>();
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<TrainingSession> TrainingSessions => Set<TrainingSession>();
+    public DbSet<UserNameProjection> UserNames => Set<UserNameProjection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

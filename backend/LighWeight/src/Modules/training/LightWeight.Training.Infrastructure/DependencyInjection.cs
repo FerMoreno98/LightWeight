@@ -4,6 +4,7 @@ using LightWeight.shared.Messaging;
 using LightWeight.shared.Migrations;
 using LightWeight.shared.Types;
 using LightWeight.Training.Application;
+using LightWeight.Training.Application.Projections.UserNames;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 using LightWeight.Training.Infrastructure.Persistence;
@@ -46,6 +47,7 @@ public static class DependencyInjection
         services.AddScoped<IProgramRepository,ProgramRepository>();
         services.AddScoped<IExerciseRepository,ExerciseRepository>();
         services.AddScoped<ITrainingSessionRepository,TrainingSessionRepository>();
+        services.AddScoped<IUserNameProjectionStore,UserNameProjectionStore>();
         services.AddScoped<IEventDispatcher, EventDispatcher>();
         services.AddSingleton<IClock, SystemClock>();
 

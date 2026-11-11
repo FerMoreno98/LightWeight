@@ -15,8 +15,8 @@ public sealed class UserProfileDomainEventsHandler :
         => _publisher = publisher;
 
     public Task HandleAsync(UserCompletedDomainEvent @event, CancellationToken ct = default)
-        => _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(@event.UserId, @event.Sex.ToString(), @event.OccurredAtUtc), ct);
+        => _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(@event.UserId, @event.Name, @event.Sex.ToString(), @event.OccurredAtUtc), ct);
 
     public Task HandleAsync(UserProfileModifiedDomainEvent @event, CancellationToken ct = default)
-        => _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(@event.UserId, @event.Sex.ToString(), @event.OccurredAtUtc), ct);
+        => _publisher.PublishAsync(new ProfileRecordedIntegrationEvent(@event.UserId, @event.Name, @event.Sex.ToString(), @event.OccurredAtUtc), ct);
 }

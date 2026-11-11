@@ -43,6 +43,7 @@ using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Application.Events;
 using LightWeight.Training.Domain.Events;
 using LightWeight.shared.Contracts.Dashboard;
+using LightWeight.shared.Contracts.UserProfile;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace LightWeight.Training.Application;
@@ -100,6 +101,7 @@ public static class DependencyInjection
         services.AddScoped<IDomainEventHandler<TrainingSessionFinishedDomainEvent>, TrainingSessionDomainEventsHandler>();
         // The dashboard asks to publish again the finished sessions of a user when it rebuilds its projections
         services.AddScoped<IIntegrationEventHandler<RebuildRequestedIntegrationEvent>, RebuildRequestedIntegrationEventHandler>();
+        services.AddScoped<IIntegrationEventHandler<ProfileRecordedIntegrationEvent>, UserProfileProjector>();
         return services;
     }
 }

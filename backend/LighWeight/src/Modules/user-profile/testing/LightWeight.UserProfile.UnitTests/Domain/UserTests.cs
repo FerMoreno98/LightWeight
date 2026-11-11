@@ -164,6 +164,6 @@ public class UserTests
         user.Modify("Fernando", Sex.Female, new DateTime(1990, 1, 1, 0, 0, 0, DateTimeKind.Utc), later);
 
         var domainEvent = Assert.Single(user.DomainEvents.OfType<UserProfileModifiedDomainEvent>());
-        Assert.Equal(new UserProfileModifiedDomainEvent(FixedUserId, Sex.Female, later), domainEvent);
+        Assert.Equal(new UserProfileModifiedDomainEvent(FixedUserId, "Fernando", Sex.Female, later), domainEvent);
     }
 }

@@ -3,4 +3,4 @@ using LightWeight.UserProfile.Domain.Enum;
 
 namespace LightWeight.UserProfile.Domain.Events;
 
-public sealed record UserCompletedDomainEvent(Guid UserId, Sex Sex, DateTime OccurredAtUtc) : IDomainEvent;
+public sealed record UserCompletedDomainEvent(Guid UserId, string Name, Sex Sex, DateTime OccurredAtUtc) : IDomainEvent;
