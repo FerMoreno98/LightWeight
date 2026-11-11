@@ -38,12 +38,18 @@ public sealed record VerifyOtpCodeCommandHandler : ICommandHandler<VerifyOtpCode
         // pillo el user, que tiene que existir si o si por que debe venir del paso previo (SendOtpCode)
         User? user = await _userRepository.FindByEmailAsync(command.Email) ?? throw new UserNotFoundException();
         // pillo el code que no este usado y que no haya expirado si no hay code, lanzo excepcion de application
+        // A code with too many failed attempts no longer counts: a new one has to be requested
         OtpCode? code = user.OtpCodes.
-        SingleOrDefault(c => c.UsedAt == null && c.ExpiresAt > _clock.UtcNow) ?? throw new InvalidOtpCodeException();
+        SingleOrDefault(c => c.CanBeVerified(_clock.UtcNow)) ?? throw new InvalidOtpCodeException();
 
         // Valido que el code que me pasan es correcto
         if (!_hashService.Verify(command.Code, code.Hash))
+        {
+            // Saved before throwing: the count is what stops guessing the code
+            code.RegisterFailedAttempt();
+            await _uow.SaveChangesAsync(ct);
             throw new InvalidOtpCodeException();
+        }
         // Si es valido lo marco como usado
         code.MarkAsUsed(_clock.UtcNow);
         DeviceToken device = user.RegisterDevice

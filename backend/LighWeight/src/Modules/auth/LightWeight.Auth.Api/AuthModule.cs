@@ -1,5 +1,6 @@
 
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 using LightWeight.Auth.Api.DTOs;
 using LightWeight.Auth.Application.Commands.LoginOtp.SendOtpCode;
 using LightWeight.Auth.Application.Commands.LoginOtp.VerifyOtpCode;
@@ -20,13 +21,43 @@ public static class AuthModule
     {
         var group = app.MapGroup("/api/auth");
 
-        group.MapPost("/otp/send",    SendOtpCode);
-        group.MapPost("/otp/verify",  VerifyOtpCode);
+        group.MapPost("/otp/send",    SendOtpCode).RequireRateLimiting(OtpSendPolicy);
+        group.MapPost("/otp/verify",  VerifyOtpCode).RequireRateLimiting(OtpVerifyPolicy);
         group.MapPost("/refresh",     RefreshTokenLogin);
         group.MapPost("/logout",      Logout).RequireAuthorization();
 
         return app;
     }
+    private const string OtpSendPolicy = "auth-otp-send";
+    private const string OtpVerifyPolicy = "auth-otp-verify";
+
+    /// <summary>
+    /// Limits per IP on the OTP endpoints: sending stops the API from being used to flood inboxes,
+    /// verifying stops guessing codes (on top of OtpCode.MaxFailedAttempts). Over the limit: 429.
+    /// The IP is the real one only with UseForwardedHeaders behind the proxy; otherwise every user
+    /// would share the proxy's IP and its limit
+    /// </summary>
+    public static IServiceCollection AddAuthRateLimiting(this IServiceCollection services)
+    {
+        services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy(OtpSendPolicy, httpContext => PerIp(httpContext, permitLimit: 5));
+            options.AddPolicy(OtpVerifyPolicy, httpContext => PerIp(httpContext, permitLimit: 10));
+        });
+        return services;
+    }
+
+    private static RateLimitPartition<string> PerIp(HttpContext httpContext, int permitLimit) =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = permitLimit,
+                Window = TimeSpan.FromMinutes(10),
+                QueueLimit = 0,
+            });
+
     private const string RefreshCookieName = "refresh_token";
 
     private static CookieOptions RefreshCookieOptions(HttpContext httpContext) => new()

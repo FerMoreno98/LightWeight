@@ -1,0 +1,93 @@
+# Production. On the server, next to this file: deploy/Caddyfile and .env (see .env.example)
+#   docker compose -f docker-compose.prod.yaml up -d
+# Only Caddy is reachable from the internet (80/443). The API, the web and Postgres stay inside
+# the compose network.
+#
+# Images: built by GitHub Actions and pulled from ghcr.io (docker compose pull). Without the
+# pipeline they can still be built on the server with "up -d --build", but it needs ~2 GB of RAM.
+
+services:
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      - DOMAIN=${DOMAIN:?Define DOMAIN en el archivo .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The certificates: without the volume Let's Encrypt would be asked again on every restart
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - front
+
+  api:
+    image: ghcr.io/fermoreno98/lightweight-api:${IMAGE_TAG:-latest}
+    build:
+      context: ./backend/LighWeight
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__defaultConnection=Host=db;Port=5432;Username=postgres;Database=lightweight;Password=${POSTGRES_PASSWORD}
+      # Same domain as the web: CORS is not needed, but the API requires the setting
+      - Cors__AllowedOrigins__0=https://${DOMAIN}
+      # Caddy's real IP is trusted only from this network (fixed below)
+      - ForwardedHeaders__KnownNetworks__0=172.30.0.0/24
+      - Smtp__Host=${SMTP_HOST:?Define SMTP_HOST en el archivo .env}
+      - Smtp__Port=${SMTP_PORT:-587}
+      - Smtp__EnableSsl=true
+      - Smtp__Username=${SMTP_USERNAME:?Define SMTP_USERNAME en el archivo .env}
+      - Smtp__Password=${SMTP_PASSWORD:?Define SMTP_PASSWORD en el archivo .env}
+      - Smtp__From=${SMTP_FROM:-${SMTP_USERNAME}}
+      - Jwt__Secret=${JWT_SECRET:?Define JWT_SECRET en el archivo .env}
+      - Jwt__Issuer=LightWeight.Api
+      - Jwt__Audience=LightWeight
+      - Jwt__AccessTokenExpirationMinutes=15
+      # Auth__RefreshCookie__Secure is not set: true by default (HTTPS through Caddy)
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - api-logs:/app/logs
+
+  front:
+    image: ghcr.io/fermoreno98/lightweight-front:${IMAGE_TAG:-latest}
+    build:
+      context: ./frontend/LightWeight
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en el archivo .env}
+      - POSTGRES_DB=lightweight
+    # Only from the server itself (DBeaver through an SSH tunnel), never from the internet
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  postgres-data:
+  api-logs:
+  caddy-data:
+  caddy-config:

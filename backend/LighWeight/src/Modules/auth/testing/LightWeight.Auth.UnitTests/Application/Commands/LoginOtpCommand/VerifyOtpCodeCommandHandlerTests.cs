@@ -249,4 +249,35 @@ public class VerifyOtpCodeCommandHandlerTests
 
         _ = _clock.Received().UtcNow;
     }
+
+    // ─── Failed attempts ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task HandleAsync_WrongCode_CountsTheAttemptAndSavesIt()
+    {
+        var user = BuildUserWithValidOtp();
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<InvalidOtpCodeException>(
+            () => handler.HandleAsync(BuildCommand(code: "wrong")));
+
+        Assert.Equal(1, user.OtpCodes.Single().FailedAttempts);
+        await _uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_AfterTooManyFailedAttempts_RejectsEvenTheRightCode()
+    {
+        var user = BuildUserWithValidOtp();
+        for (int i = 0; i < OtpCode.MaxFailedAttempts; i++) user.OtpCodes.Single().RegisterFailedAttempt();
+        _userRepository.FindByEmailAsync("user@example.com").Returns(user);
+        var handler = BuildHandler();
+
+        await Assert.ThrowsAsync<InvalidOtpCodeException>(
+            () => handler.HandleAsync(BuildCommand()));
+
+        Assert.False(user.OtpCodes.Single().IsAlreadyUsed());
+        Assert.Empty(user.DeviceTokens);
+    }
 }

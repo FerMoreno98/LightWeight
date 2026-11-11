@@ -17,6 +17,42 @@ Decisiones y problemas conocidos que hemos dejado para más adelante. Cada entra
 - **Por qué se dejó:** no rompe nada, y solo duplica trabajo.
 - **Cuándo retomarla:** junto a la separación de Shared, o al añadir el próximo módulo.
 
+## Autenticación
+
+### La detección de robo del refresh token no hace nada
+
+- **Qué pasa:** `DeviceToken.ValidateRefreshToken` lanza `StolenRefreshTokenException` cuando llega un token que ya se revocó y se reemplazó. Esto indica que alguien está reutilizando un token viejo. Nadie captura la excepción para revocar las sesiones del usuario: llega al `GlobalExceptionHandler` como `BusinessException` y se responde un 400.
+- **Cuándo retomarla:** a la vez que la revocación por dispositivo y la carrera entre pestañas, porque están relacionadas.
+- **Solución prevista:** al detectarla, revocar todos los refresh tokens activos del usuario, o al menos los del dispositivo. Antes hay que resolver la carrera entre pestañas; si no, un uso normal cerraría todas las sesiones.
+
+### `DeviceToken.RevokedAt` e `IsActive` no se usan
+
+- **Qué pasa:** ningún código modifica `RevokedAt` ni comprueba `IsActive` al refrescar. No se puede cerrar la sesión de un dispositivo concreto ni la de todos.
+- **Cuándo retomarla:** cuando se quiera una pantalla de "dispositivos conectados" o un "cerrar todas las sesiones".
+- **Solución prevista:** un método `User.RevokeDevice` / `RevokeAllDevices` que revoque el dispositivo y sus refresh tokens, y que `ValidateRefreshToken` rechace los tokens de dispositivos inactivos.
+
+### Carrera de refresh entre pestañas
+
+- **Qué pasa:** el access token vive en memoria y la cookie se comparte entre pestañas. Si dos pestañas recargan a la vez, las dos llaman a `/api/auth/refresh` con el mismo token. La primera lo rota y la segunda envía un token ya reemplazado, que salta como robo, y esa pestaña pierde la sesión.
+- **Cuándo retomarla:** antes de implementar la reacción al robo.
+- **Solución prevista:** en el front, una sola pestaña hace el refresh (Web Locks o `BroadcastChannel`) y comparte el token con las demás. En el backend, aceptar el token anterior durante unos segundos después de rotarlo.
+
+### Los errores de refresh devuelven 400 o 404
+
+- **Qué pasa:** un refresh token inválido, revocado o caducado responde 400, y un usuario o dispositivo inexistente responde 404. Lo correcto sería 401. El front trata cualquier error como sesión perdida, así que hoy no rompe nada.
+- **Cuándo retomarla:** cuando haya otro cliente (app nativa) o al tocar el manejo de errores de auth.
+
+### El dispositivo no se actualiza y puede quedar huérfano
+
+- **Qué pasa:** si el dispositivo ya existe, `User.RegisterDevice` solo actualiza `LastSeenAt`; `DeviceName` y `Platform` se quedan con los valores del primer login. Si el usuario borra el `localStorage`, se genera otro `device_id` y el `DeviceToken` antiguo se queda con su refresh token hasta que caduque.
+- **Cuándo retomarla:** con la pantalla de dispositivos conectados.
+
+### El access token sigue siendo válido tras el logout
+
+- **Qué pasa:** el logout solo revoca el refresh token. El JWT sigue siendo válido hasta que caduca (15 minutos en Development).
+- **Por qué se dejó:** es lo habitual con access tokens cortos; revocarlos exigiría una lista negra.
+- **Cuándo retomarla:** solo si se necesita revocación inmediata.
+
 ## Dashboard
 
 ### El rebuild reclasifica el histórico

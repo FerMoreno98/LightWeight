@@ -2,6 +2,11 @@ import { inject, Injectable, signal } from "@angular/core";
 import { AuthApiService } from "../data/auth-api.service";
 import { firstValueFrom } from "rxjs";
 import { TokenStorageService } from "../../../Core/Auth/token-storage.service";
+import { HttpErrorResponse } from "@angular/common/http";
+
+// The API limits the code requests and checks per IP and answers 429 when they are exceeded
+const TOO_MANY_ATTEMPTS = 'Demasiados intentos. Espera unos minutos y vuelve a probar';
+const tooManyAttempts = (error: unknown) => error instanceof HttpErrorResponse && error.status === 429;
 
 @Injectable({ providedIn: 'root' })
 export class AuthStore {
@@ -22,8 +27,8 @@ export class AuthStore {
     try {
       await firstValueFrom(this.api.requestOtp(email));
       return true;
-    } catch {
-      this._error.set('No se ha podido enviar el código');
+    } catch (error) {
+      this._error.set(tooManyAttempts(error) ? TOO_MANY_ATTEMPTS : 'No se ha podido enviar el código');
       return false;
     } finally {
       this._isLoading.set(false);
@@ -37,8 +42,8 @@ export class AuthStore {
       const accessToken = await firstValueFrom(this.api.verifyOtp(code, DeviceIdentifier,DeviceName,Platform,email));
       this.tokenStorage.setAccessToken(accessToken);
       return true;
-    } catch {
-      this._error.set('Código incorrecto');
+    } catch (error) {
+      this._error.set(tooManyAttempts(error) ? TOO_MANY_ATTEMPTS : 'Código incorrecto');
       return false;
     } finally {
       this._isLoading.set(false);

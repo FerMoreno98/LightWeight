@@ -1,0 +1,23 @@
+# Entry point in production. Caddy gets and renews the Let's Encrypt certificate for DOMAIN
+# by itself, and redirects http to https. DOMAIN comes from .env (docker-compose.prod.yaml)
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# The API. Caddy adds X-Forwarded-For / X-Forwarded-Proto with the user's IP and https
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	# Everything else is the web (nginx with the Angular build)
+	handle {
+		reverse_proxy front:80
+	}
+}

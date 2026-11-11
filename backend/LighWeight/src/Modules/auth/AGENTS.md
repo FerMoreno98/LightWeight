@@ -10,6 +10,7 @@ This module handles user identity and authentication via an OTP-only flow (no pa
 - **Invariants**:
   - Email must be unique across the system
   - A User can only have one active OtpCode at a time (pending OTPs are invalidated before creating a new one)
+  - An OtpCode allows `OtpCode.MaxFailedAttempts` (5) wrong guesses; each one is saved before answering, then the code can no longer be verified and a new one must be requested
   - A DeviceToken's DeviceIdentifier must be unique per User
   - A DeviceToken can only have one active (non-revoked, non-replaced) RefreshToken at a time
 - **Child entities**: `DeviceToken`, `OtpCode`, `RefreshToken`
@@ -125,6 +126,7 @@ auth/
 - EF Core persistence with domain event dispatch via UnitOfWork
 - JWT token generation (HMAC-SHA256, configurable TTL)
 - Email sending via SMTP, configured by the `Smtp` section (`SmtpOptions`): `Host`, `Port`, `EnableSsl`, `Username`, `Password`, `From`, `FromName`. Development: mailpit (`mailpit:1025` in docker, no SSL, no account). Production: Gmail (`smtp.gmail.com:587`, `EnableSsl=true`, the Gmail address as `Username` and `From`, an app password as `Password`; see `.env.example`). Only the environment variables change, never the code. Without `Username` it sends without logging in
+- Rate limiting per IP on `/otp/send` (5 per 10 min) and `/otp/verify` (10 per 10 min), 429 over the limit (`AuthModule.AddAuthRateLimiting`). Behind the proxy the IP is the user's thanks to `UseForwardedHeaders` (`ForwardedHeaders:KnownNetworks`)
 - OTP email: `OtpEmail` (Application) builds the subject (with the code), the HTML (tables and inline styles, dark like the app, no images nor web fonts) and the plain text version; both are sent. The code is generated with `RandomNumberGenerator` and lasts `OtpCode.DefaultTtlMinutes`
 
 **Pending / in progress:**

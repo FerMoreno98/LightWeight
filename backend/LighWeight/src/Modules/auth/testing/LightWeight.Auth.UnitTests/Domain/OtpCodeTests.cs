@@ -140,4 +140,44 @@ public class OtpCodeTests
 
         Assert.NotNull(otp.UsedAt);
     }
+
+    // ─── Failed attempts ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Create_StartsWithoutFailedAttempts()
+    {
+        var otp = BuildValidOtpCode();
+
+        Assert.Equal(0, otp.FailedAttempts);
+        Assert.True(otp.CanBeVerified(FixedNow));
+    }
+
+    [Fact]
+    public void CanBeVerified_BelowTheLimit_IsTrue()
+    {
+        var otp = BuildValidOtpCode();
+        for (int i = 0; i < OtpCode.MaxFailedAttempts - 1; i++) otp.RegisterFailedAttempt();
+
+        Assert.True(otp.CanBeVerified(FixedNow));
+    }
+
+    [Fact]
+    public void CanBeVerified_AtTheLimit_IsFalse()
+    {
+        var otp = BuildValidOtpCode();
+        for (int i = 0; i < OtpCode.MaxFailedAttempts; i++) otp.RegisterFailedAttempt();
+
+        Assert.True(otp.HasTooManyFailedAttempts());
+        Assert.False(otp.CanBeVerified(FixedNow));
+    }
+
+    [Fact]
+    public void CanBeVerified_UsedOrExpired_IsFalse()
+    {
+        var used = BuildValidOtpCode();
+        used.MarkAsUsed(FixedNow);
+
+        Assert.False(used.CanBeVerified(FixedNow));
+        Assert.False(BuildValidOtpCode().CanBeVerified(FixedNow.AddMinutes(OtpCode.DefaultTtlMinutes + 1)));
+    }
 }

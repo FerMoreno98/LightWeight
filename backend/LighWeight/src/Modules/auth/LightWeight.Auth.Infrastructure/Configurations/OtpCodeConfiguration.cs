@@ -16,6 +16,7 @@ public class OtpCodeConfiguration : IEntityTypeConfiguration<OtpCode>
         builder.Property(o => o.CreatedAt).HasColumnName("CreatedAt");
         builder.Property(o => o.ExpiresAt).HasColumnName("ExpiresAt");
         builder.Property(o => o.UsedAt).HasColumnName("UsedAt");
+        builder.Property(o => o.FailedAttempts).HasColumnName("FailedAttempts");
         builder.Property(x => x.Id)
     .ValueGeneratedNever(); // Cuando generas el id en el codigo, si no pones esto en muchas ocasiones EFCore se lia y piensa que la entidad existe
 
