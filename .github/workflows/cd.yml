@@ -1,0 +1,128 @@
+# CD: when CI passes on main, build the images, push them to ghcr.io and deploy them to the VPS.
+#
+#   CI (tests) ──ok──► build: api + front images ──► ghcr.io/fermoreno98/lightweight-{api,front}:<sha>
+#                                                   └► deploy: ssh to the VPS ──► deploy/deploy.sh <sha>
+#
+# - Each image is tagged with the commit SHA (and "latest"). Going back to an older version is
+#   running this workflow by hand (Actions → CD → Run workflow) with the SHA to deploy.
+# - The deploy job is skipped until the repository variable DEPLOY_HOST exists, so the images are
+#   published from now on even without a server.
+# - The SSH key can only run deploy/deploy.sh on the server (forced command in authorized_keys):
+#   if it leaks, it can redeploy a commit of this repo, nothing else.
+#
+# Configuration (Settings → Secrets and variables → Actions, environment "production"):
+#   variables: DEPLOY_HOST (IP of the VPS), DEPLOY_USER (fer), DEPLOY_KNOWN_HOSTS (ssh-keyscan of the VPS)
+#   secret:    DEPLOY_SSH_KEY (private key of the deploy key)
+#
+# Actions are pinned by commit SHA, as in ci.yml. Only official actions: the images are built
+# and pushed with the docker CLI that the runner already has.
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit to deploy (40 characters). Empty: build and deploy the latest commit of main"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# One deploy at a time, in order. A deploy in progress is never cancelled halfway
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and push images
+    # Only after a green CI on a push to main (not on PRs), or by hand without a SHA
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.sha == '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      sha: ${{ steps.vars.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The commit CI tested, not whatever main points to now
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Variables
+        id: vars
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # ghcr.io only accepts lowercase names
+          echo "registry=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to ghcr.io
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      # The previous "latest" image is used as cache (inline cache): if only the front changes,
+      # the API layers are reused and the build is much faster
+      - name: Build and push API
+        run: |
+          image="${{ steps.vars.outputs.registry }}/lightweight-api"
+          docker buildx build backend/LighWeight \
+            --cache-from "type=registry,ref=$image:latest" \
+            --cache-to type=inline \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=${{ steps.vars.outputs.sha }}" \
+            -t "$image:${{ steps.vars.outputs.sha }}" \
+            -t "$image:latest" \
+            --push
+
+      - name: Build and push front
+        run: |
+          image="${{ steps.vars.outputs.registry }}/lightweight-front"
+          docker buildx build frontend/LightWeight \
+            --cache-from "type=registry,ref=$image:latest" \
+            --cache-to type=inline \
+            --label "org.opencontainers.image.source=https://github.com/${{ github.repository }}" \
+            --label "org.opencontainers.image.revision=${{ steps.vars.outputs.sha }}" \
+            -t "$image:${{ steps.vars.outputs.sha }}" \
+            -t "$image:latest" \
+            --push
+
+  deploy:
+    name: Deploy to the VPS
+    needs: build
+    # Runs after a build, or alone when a SHA is given by hand (rollback: the images already exist)
+    if: >-
+      always() && vars.DEPLOY_HOST != '' &&
+      (needs.build.result == 'success' ||
+       (needs.build.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.sha != ''))
+    runs-on: ubuntu-latest
+    # The environment holds the variables and the secret. In its settings you can also require
+    # a manual approval before each deploy
+    environment: production
+    steps:
+      - name: Deploy over SSH
+        env:
+          SHA: ${{ needs.build.outputs.sha || inputs.sha }}
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ vars.DEPLOY_HOST }}
+          USER: ${{ vars.DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid SHA: '$SHA'"; exit 1; }
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          # The server's fingerprint is fixed: if someone impersonates the VPS, ssh refuses
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The server ignores the command and runs deploy/deploy.sh; the SHA arrives as its argument
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            "$USER@$HOST" "$SHA"

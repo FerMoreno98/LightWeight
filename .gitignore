@@ -4,5 +4,9 @@
 # Apuntes personales
 APUNTES-eventos.md
 
-# Bitácora local del despliegue (no se sube)
+# Bitácora y guía del servidor, locales (no se suben)
 Doc/Deployment.md
+Doc/ServerSetup.md
+
+# Copias de la BD que hace deploy/deploy.sh antes de cada despliegue (en el servidor)
+backups/
