@@ -5,8 +5,8 @@
 #
 # - Each image is tagged with the commit SHA (and "latest"). Going back to an older version is
 #   running this workflow by hand (Actions → CD → Run workflow) with the SHA to deploy.
-# - The deploy job is skipped until the repository variable DEPLOY_HOST exists, so the images are
-#   published from now on even without a server.
+# - The deploy step does nothing while the environment has no DEPLOY_HOST, so the images can be
+#   published even without a server.
 # - The SSH key can only run deploy/deploy.sh on the server (forced command in authorized_keys):
 #   if it leaks, it can redeploy a commit of this repo, nothing else.
 #
@@ -98,9 +98,11 @@ jobs:
   deploy:
     name: Deploy to the VPS
     needs: build
-    # Runs after a build, or alone when a SHA is given by hand (rollback: the images already exist)
+    # Runs after a build, or alone when a SHA is given by hand (rollback: the images already exist).
+    # DEPLOY_HOST is not checked here: a job's "if" is evaluated before entering the environment,
+    # so it only sees repository variables, not the environment's. The step below checks it
     if: >-
-      always() && vars.DEPLOY_HOST != '' &&
+      always() &&
       (needs.build.result == 'success' ||
        (needs.build.result == 'skipped' && github.event_name == 'workflow_dispatch' && inputs.sha != ''))
     runs-on: ubuntu-latest
@@ -117,6 +119,10 @@ jobs:
           USER: ${{ vars.DEPLOY_USER }}
         run: |
           set -euo pipefail
+          if [ -z "$HOST" ]; then
+            echo "::notice::DEPLOY_HOST is not set in the production environment: nothing deployed"
+            exit 0
+          fi
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Invalid SHA: '$SHA'"; exit 1; }
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
