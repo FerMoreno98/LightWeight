@@ -1,0 +1,13 @@
+# Daily copy of the database (deploy/backup.sh). Started by lightweight-backup.timer.
+# Install: see Doc/ServerSetup.md, step 14. Logs: journalctl -u lightweight-backup
+[Unit]
+Description=LightWeight: copia de la BD fuera del servidor
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The user that owns /opt/lightweight, is in the docker group and has the rclone settings
+User=fer
+ExecStart=/opt/lightweight/deploy/backup.sh

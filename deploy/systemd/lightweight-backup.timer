@@ -1,0 +1,12 @@
+# Runs lightweight-backup.service every night. Persistent: if the server was off at that time,
+# the copy is made as soon as it starts. Check it: systemctl list-timers lightweight-backup
+[Unit]
+Description=LightWeight: copia diaria de la BD
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
