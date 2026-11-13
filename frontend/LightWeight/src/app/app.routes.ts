@@ -5,8 +5,9 @@ import { onboardingGuard, profileCompletedGuard } from './Modules/UserProfile/pr
 export const routes: Routes =
 [
     {
+        // The guard of /home sends to the login when there is no session
         path: '',
-        redirectTo: '/auth/login',
+        redirectTo: '/home',
         pathMatch: 'full',
     },
     {
