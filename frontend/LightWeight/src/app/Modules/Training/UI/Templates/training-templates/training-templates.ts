@@ -4,7 +4,7 @@ import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { TrainingTabs } from '../../shared/training-tabs/training-tabs';
 import { muscleGroupLabel } from '../../shared/muscle-groups';
-import { Program, TrainingTemplate } from '../../../data/training-api.service';
+import { Program, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
 import { PERIODIZATION_LABELS, TRAINING_DISTRIBUTION_LABELS, VOLUME_LANDMARK_LABELS } from '../../shared/program-labels';
 import { ConfirmDialog } from '../../../../../Shared/confirm-dialog/confirm-dialog';
 import { InfoTooltip } from '../../../../../Shared/info-tooltip/info-tooltip';
@@ -96,6 +96,8 @@ export class TrainingTemplates {
       input?.focus();
       input?.select();
     });
+    // Same for the landmark select
+    effect(() => this.landmarkSelect()?.nativeElement.focus());
   }
 
   startRename(template: TrainingTemplate) {
@@ -114,6 +116,28 @@ export class TrainingTemplates {
     this.editingNameId.set(null);
     if (!name || name === template.name) return;
     await this.store.RenameTrainingTemplate(template.id, name);
+  }
+
+  // ---------------------------------------------------------------- Volume landmark
+
+  readonly volumeLandmarks: VolumeLandmark[] = ['MV', 'MEV', 'MAV', 'MRV'];
+  readonly landmarkLabels = VOLUME_LANDMARK_LABELS;
+  /** Id of the template whose landmark is being edited (only one at a time) */
+  editingLandmarkId = signal<string | null>(null);
+  private landmarkSelect = viewChild<ElementRef<HTMLSelectElement>>('landmarkSelect');
+
+  startLandmarkEdit(template: TrainingTemplate) {
+    this.editingLandmarkId.set(template.id);
+  }
+
+  cancelLandmarkEdit() {
+    this.editingLandmarkId.set(null);
+  }
+
+  async saveLandmark(template: TrainingTemplate, volumeLandmark: VolumeLandmark) {
+    this.editingLandmarkId.set(null);
+    if (volumeLandmark === template.volumeLandmark) return;
+    await this.store.ChangeTrainingTemplateVolumeLandmark(template.id, volumeLandmark);
   }
 
   // ---------------------------------------------------------------- Sharing
@@ -209,16 +233,67 @@ export class TrainingTemplates {
     clearTimeout(this.linkCopiedTimer);
   }
 
+  // ---------------------------------------------------------------- Duplicate
+
   /** Id of the template being duplicated, to disable its button and avoid double copies */
   duplicatingId = signal<string | null>(null);
+  /** Template whose copy is being set up in the dialog (null: dialog closed) */
+  duplicateTarget = signal<TrainingTemplate | null>(null);
+  /** Volume level of the copy: duplicating is how a MEV week becomes the MAV one */
+  duplicateLandmark = signal<VolumeLandmark>('MEV');
+  duplicateName = signal('');
+  /** Once the user types a name it is kept; until then it follows the chosen level */
+  private duplicateNameEdited = false;
 
-  async duplicateTemplate(template: TrainingTemplate) {
-    if (this.duplicatingId()) return;
+  openDuplicate(template: TrainingTemplate) {
+    this.duplicateTarget.set(template);
+    this.duplicateLandmark.set(template.volumeLandmark);
+    this.duplicateNameEdited = false;
+    this.duplicateName.set(this.defaultCopyName(template, template.volumeLandmark));
+  }
+
+  chooseDuplicateLandmark(landmark: VolumeLandmark) {
+    const template = this.duplicateTarget();
+    this.duplicateLandmark.set(landmark);
+    if (template && !this.duplicateNameEdited) this.duplicateName.set(this.defaultCopyName(template, landmark));
+  }
+
+  editDuplicateName(name: string) {
+    this.duplicateNameEdited = true;
+    this.duplicateName.set(name);
+  }
+
+  cancelDuplicate() {
+    if (!this.duplicatingId()) this.duplicateTarget.set(null);
+  }
+
+  async confirmDuplicate() {
+    const template = this.duplicateTarget();
+    const name = this.duplicateName().trim();
+    if (!template || !name || this.duplicatingId()) return;
     this.duplicatingId.set(template.id);
     try {
-      await this.store.DuplicateTrainingTemplate(template.id);
+      await this.store.DuplicateTrainingTemplate(template.id, name, this.duplicateLandmark());
+      this.duplicateTarget.set(null);
     } finally {
       this.duplicatingId.set(null);
     }
+  }
+
+  /** "{name} (copia)" at the same level, "{name} (MAV)" at another one; shortened so it fits the 200 chars limit */
+  private defaultCopyName(template: TrainingTemplate, landmark: VolumeLandmark): string {
+    const suffix = landmark === template.volumeLandmark ? ' (copia)' : ` (${landmark})`;
+    return template.name.slice(0, 200 - suffix.length).trimEnd() + suffix;
+  }
+
+  /** Colour of each level, the same scale as the map: it heats up with the volume, MV (deload) is the cool one */
+  landmarkColor(landmark: VolumeLandmark, selected: boolean): string {
+    const colors: Record<VolumeLandmark, string> = {
+      MV: 'border-info text-info bg-info/15',
+      MEV: 'border-accent text-accent bg-accent/15',
+      MAV: 'border-warning text-warning bg-warning/15',
+      MRV: 'border-danger text-danger bg-danger/15',
+    };
+    return selected ? colors[landmark] : 'border-line-strong text-muted';
   }
 }

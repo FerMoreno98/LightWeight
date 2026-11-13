@@ -501,6 +501,9 @@ export class TrainingApiService {
     DuplicateTrainingTemplate(TrainingTemplateId : string, name? : string, volumeLandmark? : VolumeLandmark) : Observable<{id: string}>{
         return this.http.post<{id: string}>(`${this.baseUrl}/training-template/${TrainingTemplateId}/duplicate`, { name, volumeLandmark });
     }
+    ChangeTrainingTemplateVolumeLandmark(TrainingTemplateId : string, volumeLandmark : VolumeLandmark) : Observable<void>{
+        return this.http.patch<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}/volume-landmark`, { volumeLandmark });
+    }
     RenameTrainingTemplate(TrainingTemplateId : string, name : string) : Observable<void>{
         return this.http.patch<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}/name`, { name });
     }

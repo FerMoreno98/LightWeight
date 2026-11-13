@@ -734,6 +734,19 @@ export class TrainingStore{
             return false;
         }
     }
+    /** Changes the volume landmark of a template and updates it in the local list (no reload needed) */
+    async ChangeTrainingTemplateVolumeLandmark(TrainingTemplateId : string, volumeLandmark : VolumeLandmark) : Promise<boolean>{
+        this._error.set(null);
+        try{
+            await firstValueFrom(this.api.ChangeTrainingTemplateVolumeLandmark(TrainingTemplateId, volumeLandmark));
+            this._trainingTemplates.update(tt => tt.map(t => t.id === TrainingTemplateId ? { ...t, volumeLandmark } : t));
+            this._planningVersion.update(v => v + 1);
+            return true;
+        }catch{
+            this._error.set("No se ha podido cambiar el volume landmark");
+            return false;
+        }
+    }
     async UpdateTemplateSet
     (
         templateSessionId:string | null,
