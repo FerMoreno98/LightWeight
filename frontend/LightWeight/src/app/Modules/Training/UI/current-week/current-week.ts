@@ -1,7 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TrainingStore } from '../../state/training.store';
-import { MesocycleTemplate, Session } from '../../data/training-api.service';
+import { MesocycleTemplate, Session, TrainingSetupStatus } from '../../data/training-api.service';
 import { TRAINING_DISTRIBUTION_LABELS, formatCyclePeriod } from '../shared/cycle-format';
 import { ConfirmDialog } from '../../../../Shared/confirm-dialog/confirm-dialog';
 
@@ -32,6 +32,11 @@ export class CurrentWeek {
       : [];
   });
 
+  /** Setup status, only loaded without an active macrocycle: decides whether to offer the onboarding wizard */
+  setup = signal<TrainingSetupStatus | null>(null);
+  /** Someone who has never had a macrocycle gets the wizard instead of the bare "start a macrocycle" */
+  offerWizard = computed(() => !!this.setup()?.isFirstTime);
+
   /** Own loading flag: the store one is shared by every request of the page */
   isLoading = signal(true);
   isFinishing = signal(false);
@@ -53,6 +58,8 @@ export class CurrentWeek {
         await this.store.GetSessionsFromATrainingTemplate(current.microcycle.trainingTemplateId);
       } else if (current?.status === 'PendingPlanning' && current.mesocycleId) {
         await this.store.GetMesocycleDetail(current.mesocycleId);
+      } else if (current?.status === 'NoActiveMacrocycle') {
+        this.setup.set(await this.store.GetTrainingSetupStatus());
       }
     } finally {
       this.isLoading.set(false);

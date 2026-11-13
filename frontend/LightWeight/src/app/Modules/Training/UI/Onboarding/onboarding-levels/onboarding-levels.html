@@ -67,6 +67,12 @@
         }
       </button>
     </div>
+  } @else if (status()) {
+    <!-- Opened by URL before having a base template: nothing to copy yet -->
+    <p class="mt-6 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+      Primero necesitas la plantilla base con sus sesiones: los niveles se crean copiándola.
+    </p>
+    <a [routerLink]="baseStepUrl()" class="btn btn-primary mt-4">Ir a la plantilla base</a>
   } @else {
     <div class="mt-6 h-24 animate-pulse rounded-lg bg-raised"></div>
   }

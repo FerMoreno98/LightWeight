@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram, VolumeLandmark } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram, VolumeLandmark, TrainingSetupStatus } from "../data/training-api.service";
 import { HttpErrorResponse } from "@angular/common/http";
 import { firstValueFrom } from "rxjs";
 
@@ -180,6 +180,16 @@ export class TrainingStore{
     }
 
     /** Loads the week the user is training now (or which step is missing) */
+    /** Setup status for the onboarding wizard entry points (null if it fails). It does not touch isLoading
+     *  or error: it only decides which call to action to show, so a failure falls back to the usual page */
+    async GetTrainingSetupStatus(programId? : string) : Promise<TrainingSetupStatus | null>{
+        try{
+            return await firstValueFrom(this.api.GetTrainingSetupStatus(programId));
+        }catch{
+            return null;
+        }
+    }
+
     async GetCurrentMicrocycle() : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);

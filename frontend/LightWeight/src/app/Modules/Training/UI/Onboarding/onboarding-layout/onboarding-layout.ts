@@ -5,7 +5,7 @@ import { filter, map } from 'rxjs';
 import { OnboardingStore } from '../onboarding.store';
 import { TrainingStore } from '../../../state/training.store';
 import { OnboardingMinimap } from '../onboarding-minimap/onboarding-minimap';
-import { nextStep, parseOnboardingUrl, stepUrl, STEP_LABELS } from '../onboarding-steps';
+import { nextStep, ONBOARDING_STEPS, parseOnboardingUrl, stepStates, stepUrl, STEP_LABELS } from '../onboarding-steps';
 
 /**
  * Shell of the onboarding wizard: the minimap beside the page of the current step (the usual planning forms,
@@ -31,6 +31,20 @@ export class OnboardingLayout {
     { initialValue: this.router.url }
   );
   location = computed(() => parseOnboardingUrl(this.url()));
+
+  /** Compact progress for phones, where the full minimap would push the form below the fold */
+  progress = computed(() => {
+    const status = this.status();
+    const step = this.location().step;
+    if (!status || !step) return null;
+    const states = stepStates(status, step);
+    return {
+      index: ONBOARDING_STEPS.indexOf(step) + 1,
+      total: ONBOARDING_STEPS.length,
+      label: STEP_LABELS[step],
+      segments: ONBOARDING_STEPS.map(key => states[key]),
+    };
+  });
 
   /** Button to the next step once the current one is done (the forms do not know the wizard order) */
   next = computed(() => {

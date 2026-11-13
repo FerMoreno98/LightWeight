@@ -1,11 +1,11 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { VolumeLandmark } from '../../../data/training-api.service';
 import { TrainingStore } from '../../../state/training.store';
 import { VOLUME_LANDMARK_LABELS } from '../../shared/program-labels';
 import { OnboardingStore } from '../onboarding.store';
-import { baseTemplate, LANDMARK_ORDER, LEVEL_DEFAULT_NAMES, ONBOARDING_BASE } from '../onboarding-steps';
+import { baseTemplate, LANDMARK_ORDER, LEVEL_DEFAULT_NAMES, ONBOARDING_BASE, resumeUrl } from '../onboarding-steps';
 
 interface LevelOption {
   landmark: VolumeLandmark;
@@ -20,7 +20,7 @@ interface LevelOption {
 @Component({
   selector: 'app-onboarding-levels',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   templateUrl: './onboarding-levels.html',
 })
 export class OnboardingLevels {
@@ -34,6 +34,12 @@ export class OnboardingLevels {
   base = computed(() => {
     const status = this.status();
     return status ? baseTemplate(status) : null;
+  });
+
+  /** Where the wizard should continue when this step cannot be done yet */
+  baseStepUrl = computed(() => {
+    const status = this.status();
+    return status ? resumeUrl(status) : ONBOARDING_BASE;
   });
 
   /** Landmarks the program already has, as a string so it only changes when the templates really change */

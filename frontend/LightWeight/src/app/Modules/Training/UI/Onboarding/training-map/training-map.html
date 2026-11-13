@@ -1,0 +1,143 @@
+<div class="map">
+  <div class="flex min-h-22 flex-wrap items-start justify-between gap-4 sm:items-center">
+    @for (s of [step()]; track s) {
+      <div class="caption min-w-0" aria-live="polite">
+        <div class="text-xs font-semibold uppercase tracking-wider text-accent">Paso {{ s + 1 }} de {{ steps.length }}</div>
+        <h2 class="mt-0.5 font-display text-[28px] font-semibold uppercase leading-tight text-fg">{{ current().title }}</h2>
+        <p class="mt-0.5 text-sm text-muted">{{ current().text }}</p>
+        @if (isLast()) {
+          <button type="button" class="btn btn-primary mt-3" (click)="start.emit()">{{ ctaLabel() }}</button>
+        }
+      </div>
+    }
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div class="flex gap-1.5">
+        @for (s of steps; track $index) {
+          <button type="button"
+                  class="h-7 w-7 cursor-pointer rounded-full border text-xs font-semibold"
+                  [class]="$index === step() ? 'border-accent bg-accent text-accent-ink'
+                    : $index < step() ? 'border-accent text-accent' : 'border-line-strong text-muted'"
+                  [attr.aria-label]="'Ir al paso ' + ($index + 1)"
+                  [attr.aria-current]="$index === step() ? 'step' : null"
+                  (click)="select($index)">{{ $index + 1 }}</button>
+        }
+      </div>
+      <button type="button" class="btn btn-secondary" aria-label="Paso anterior" [disabled]="step() === 0" (click)="previous()">←</button>
+      <button type="button" class="btn btn-secondary" (click)="next()">{{ isLast() ? 'Repetir ↺' : 'Siguiente →' }}</button>
+    </div>
+  </div>
+
+  <div class="diagram-scroll">
+    <div class="diagram" (mouseleave)="hoverRow.set(null)">
+      <div class="col-h d">Lo que diseñas</div>
+      <div class="col-h e">Lo que ejecutas</div>
+      <div class="frame" [class.off]="frameHidden()"></div>
+      <div class="spacer"></div>
+
+      <div class="macro-label" style="--o: 5" [class]="nodeState('macro')">
+        <span class="kind">Macrociclo</span><span class="name">Volumen</span>
+      </div>
+
+      <!-- Row 3: program / mesocycle -->
+      <div class="node d" style="grid-row: 3; --o: 30" [class]="nodeState('prog')"
+           [style.--delay]="delay('prog')" [style.--pdelay]="pulseDelay('prog')" (mouseenter)="hoverRow.set(3)">
+        <div class="kind">Programa</div>
+        <div class="name">PPL Hipertrofia</div>
+        <div class="sub"><span class="chip">Ondulante</span><span class="chip ref">Pecho</span><span class="chip ref">Espalda</span></div>
+      </div>
+      <div class="link" style="grid-row: 3; --o: 31" [class]="linkState(3)" [style.--delay]="linkDelay(3)">
+        <span class="line"></span><span class="lbl">sigue</span>
+      </div>
+      <div class="node e" style="grid-row: 3; --o: 32" [class]="nodeState('meso')"
+           [style.--delay]="delay('meso')" [style.--pdelay]="pulseDelay('meso')" (mouseenter)="hoverRow.set(3)">
+        <div class="kind">Mesociclo</div>
+        <div class="name">Bloque 1</div>
+        <div class="sub"><span class="chip ref">sigue <b>PPL Hipertrofia</b></span><span>Motivación 8/10</span></div>
+      </div>
+
+      <!-- Row 4: templates per volume level / weeks -->
+      <div class="node d" style="grid-row: 4; --o: 40" [class]="nodeState('tpl')"
+           [style.--delay]="delay('tpl')" [style.--pdelay]="pulseDelay('tpl')" (mouseenter)="hoverRow.set(4)">
+        <div class="kind">Plantillas · una por nivel de volumen</div>
+        <div class="tpls">
+          @for (t of templates; track t.level) {
+            <div class="tpl" [class]="'lv-' + t.level">
+              <b>{{ levelLabel[t.level] }}</b>
+              <small>{{ t.name }} · {{ t.sets }} series</small>
+            </div>
+          }
+        </div>
+      </div>
+      <div class="link" style="grid-row: 4; --o: 41" [class]="linkState(4)" [style.--delay]="linkDelay(4)">
+        <span class="line"></span><span class="lbl">sigue</span>
+      </div>
+      <div class="node e" style="grid-row: 4; --o: 42" [class]="nodeState('week')"
+           [style.--delay]="delay('week')" [style.--pdelay]="pulseDelay('week')" (mouseenter)="hoverRow.set(4)">
+        <div class="kind">Semanas (microciclos)</div>
+        <div class="weeks">
+          @for (w of weeks(); track w.number) {
+            <div class="wk" [class]="'lv-' + w.level" [class.now]="w.current" [class.adj]="w.adjusted"
+                 [attr.title]="'Semana ' + w.number + ': ' + levelLabel[w.level]">
+              <span class="wn">S{{ w.number }}</span><span class="bar"></span><span class="lab">{{ levelLabel[w.level] }}</span>
+            </div>
+          }
+        </div>
+        @if (isDeciding()) {
+          <div class="adjust">
+            <span class="chip next"><span class="dot"></span>Fatiga alta</span>
+            S4: <b class="from">MRV</b><i>→</i><b class="to">MAV</b>
+          </div>
+        }
+      </div>
+
+      <!-- Row 5: sessions / workouts -->
+      <div class="node d" style="grid-row: 5; --o: 50" [class]="nodeState('ses')"
+           [style.--delay]="delay('ses')" [style.--pdelay]="pulseDelay('ses')" (mouseenter)="hoverRow.set(5)">
+        <div class="kind">Sesiones</div>
+        <div class="chips">
+          @for (s of sessions; track s) {
+            <span class="chip big">{{ s }}</span>
+          }
+        </div>
+      </div>
+      <div class="link" style="grid-row: 5; --o: 51" [class]="linkState(5)" [style.--delay]="linkDelay(5)">
+        <span class="line"></span><span class="lbl">sigue</span>
+      </div>
+      <div class="node e" style="grid-row: 5; --o: 52" [class]="nodeState('train')"
+           [style.--delay]="delay('train')" [style.--pdelay]="pulseDelay('train')" (mouseenter)="hoverRow.set(5)">
+        <div class="kind">Entrenos</div>
+        <div class="chips">
+          @for (w of workouts; track w.day) {
+            <span class="chip" [class]="w.state">
+              @if (w.state === 'ok') { ✓ } @else { <span class="dot"></span> }
+              {{ w.day }} · {{ w.session }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Row 6: planned sets / performed sets -->
+      <div class="node d" style="grid-row: 6; --o: 60" [class]="nodeState('sets')"
+           [style.--delay]="delay('sets')" [style.--pdelay]="pulseDelay('sets')" (mouseenter)="hoverRow.set(6)">
+        <div class="kind">Series planificadas</div>
+        <div class="sets">
+          @for (s of plannedSets; track s.exercise) {
+            <div class="setrow"><span class="ex">{{ s.exercise }}</span><span class="sc">{{ s.scheme }}<em>{{ s.effort }}</em></span></div>
+          }
+        </div>
+      </div>
+      <div class="link cmp" style="grid-row: 6; --o: 61" [class]="linkState(6)" [style.--delay]="linkDelay(6)">
+        <span class="line"></span><span class="lbl">compara</span>
+      </div>
+      <div class="node e" style="grid-row: 6; --o: 62" [class]="nodeState('done')"
+           [style.--delay]="delay('done')" [style.--pdelay]="pulseDelay('done')" (mouseenter)="hoverRow.set(6)">
+        <div class="kind">Series realizadas</div>
+        <div class="sets">
+          @for (s of performedSets; track s.exercise) {
+            <div class="setrow"><span class="ex">{{ s.exercise }}</span><span class="sc"><i>{{ s.load }}</i>{{ s.reps }}</span></div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

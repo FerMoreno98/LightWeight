@@ -7,10 +7,12 @@ import { resumeOnboardingGuard } from "./UI/Onboarding/onboarding.guards";
 export const TrainingRoutes: Routes = [
     {
         // Onboarding wizard: the usual planning forms inside a layout with the minimap. OnboardingFlow makes
-        // them move through the wizard pages. Only reachable by URL for now (no link points here yet)
+        // them move through the wizard pages. Reached from the home (first time) and from the training tabs
         path: 'onboarding',
         providers: [{ provide: TrainingFlow, useClass: OnboardingFlow }, OnboardingStore],
         children: [
+            // The animated map: entry of the wizard and "how does it work" page of the training section
+            { path: 'intro', loadComponent: () => import('./UI/Onboarding/onboarding-intro/onboarding-intro').then(m => m.OnboardingIntro) },
             // On its own: to the step where the user left it
             { path: '', pathMatch: 'full', canActivate: [resumeOnboardingGuard], children: [] },
             {

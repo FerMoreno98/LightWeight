@@ -20,16 +20,33 @@
       @switch (current.status) {
 
         @case ('NoActiveMacrocycle') {
-          <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-14 text-center">
-            <p class="text-base font-medium text-fg">No tienes ningún macrociclo en curso</p>
-            <p class="max-w-sm text-sm text-subtle">Empieza uno para planificar tus mesociclos y ver aquí la semana que te toca.</p>
-            <a
-              routerLink="/training/macrocycle"
-              class="btn btn-primary mt-2"
-            >
-              Empezar macrociclo
-            </a>
-          </div>
+          @if (offerWizard()) {
+            <!-- First time: the onboarding wizard (to its start, or where it was left) -->
+            <div class="flex flex-col items-center gap-3 rounded-xl border border-accent/40 bg-accent/5 px-6 py-14 text-center">
+              <p class="text-xs font-semibold uppercase tracking-wider text-accent">Primeros pasos</p>
+              <p class="font-display text-3xl font-bold uppercase leading-none text-fg">Monta tu primer entrenamiento</p>
+              <p class="max-w-md text-sm text-muted">
+                Un asistente te guía: tu programa, una plantilla por nivel de volumen y el primer bloque, con un mapa de cómo encaja todo.
+              </p>
+              @if (setup()?.programId) {
+                <a routerLink="/training/onboarding" class="btn btn-primary mt-2">Seguir donde lo dejaste</a>
+              } @else {
+                <a routerLink="/training/onboarding/intro" class="btn btn-primary mt-2">Empezar</a>
+              }
+              <a routerLink="/training/macrocycle" class="text-xs font-medium text-muted transition hover:text-fg">Prefiero empezar el macrociclo a mano</a>
+            </div>
+          } @else {
+            <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-14 text-center">
+              <p class="text-base font-medium text-fg">No tienes ningún macrociclo en curso</p>
+              <p class="max-w-sm text-sm text-subtle">Empieza uno para planificar tus mesociclos y ver aquí la semana que te toca.</p>
+              <a
+                routerLink="/training/macrocycle"
+                class="btn btn-primary mt-2"
+              >
+                Empezar macrociclo
+              </a>
+            </div>
+          }
         }
 
         @case ('NoActiveMesocycle') {
