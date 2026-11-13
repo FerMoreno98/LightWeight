@@ -1,4 +1,4 @@
-<div class="flex min-h-screen items-center justify-center px-4 py-10">
+<div class="flex justify-center" [class]="flow.embedded ? '' : 'min-h-screen items-center px-4 py-10'">
   <div class="w-full max-w-sm rounded-xl bg-surface border border-line p-8 shadow-xl">
     <h1 class="font-display uppercase leading-none mb-6 text-center text-3xl font-bold text-fg">Nueva plantilla de entrenamiento</h1>
 
@@ -21,7 +21,9 @@
         <div>
           <div class="flex items-center justify-between">
             <label for="programId" class="block text-sm font-medium text-soft">Programa</label>
-            <a [routerLink]="createProgramLink" class="text-xs font-medium text-accent transition hover:text-accent">+ Nuevo programa</a>
+            @if (!flow.embedded) {
+              <a [routerLink]="createProgramLink" class="text-xs font-medium text-accent transition hover:text-accent">+ Nuevo programa</a>
+            }
           </div>
           <select
             id="programId"

@@ -1,0 +1,73 @@
+<div class="rounded-xl border border-line bg-surface p-6 shadow-xl sm:p-8">
+  <h2 class="font-display text-3xl font-bold uppercase leading-none text-fg">Niveles de volumen</h2>
+  <p class="mt-2 max-w-prose text-sm text-muted">
+    Una plantilla por cada nivel que vayas a usar. Cada semana eliges cuál toca: así subes o bajas el volumen.
+    Se crean como copia de tu plantilla base; luego ajustas las series de cada una.
+  </p>
+
+  @if (base(); as base) {
+    <div class="mt-6">
+      <p class="text-xs font-semibold uppercase tracking-wider text-muted">Ya tienes</p>
+      <ul class="mt-2 flex flex-wrap gap-2">
+        @for (template of status()!.templates; track template.id) {
+          <li class="rounded-lg border border-line bg-raised px-3 py-2 text-sm">
+            <span class="font-semibold text-fg">{{ template.volumeLandmark }}</span>
+            <span class="text-muted"> · {{ template.name }}</span>
+            @if (template.id === base.id) {
+              <span class="ml-1 text-xs text-accent">(base)</span>
+            }
+          </li>
+        }
+      </ul>
+    </div>
+
+    @if (options().length > 0) {
+      <div class="mt-6">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted">Añadir niveles</p>
+        <ul class="mt-2 flex flex-col gap-2">
+          @for (option of options(); track option.landmark) {
+            <li class="flex flex-wrap items-center gap-3 rounded-lg border p-3 transition"
+                [class.border-accent]="option.selected"
+                [class.border-line]="!option.selected">
+              <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                <input type="checkbox" class="h-4 w-4 accent-accent"
+                       [id]="'level-' + option.landmark"
+                       [checked]="option.selected"
+                       (change)="toggle(option)" />
+                <span class="text-sm text-soft">{{ landmarkLabels[option.landmark] }}</span>
+              </label>
+              @if (option.selected) {
+                <input type="text" class="input w-full sm:w-48"
+                       [id]="'level-name-' + option.landmark"
+                       [attr.aria-label]="'Nombre de la plantilla ' + option.landmark"
+                       [ngModel]="option.name"
+                       (ngModelChange)="rename(option, $event)" />
+              }
+            </li>
+          }
+        </ul>
+      </div>
+    } @else {
+      <p class="mt-6 text-sm text-soft">Tu programa ya tiene los cuatro niveles.</p>
+    }
+
+    @if (error()) {
+      <p class="mt-4 text-sm text-danger">{{ error() }}</p>
+    }
+
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <button type="button" class="btn btn-secondary flex-1" (click)="skip()" [disabled]="isCreating()">
+        Continuar sin más niveles
+      </button>
+      <button type="button" class="btn btn-primary flex-1" (click)="createLevels()" [disabled]="!canCreate() || isCreating()">
+        @if (isCreating()) {
+          Creando…
+        } @else {
+          Crear {{ selectedCount() || '' }} {{ selectedCount() === 1 ? 'plantilla' : 'plantillas' }} y continuar
+        }
+      </button>
+    </div>
+  } @else {
+    <div class="mt-6 h-24 animate-pulse rounded-lg bg-raised"></div>
+  }
+</div>

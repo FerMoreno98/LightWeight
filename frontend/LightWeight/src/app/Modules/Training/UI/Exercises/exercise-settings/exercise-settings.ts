@@ -17,7 +17,7 @@ export class ExerciseSettings {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private flow = inject(TrainingFlow);
+  protected flow = inject(TrainingFlow);
 
   isLoading = this.store.isLoading;
   error = this.store.error;

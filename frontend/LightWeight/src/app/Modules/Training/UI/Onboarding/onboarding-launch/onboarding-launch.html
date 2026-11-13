@@ -1,0 +1,71 @@
+<div class="rounded-xl border border-line bg-surface p-6 shadow-xl sm:p-8">
+  <h2 class="font-display text-3xl font-bold uppercase leading-none text-fg">Lanza el bloque</h2>
+  <p class="mt-2 max-w-prose text-sm text-muted">
+    Empieza hoy tu macrociclo con un mesociclo que sigue
+    <span class="font-semibold text-soft">{{ status()?.programName }}</span>
+    y su primera semana.
+  </p>
+
+  @if (status(); as status) {
+    @if (!status.canLaunch) {
+      <p class="mt-6 rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+        @if (status.step === 'Done') {
+          Ya tienes un bloque en marcha.
+        } @else {
+          Antes de lanzar, todas las sesiones de la plantilla base necesitan series.
+        }
+      </p>
+    }
+
+    <form class="mt-6 flex flex-col gap-5" (ngSubmit)="launch()">
+      <div class="flex flex-col gap-2">
+        <label for="launch-stage" class="text-sm font-medium text-soft">Etapa del macrociclo</label>
+        <select id="launch-stage" name="stage" class="input" required
+                [ngModel]="stage()" (ngModelChange)="stage.set($event)">
+          <option value="" disabled>Selecciona una etapa</option>
+          @for (option of stages; track option) {
+            <option [value]="option">{{ stageLabels[option] }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="flex flex-col gap-2">
+        <label for="launch-template" class="text-sm font-medium text-soft">Plantilla de la semana 1</label>
+        <select id="launch-template" name="template" class="input" required
+                [ngModel]="templateId()" (ngModelChange)="templateId.set($event)">
+          @for (template of status.templates; track template.id) {
+            <option [value]="template.id">{{ template.volumeLandmark }} · {{ template.name }}</option>
+          }
+        </select>
+        <p class="text-xs text-subtle">Las demás plantillas las eliges al planificar cada semana.</p>
+      </div>
+
+      <div>
+        <label for="launch-motivation" class="flex items-center justify-between text-sm font-medium text-soft">
+          <span>Motivación al empezar el mesociclo</span>
+          <span class="font-semibold text-accent">{{ motivationLevel() }}/10</span>
+        </label>
+        <input id="launch-motivation" name="motivation" type="range" min="1" max="10" step="1"
+               class="mt-2 w-full accent-accent"
+               [ngModel]="motivationLevel()" (ngModelChange)="motivationLevel.set(+$event)" />
+      </div>
+
+      <div>
+        <label for="launch-injuries" class="block text-sm font-medium text-soft">Lesiones <span class="text-subtle">(opcional)</span></label>
+        <input id="launch-injuries" name="injuries" type="text" class="input mt-1"
+               placeholder="Ej: molestia en el hombro derecho"
+               [ngModel]="injuries()" (ngModelChange)="injuries.set($event)" />
+      </div>
+
+      @if (error()) {
+        <p class="text-sm text-danger">{{ error() }}</p>
+      }
+
+      <button type="submit" class="btn btn-primary" [disabled]="!canLaunch() || isLaunching()">
+        {{ isLaunching() ? 'Lanzando…' : 'Empezar a entrenar' }}
+      </button>
+    </form>
+  } @else {
+    <div class="mt-6 h-40 animate-pulse rounded-lg bg-raised"></div>
+  }
+</div>

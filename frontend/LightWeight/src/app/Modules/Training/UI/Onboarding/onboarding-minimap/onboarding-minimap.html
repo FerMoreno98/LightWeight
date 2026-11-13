@@ -1,0 +1,95 @@
+<nav aria-label="Pasos del asistente" class="flex flex-col gap-5">
+  <ng-template #nodeBody let-node>
+    <div class="flex items-center justify-between gap-2">
+      <span class="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider"
+            [class.text-accent]="node.state === 'done'"
+            [class.text-muted]="node.state !== 'done'">
+        @if (node.state === 'done') {
+          <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+          </svg>
+        }
+        {{ node.label }}
+      </span>
+      @if (node.state === 'current') {
+        <span class="rounded-full bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-ink">Estás aquí</span>
+      }
+    </div>
+
+    <div class="mt-1.5 text-sm">
+      @switch (node.key) {
+        @case ('program') {
+          @if (status().programName; as name) {
+            <span class="font-display text-lg font-semibold leading-tight text-fg">{{ name }}</span>
+          } @else {
+            <span class="text-subtle">Aún sin crear</span>
+          }
+        }
+        @case ('template') {
+          @if (base(); as base) {
+            <span class="flex flex-wrap items-center gap-2">
+              <span class="font-display text-lg font-semibold leading-tight text-fg">{{ base.name }}</span>
+              <span class="rounded-full px-2 py-0.5 text-xs font-bold" [class]="landmarkClass(base.volumeLandmark)">{{ base.volumeLandmark }}</span>
+            </span>
+          } @else {
+            <span class="text-subtle">Aún sin crear</span>
+          }
+        }
+        @case ('sessions') {
+          @if (base(); as base) {
+            @if (base.sessions > 0) {
+              <span class="text-soft">{{ base.sessions }} {{ base.sessions === 1 ? 'sesión' : 'sesiones' }} · {{ base.sessionsWithSets }} con series</span>
+            } @else {
+              <span class="text-subtle">Ninguna sesión todavía</span>
+            }
+          } @else {
+            <span class="text-subtle">Necesita la plantilla base</span>
+          }
+        }
+        @case ('levels') {
+          @if (landmarks().length > 1) {
+            <span class="flex flex-wrap gap-1.5">
+              @for (landmark of landmarks(); track landmark) {
+                <span class="rounded-full px-2 py-0.5 text-xs font-bold" [class]="landmarkClass(landmark)">{{ landmark }}</span>
+              }
+            </span>
+          } @else {
+            <span class="text-subtle">Opcional: MEV, MAV, MRV, MV…</span>
+          }
+        }
+        @case ('launch') {
+          <span [class.text-soft]="node.state === 'done'" [class.text-subtle]="node.state !== 'done'">Macrociclo · mesociclo · semana 1</span>
+        }
+      }
+    </div>
+  </ng-template>
+
+  @for (group of [{ title: 'Lo que diseñas', nodes: design() }, { title: 'Lo que ejecutas', nodes: execution() }]; track group.title) {
+    <section class="flex flex-col gap-2">
+      <h2 class="text-xs font-semibold uppercase tracking-wider text-soft">{{ group.title }}</h2>
+      @for (node of group.nodes; track node.key) {
+        @if (node.url) {
+          <a [routerLink]="node.url"
+             class="block rounded-xl border bg-surface p-3 transition hover:border-accent/60"
+             [class.border-line]="node.state !== 'available'"
+             [class.border-line-strong]="node.state === 'available'">
+            <ng-container *ngTemplateOutlet="nodeBody; context: { $implicit: node }" />
+          </a>
+        } @else {
+          <div class="rounded-xl border p-3"
+               [class.border-accent]="node.state === 'current'"
+               [class.bg-surface]="node.state !== 'locked'"
+               [class.ring-4]="node.state === 'current'"
+               [class.ring-accent/15]="node.state === 'current'"
+               [class.border-line]="node.state === 'done'"
+               [class.border-dashed]="node.state === 'locked'"
+               [class.border-line-strong]="node.state === 'locked'"
+               [class.opacity-60]="node.state === 'locked'"
+               [attr.aria-current]="node.state === 'current' ? 'step' : null">
+            <ng-container *ngTemplateOutlet="nodeBody; context: { $implicit: node }" />
+          </div>
+        }
+      }
+    </section>
+  }
+</nav>

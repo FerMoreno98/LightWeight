@@ -1,0 +1,41 @@
+<main class="mx-auto w-full max-w-6xl px-4 py-8">
+  <header class="mb-6">
+    <p class="text-xs font-semibold uppercase tracking-wider text-muted">Primeros pasos</p>
+    <h1 class="mt-1 font-display text-4xl font-bold uppercase leading-none text-fg">
+      Monta tu <span class="text-accent">entrenamiento</span>
+    </h1>
+  </header>
+
+  @if (error()) {
+    <div class="mb-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{{ error() }}</div>
+  }
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-[18rem_minmax(0,1fr)]">
+    <aside class="lg:sticky lg:top-6 lg:self-start">
+      @if (status(); as status) {
+        <app-onboarding-minimap [status]="status" [current]="location().step" />
+      } @else {
+        <div class="flex flex-col gap-2">
+          @for (skeleton of [1, 2, 3, 4, 5]; track skeleton) {
+            <div class="h-16 animate-pulse rounded-xl border border-line bg-surface/60"></div>
+          }
+        </div>
+      }
+    </aside>
+
+    <section class="min-w-0">
+      @if (next(); as next) {
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/10 px-4 py-3">
+          <p class="text-sm text-soft">
+            Paso completado.
+            @if (next.optional) {
+              <span class="text-muted">El siguiente es opcional.</span>
+            }
+          </p>
+          <a [routerLink]="next.url" class="btn btn-primary">Siguiente: {{ next.label }}</a>
+        </div>
+      }
+      <router-outlet />
+    </section>
+  </div>
+</main>

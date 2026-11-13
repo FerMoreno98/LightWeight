@@ -159,6 +159,41 @@ export interface MesocycleDetail{
     availableTemplates : MesocycleTemplate[]
 }
 
+/** Next thing to do in the onboarding wizard, worked out by the backend from what is saved */
+export type TrainingSetupStep = 'CreateProgram' | 'CreateTemplate' | 'FillSessions' | 'AddVolumeLevels' | 'LaunchBlock' | 'Done';
+/** A template of the program the wizard works on. The first one is the base, the rest are its volume levels */
+export interface SetupTemplate{
+    id : string,
+    name : string,
+    volumeLandmark : VolumeLandmark,
+    sessions : number,
+    sessionsWithSets : number
+}
+/** How far the user is in setting up their training */
+export interface TrainingSetupStatus{
+    step : TrainingSetupStep,
+    /** The base template has sessions and all of them have sets */
+    canLaunch : boolean,
+    /** The user has never had a macrocycle */
+    isFirstTime : boolean,
+    programId : string | null,
+    programName : string | null,
+    templates : SetupTemplate[]
+}
+export interface LaunchTrainingBlockRequest{
+    trainingStage : TrainingStage,
+    macrocycleComments : string | null,
+    programId : string,
+    motivationLevel : number,
+    injuries : string | null,
+    mesocycleComments : string | null,
+    trainingTemplateId : string
+}
+export interface LaunchTrainingBlockResult{
+    macrocycleId : string,
+    mesocycleId : string,
+    microcycleId : string
+}
 export type CurrentMicrocycleStatus = 'NoActiveMacrocycle' | 'NoActiveMesocycle' | 'PendingPlanning' | 'InProgress';
 /** The week the user is training now, or which step of the hierarchy is missing */
 export interface CurrentMicrocycle{
@@ -312,6 +347,14 @@ export class TrainingApiService {
             trainingTemplateId
         });
     }
+    /** Without programId the backend uses the most recent program of the user */
+    GetTrainingSetupStatus(programId? : string) : Observable<TrainingSetupStatus>{
+        return this.http.get<TrainingSetupStatus>(`${this.baseUrl}/setup-status`, programId ? { params: { programId } } : {});
+    }
+    /** Macrocycle, mesocycle and first week in a single request */
+    LaunchTrainingBlock(request : LaunchTrainingBlockRequest) : Observable<LaunchTrainingBlockResult>{
+        return this.http.post<LaunchTrainingBlockResult>(`${this.baseUrl}/launch-block`, request);
+    }
     GetCurrentMicrocycle() : Observable<CurrentMicrocycle>{
         return this.http.get<CurrentMicrocycle>(`${this.baseUrl}/microcycle/current`);
     }
@@ -454,8 +497,9 @@ export class TrainingApiService {
     DeleteTrainingTemplate(TrainingTemplateId : string) : Observable<void>{
         return this.http.delete<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}`);
     }
-    DuplicateTrainingTemplate(TrainingTemplateId : string) : Observable<{id: string}>{
-        return this.http.post<{id: string}>(`${this.baseUrl}/training-template/${TrainingTemplateId}/duplicate`, {});
+    /** Without name and landmark the copy is "{name} (copia)" with the same landmark */
+    DuplicateTrainingTemplate(TrainingTemplateId : string, name? : string, volumeLandmark? : VolumeLandmark) : Observable<{id: string}>{
+        return this.http.post<{id: string}>(`${this.baseUrl}/training-template/${TrainingTemplateId}/duplicate`, { name, volumeLandmark });
     }
     RenameTrainingTemplate(TrainingTemplateId : string, name : string) : Observable<void>{
         return this.http.patch<void>(`${this.baseUrl}/training-template/${TrainingTemplateId}/name`, { name });

@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram, VolumeLandmark } from "../data/training-api.service";
 import { HttpErrorResponse } from "@angular/common/http";
 import { firstValueFrom } from "rxjs";
 
@@ -28,6 +28,8 @@ export class TrainingStore{
     private _sessionWorkout = signal<SessionWorkout | null>(null);
     /** Last performance of each exercise, by exercise id. Merged as new exercises are requested */
     private _previousPerformance = signal<Record<string, PreviousExercise>>({});
+    /** Goes up every time the planning (programs, templates, sessions, sets) is saved, so views can reload what they derive from it */
+    private _planningVersion = signal(0);
 
     isLoading = this._isLoading.asReadonly();
     error = this._error.asReadonly();
@@ -43,6 +45,7 @@ export class TrainingStore{
     currentMicrocycle = this._currentMicrocycle.asReadonly();
     sessionWorkout = this._sessionWorkout.asReadonly();
     previousPerformance = this._previousPerformance.asReadonly();
+    planningVersion = this._planningVersion.asReadonly();
 
     async CreateMacrocycle
     (
@@ -387,6 +390,7 @@ export class TrainingStore{
                     periodization,
                     aimMuscleGroups
                 ));
+            this._planningVersion.update(v => v + 1);
             return result.id;
         }catch{
             this._error.set('No se ha podido crear el programa');
@@ -490,6 +494,7 @@ export class TrainingStore{
                     trainingDistribution,
                     durationInDays
                 ));
+            this._planningVersion.update(v => v + 1);
             return result.id;
         }catch{
             this._error.set('No se ha podido crear la plantilla de entrenamiento');
@@ -512,6 +517,7 @@ export class TrainingStore{
                     trainingTemplateId,
                     name
                 ));
+            this._planningVersion.update(v => v + 1);
             return result.id;
         }catch{
             this._error.set('No se ha podido crear la sesión de la plantilla');
@@ -550,6 +556,7 @@ export class TrainingStore{
                     expectedRPE,
                     series
                 ));
+            this._planningVersion.update(v => v + 1);
             return true;
         }catch{
             this._error.set('No se ha podido crear el set de la plantilla');
@@ -637,6 +644,7 @@ export class TrainingStore{
         try{
             await firstValueFrom(this.api.DeleteSetTemplate(TemplateSetId))
             this._sets.update(sets => sets.filter(s => s.id !== TemplateSetId));
+            this._planningVersion.update(v => v + 1);
             return true;
         }catch{
             this._error.set("No se ha podido borrar la serie");
@@ -652,6 +660,7 @@ export class TrainingStore{
             await firstValueFrom(this.api.DeleteTemplateSession(TemplateSessionId))
             this._sessions.update(s => s.filter(s => s.id !== TemplateSessionId));
             this._seriesPerGroupPerSession.update(s => s.filter(s => s.sessionId !== TemplateSessionId));
+            this._planningVersion.update(v => v + 1);
             return true;
         }catch{
             this._error.set("No se ha podido borrar la sesion");
@@ -672,6 +681,7 @@ export class TrainingStore{
                     ? { ...p, trainingTemplatesCount: p.trainingTemplatesCount - 1 }
                     : p));
             }
+            this._planningVersion.update(v => v + 1);
             return true;
         }catch{
             this._error.set("No se ha podido eliminar la plantilla");
@@ -682,17 +692,18 @@ export class TrainingStore{
     }
     /** Duplicates a template with its sessions and sets, then reloads templates and programs
      *  (the copy's volume and the program's template count are computed by the backend) */
-    async DuplicateTrainingTemplate(TrainingTemplateId : string) : Promise<string | null>{
+    async DuplicateTrainingTemplate(TrainingTemplateId : string, name? : string, volumeLandmark? : VolumeLandmark) : Promise<string | null>{
         this._isLoading.set(true);
         this._error.set(null);
         try{
-            const result = await firstValueFrom(this.api.DuplicateTrainingTemplate(TrainingTemplateId));
+            const result = await firstValueFrom(this.api.DuplicateTrainingTemplate(TrainingTemplateId, name, volumeLandmark));
             const [templates, programs] = await Promise.all([
                 firstValueFrom(this.api.GetUserTrainingTemplates()),
                 firstValueFrom(this.api.GetUserPrograms()),
             ]);
             this._trainingTemplates.set(templates);
             this._programs.set(programs);
+            this._planningVersion.update(v => v + 1);
             return result.id;
         }catch{
             this._error.set("No se ha podido duplicar la plantilla");

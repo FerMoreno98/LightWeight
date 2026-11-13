@@ -28,7 +28,7 @@ export class SessionSets {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private flow = inject(TrainingFlow);
+  protected flow = inject(TrainingFlow);
 
   private _isLoadingSets = signal(true);
   isLoading = this._isLoadingSets.asReadonly();

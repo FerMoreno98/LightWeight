@@ -17,7 +17,7 @@ export class CreateSessionTemplate {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private flow = inject(TrainingFlow);
+  protected flow = inject(TrainingFlow);
   /** Built once: a new UrlTree on every check would make [routerLink] change all the time */
   readonly templatesListLink = this.flow.templatesList();
 

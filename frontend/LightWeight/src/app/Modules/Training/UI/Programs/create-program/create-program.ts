@@ -18,7 +18,7 @@ export class CreateProgram {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private location = inject(Location);
-  private flow = inject(TrainingFlow);
+  protected flow = inject(TrainingFlow);
   /** Whether the user arrived here from another page of the app (so Cancel can go back to it) */
   private hasPreviousPage = !!this.router.lastSuccessfulNavigation()?.previousNavigation;
 

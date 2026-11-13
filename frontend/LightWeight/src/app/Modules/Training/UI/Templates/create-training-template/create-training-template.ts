@@ -15,7 +15,7 @@ export class CreateTrainingTemplate {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
-  private flow = inject(TrainingFlow);
+  protected flow = inject(TrainingFlow);
   /** Built once: a new UrlTree on every check would make [routerLink] change all the time */
   readonly createProgramLink = this.flow.createProgram();
 
@@ -31,7 +31,8 @@ export class CreateTrainingTemplate {
 
   async ngOnInit(){
     await this.store.GetUserPrograms();
-    const programId = this.route.snapshot.queryParamMap.get('programId');
+    // In the wizard the program is part of the path; in the app it comes as ?programId=
+    const programId = this.route.snapshot.paramMap.get('programId') ?? this.route.snapshot.queryParamMap.get('programId');
     if (programId && this.programs().some(p => p.id === programId)){
       this.programId = programId;
     } else if (this.programs().length === 1){
