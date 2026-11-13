@@ -2,6 +2,7 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTraining
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.ChangeTrainingTemplateVolumeLandmark;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Application.Queries.TrainingTemplates.GetUserTrainingTemplates;
 using LightWeight.Training.Domain.Aggregates;
@@ -409,5 +410,115 @@ public class TrainingTemplateTests
         var result = validator.Validate(new CreateTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),"","MEV","FullBody",7));
         // Assert
         Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public async Task DuplicateTrainingTemplateCommand_WithNameAndLandmark_CreatesTheCopyAtThatLevel()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create("Base",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        DuplicateTrainingTemplateCommandHandler commandHandler =
+            new DuplicateTrainingTemplateCommandHandler(_programRepository,_Uow);
+        // Act
+        Guid copyId = await commandHandler.HandleAsync(new DuplicateTrainingTemplateCommand(template.Id,userId,"Pico","mrv"),default);
+        // Assert
+        TrainingTemplate copy = Assert.Single(program.trainingTemplates, t => t.Id == copyId);
+        Assert.Equal("Pico", copy.Name);
+        Assert.Equal(VolumeLandmarks.MRV, copy.VolumeLandmark);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(null, null, true)]
+    [InlineData("Acumulación", "MAV", true)]
+    [InlineData(null, "mev", true)]
+    [InlineData("", null, false)]
+    [InlineData(null, "Max", false)]
+    public void DuplicateTrainingTemplateCommandValidator_ValidatesTheOptionalFields(string? name, string? volumeLandmark, bool isValid)
+    {
+        // Arrange
+        var validator = new DuplicateTrainingTemplateCommandValidator();
+        // Act
+        var result = validator.Validate(new DuplicateTrainingTemplateCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),name,volumeLandmark));
+        // Assert
+        Assert.Equal(isValid, result.IsValid);
+    }
+
+    [Fact]
+    public async Task ChangeTrainingTemplateVolumeLandmarkCommand_WhenHappyPath_ChangesTheLandmarkAndSaves()
+    {
+        // Arrange
+        var userId = Guid.CreateVersion7();
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(userId);
+        TrainingTemplate template = TrainingTemplate.Create("Base",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        var commandHandler = new ChangeTrainingTemplateVolumeLandmarkCommandHandler(_programRepository,_Uow);
+        // Act
+        await commandHandler.HandleAsync(new ChangeTrainingTemplateVolumeLandmarkCommand(template.Id,userId,"mav"),default);
+        // Assert
+        Assert.Equal(VolumeLandmarks.MAV, template.VolumeLandmark);
+        await _Uow.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeTrainingTemplateVolumeLandmarkCommand_TemplateNotFound_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        _programRepository.GetByTrainingTemplateIdAsync(Arg.Any<Guid>()).Returns((Program?)null);
+        var commandHandler = new ChangeTrainingTemplateVolumeLandmarkCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<TrainingTemplateNotFoundApplicationException>
+        (
+            () => commandHandler.HandleAsync(new ChangeTrainingTemplateVolumeLandmarkCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),"MAV"),default)
+        );
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ChangeTrainingTemplateVolumeLandmarkCommand_UserIdDoesNotCorrespondWithProgramUserId_ThrowApplicationException()
+    {
+        // Arrange
+        IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
+        ITrainingUnitOfWork _Uow = Substitute.For<ITrainingUnitOfWork>();
+        Program program = CreateProgram(Guid.CreateVersion7());
+        TrainingTemplate template = TrainingTemplate.Create("Base",VolumeLandmarks.MEV,TrainingDistribution.FullBody,7);
+        program.AddTrainingTemplate(template);
+        _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
+        var commandHandler = new ChangeTrainingTemplateVolumeLandmarkCommandHandler(_programRepository,_Uow);
+        // Act
+        // Assert
+        await Assert.ThrowsAsync<UnauthorizedAccessException>
+        (
+            () => commandHandler.HandleAsync(new ChangeTrainingTemplateVolumeLandmarkCommand(template.Id,Guid.CreateVersion7(),"MAV"),default)
+        );
+        Assert.Equal(VolumeLandmarks.MEV, template.VolumeLandmark);
+        await _Uow.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData("MRV", true)]
+    [InlineData("mv", true)]
+    [InlineData("", false)]
+    [InlineData("Max", false)]
+    public void ChangeTrainingTemplateVolumeLandmarkCommandValidator_ValidatesTheLandmark(string volumeLandmark, bool isValid)
+    {
+        // Arrange
+        var validator = new ChangeTrainingTemplateVolumeLandmarkCommandValidator();
+        // Act
+        var result = validator.Validate(new ChangeTrainingTemplateVolumeLandmarkCommand(Guid.CreateVersion7(),Guid.CreateVersion7(),volumeLandmark));
+        // Assert
+        Assert.Equal(isValid, result.IsValid);
     }
 }

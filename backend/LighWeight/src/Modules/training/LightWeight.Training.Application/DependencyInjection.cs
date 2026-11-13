@@ -4,6 +4,8 @@ using LightWeight.shared.Mediator;
 using LightWeight.shared.Messaging;
 using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
 using LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle;
+using LightWeight.Training.Application.Commands.Macrocycles.LaunchTrainingBlock;
+using LightWeight.Training.Application.Queries.Setup.GetTrainingSetupStatus;
 using LightWeight.Training.Application.Commands.Mesocycles.CreateMesocycle;
 using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 using LightWeight.Training.Application.Commands.Microcycles.CreateMicrocycle;
@@ -34,6 +36,7 @@ using LightWeight.Training.Application.Commands.TrainingTemplates.CreateTraining
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.ChangeTrainingTemplateVolumeLandmark;
 using LightWeight.Training.Application.Queries.Exercises.GetAllExercises;
 using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
 using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
@@ -65,6 +68,8 @@ public static class DependencyInjection
 
         services.AddScoped<ICommandHandler<CreateMacrocycleCommand, Guid>, CreateMacrocycleCommandHandler>();
         services.AddScoped<ICommandHandler<FinishMacrocycleCommand>, FinishMacrocycleCommandHandler>();
+        services.AddScoped<ICommandHandler<LaunchTrainingBlockCommand, LaunchTrainingBlockResponse>, LaunchTrainingBlockCommandHandler>();
+        services.AddScoped<IQueryHandler<GetTrainingSetupStatusQuery, GetTrainingSetupStatusResponse>, GetTrainingSetupStatusQueryHandler>();
         services.AddScoped<ICommandHandler<CreateMesocycleCommand, Guid>, CreateMesocycleCommandHandler>();
         services.AddScoped<ICommandHandler<FinishMesocycleCommand>, FinishMesocycleCommandHandler>();
         services.AddScoped<ICommandHandler<CreateMicrocycleCommand, Guid>, CreateMicrocycleCommandHandler>();
@@ -103,6 +108,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DeleteTrainingTemplateCommand>,DeleteTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<DuplicateTrainingTemplateCommand, Guid>,DuplicateTrainingTemplateCommandHandler>();
         services.AddScoped<ICommandHandler<RenameTrainingTemplateCommand>,RenameTrainingTemplateCommandHandler>();
+        services.AddScoped<ICommandHandler<ChangeTrainingTemplateVolumeLandmarkCommand>,ChangeTrainingTemplateVolumeLandmarkCommandHandler>();
         services.AddScoped<ICommandHandler<UpdateTemplateSetCommand>,UpdateTemplateSetCommandHandler>();
         services.AddScoped<ICommandHandler<ReorderTemplateSetsCommand>,ReorderTemplateSetsCommandHandler>();
 

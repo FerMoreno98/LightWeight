@@ -2,6 +2,7 @@ using LightWeight.shared.Mediator;
 using LightWeight.Training.Application.Exceptions;
 using LightWeight.Training.Domain.Aggregates;
 using LightWeight.Training.Domain.Entities;
+using LightWeight.Training.Domain.Enum;
 using LightWeight.Training.Domain.Repositories;
 using LightWeight.Training.Domain.Uow;
 
@@ -26,7 +27,10 @@ public sealed class DuplicateTrainingTemplateCommandHandler : ICommandHandler<Du
         {
             throw new UnauthorizedAccessException();
         }
-        TrainingTemplate copy = program.DuplicateTrainingTemplate(command.TrainingTemplateId);
+        VolumeLandmarks? volumeLandmark = command.VolumeLandmark is null
+            ? null
+            : Enum.Parse<VolumeLandmarks>(command.VolumeLandmark, ignoreCase: true);
+        TrainingTemplate copy = program.DuplicateTrainingTemplate(command.TrainingTemplateId, command.Name, volumeLandmark);
         await _UOW.SaveChangesAsync(ct);
         return copy.Id;
     }

@@ -256,4 +256,37 @@ public class DuplicateTrainingTemplateTests
         Assert.Equal(new[] { 1, 2, 3 }, program.trainingTemplates.Select(t => t.Order).OrderBy(o => o));
         Assert.NotEqual(firstCopy.Id, secondCopy.Id);
     }
+
+    [Fact]
+    public void DuplicateTrainingTemplate_WithNameAndLandmark_UsesThemAndKeepsTheSessions()
+    {
+        // Arrange
+        Program program = CreateProgram();
+        TrainingTemplate original = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.PushPullLegs, 7);
+        TemplateSession session = TemplateSession.Create("Push A");
+        session.AddSet(CreateTemplateSet());
+        original.AddSessionTemplate(session);
+        program.AddTrainingTemplate(original);
+        // Act
+        TrainingTemplate copy = program.DuplicateTrainingTemplate(original.Id, "Acumulación", VolumeLandmarks.MAV);
+        // Assert
+        Assert.Equal("Acumulación", copy.Name);
+        Assert.Equal(VolumeLandmarks.MAV, copy.VolumeLandmark);
+        Assert.Equal(VolumeLandmarks.MEV, original.VolumeLandmark);
+        Assert.Equal(original.TrainingDistribution, copy.TrainingDistribution);
+        Assert.Equal(original.DurationInDays, copy.DurationInDays);
+        TemplateSession copiedSession = Assert.Single(copy.TemplateSessions);
+        Assert.Single(copiedSession.TemplateExercises);
+    }
+
+    [Fact]
+    public void DuplicateTrainingTemplate_WithEmptyName_Throws()
+    {
+        // Arrange
+        Program program = CreateProgram();
+        TrainingTemplate original = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        program.AddTrainingTemplate(original);
+        // Act & Assert
+        Assert.Throws<NameEmptyDomainException>(() => program.DuplicateTrainingTemplate(original.Id, "  ", VolumeLandmarks.MAV));
+    }
 }

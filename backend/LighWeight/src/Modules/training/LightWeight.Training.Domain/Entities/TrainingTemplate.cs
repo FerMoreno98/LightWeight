@@ -87,6 +87,20 @@ public sealed class TrainingTemplate : Entity<Guid>
         Name = name.Trim();
     }
 
+    /// <summary>
+    /// Changes the volume landmark the template targets. Weeks already planned with it keep pointing to it,
+    /// so only the label changes: nothing performed is lost
+    /// </summary>
+    /// <param name="volumeLandmark">New landmark</param>
+    public void ChangeVolumeLandmark(VolumeLandmarks volumeLandmark)
+    {
+        if(!System.Enum.IsDefined(volumeLandmark))
+        {
+            throw new InvalidVolumeLandmarkDomainException();
+        }
+        VolumeLandmark = volumeLandmark;
+    }
+
     /// <summary>Sets the position of the template inside its program. Only the Program decides it</summary>
     internal void SetOrder(int order)
     {
@@ -149,9 +163,10 @@ public sealed class TrainingTemplate : Entity<Guid>
     /// Soft deleted sessions are not copied. Its order is assigned when it is added to the Program
     /// </summary>
     /// <param name="name">Name of the copy: "{Name} (copia)" when duplicating inside a program, the same name when copying a whole program</param>
-    internal TrainingTemplate Duplicate(string name)
+    /// <param name="volumeLandmark">Landmark of the copy (null keeps this template's one). Lets a MEV week be cloned as the MAV one</param>
+    internal TrainingTemplate Duplicate(string name, VolumeLandmarks? volumeLandmark = null)
     {
-        var copy = Create(name, VolumeLandmark, TrainingDistribution, DurationInDays);
+        var copy = Create(name, volumeLandmark ?? VolumeLandmark, TrainingDistribution, DurationInDays);
         foreach (var session in TemplateSessions)
             copy.AddSessionTemplate(session.Duplicate());
         return copy;

@@ -91,6 +91,43 @@ public class TrainingTemplateTests
         Assert.Equal("Old name", template.Name);
     }
 
+    [Fact]
+    public void ChangeVolumeLandmark_WithValidLandmark_ChangesItAndKeepsTheSessions()
+    {
+        // Arrange
+        TrainingTemplate template = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        template.AddSessionTemplate(TemplateSession.Create("Full A"));
+        // Act
+        template.ChangeVolumeLandmark(VolumeLandmarks.MRV);
+        // Assert
+        Assert.Equal(VolumeLandmarks.MRV, template.VolumeLandmark);
+        Assert.Single(template.TemplateSessions);
+    }
+
+    [Fact]
+    public void ChangeVolumeLandmark_WithInvalidLandmark_ThrowsDomainExceptionAndKeepsIt()
+    {
+        // Arrange
+        TrainingTemplate template = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        // Act
+        // Assert
+        Assert.Throws<InvalidVolumeLandmarkDomainException>(() => template.ChangeVolumeLandmark((VolumeLandmarks)999));
+        Assert.Equal(VolumeLandmarks.MEV, template.VolumeLandmark);
+    }
+
+    [Fact]
+    public void ChangeTrainingTemplateVolumeLandmark_OfADeletedTemplate_ThrowsNotFound()
+    {
+        // Arrange
+        Program program = Program.Create(Guid.CreateVersion7(), Periodization.Linear, "ValidProgramName", new List<MuscleGroups>());
+        TrainingTemplate template = TrainingTemplate.Create("Base", VolumeLandmarks.MEV, TrainingDistribution.FullBody, 7);
+        program.AddTrainingTemplate(template);
+        program.DeleteTrainingTemplate(template.Id, DateTime.UtcNow);
+        // Act
+        // Assert
+        Assert.Throws<TrainingTemplateNotFoundDomainException>(() => program.ChangeTrainingTemplateVolumeLandmark(template.Id, VolumeLandmarks.MAV));
+    }
+
     [Theory]
     [InlineData((VolumeLandmarks)999,TrainingDistribution.Phat)]
     public void Create_WithInvalidLandmark_ThrowsDomainException

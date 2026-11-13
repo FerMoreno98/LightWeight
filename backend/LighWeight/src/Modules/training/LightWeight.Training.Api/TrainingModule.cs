@@ -3,6 +3,8 @@ using System.Security.Claims;
 using LightWeight.Training.Api.DTOs;
 using LightWeight.Training.Application.Commands.Macrocycles.CreateMacrocycle;
 using LightWeight.Training.Application.Commands.Macrocycles.FinishMacrocycle;
+using LightWeight.Training.Application.Commands.Macrocycles.LaunchTrainingBlock;
+using LightWeight.Training.Application.Queries.Setup.GetTrainingSetupStatus;
 using LightWeight.Training.Application.Commands.Mesocycles.FinishMesocycle;
 using LightWeight.Training.Application.Queries.Macrocycles.GetUserMacrocycles;
 using LightWeight.Training.Application.Queries.Macrocycles.GetMacrocycleDetail;
@@ -43,6 +45,7 @@ using LightWeight.Training.Application.Commands.TemplateSessions.DeleteTemplateS
 using LightWeight.Training.Application.Commands.TrainingTemplates.DeleteTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.DuplicateTrainingTemplate;
 using LightWeight.Training.Application.Commands.TrainingTemplates.RenameTrainingTemplate;
+using LightWeight.Training.Application.Commands.TrainingTemplates.ChangeTrainingTemplateVolumeLandmark;
 using LightWeight.Training.Application.Commands.TemplateSets.UpdateTemplateSet;
 using LightWeight.Training.Application.Commands.Programs.ShareProgram;
 using LightWeight.Training.Application.Commands.Programs.RevokeProgramShare;
@@ -59,6 +62,8 @@ public static class TrainingModule
         group.MapGet("/macrocycles", GetUserMacrocycles).RequireAuthorization();
         group.MapGet("/macrocycle/{macrocycleId:guid}", GetMacrocycleDetail).RequireAuthorization();
         group.MapPost("/macrocycle/{macrocycleId:guid}/finish", FinishMacrocycle).RequireAuthorization();
+        group.MapPost("/launch-block", LaunchTrainingBlock).RequireAuthorization();
+        group.MapGet("/setup-status", GetTrainingSetupStatus).RequireAuthorization();
         group.MapPost("/mesocycle", CreateMesocycle).RequireAuthorization();
         group.MapGet("/mesocycle/{mesocycleId:guid}", GetMesocycleDetail).RequireAuthorization();
         group.MapPost("/mesocycle/{mesocycleId:guid}/finish", FinishMesocycle).RequireAuthorization();
@@ -97,6 +102,7 @@ public static class TrainingModule
         group.MapDelete("/training-template/{trainingTemplateId:guid}",DeleteTrainingTemplate).RequireAuthorization();
         group.MapPost("/training-template/{trainingTemplateId:guid}/duplicate",DuplicateTrainingTemplate).RequireAuthorization();
         group.MapPatch("/training-template/{trainingTemplateId:guid}/name",RenameTrainingTemplate).RequireAuthorization();
+        group.MapPatch("/training-template/{trainingTemplateId:guid}/volume-landmark",ChangeTrainingTemplateVolumeLandmark).RequireAuthorization();
         group.MapPut("/template-set",UpdateTemplateSet).RequireAuthorization();
 
         return app;
@@ -118,6 +124,43 @@ public static class TrainingModule
         ), ct);
 
         return TypedResults.Ok(new { id });
+    }
+    private static async Task<IResult> LaunchTrainingBlock
+    (
+        LaunchTrainingBlockRequest request,
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var result = await mediator.SendAsync<LaunchTrainingBlockCommand, LaunchTrainingBlockResponse>(new LaunchTrainingBlockCommand(
+            Guid.Parse(userId),
+            request.TrainingStage,
+            request.MacrocycleComments,
+            request.ProgramId,
+            request.MotivationLevel,
+            request.Injuries,
+            request.MesocycleComments,
+            request.TrainingTemplateId
+        ), ct);
+        return TypedResults.Ok(result);
+    }
+    private static async Task<IResult> GetTrainingSetupStatus
+    (
+        IMediator mediator,
+        HttpContext httpContext,
+        CancellationToken ct,
+        Guid? programId = null
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                     ?? throw new UnauthorizedAccessException();
+        var status = await mediator.QueryAsync<GetTrainingSetupStatusQuery, GetTrainingSetupStatusResponse>(
+            new GetTrainingSetupStatusQuery(Guid.Parse(userId), programId), ct
+        );
+        return TypedResults.Ok(status);
     }
     private static async Task<IResult> GetUserMacrocycles
     (
@@ -671,13 +714,15 @@ public static class TrainingModule
         IMediator mediator,
         Guid trainingTemplateId,
         HttpContext httpContext,
-        CancellationToken ct
+        CancellationToken ct,
+        // Optional body: without it (or with {}) the copy is "{name} (copia)" with the same landmark
+        DuplicateTrainingTemplateRequest? request = null
     )
     {
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
             ?? throw new UnauthorizedAccessException();
         var id = await mediator.SendAsync<DuplicateTrainingTemplateCommand, Guid>(
-            new DuplicateTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId)), ct
+            new DuplicateTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId), request?.Name, request?.VolumeLandmark), ct
         );
         return TypedResults.Ok(new { id });
     }
@@ -693,6 +738,21 @@ public static class TrainingModule
             ?? throw new UnauthorizedAccessException();
         await mediator.SendAsync(
             new RenameTrainingTemplateCommand(trainingTemplateId, Guid.Parse(userId), request.Name), ct
+        );
+        return TypedResults.NoContent();
+    }
+    private static async Task<IResult> ChangeTrainingTemplateVolumeLandmark(
+        IMediator mediator,
+        Guid trainingTemplateId,
+        ChangeTrainingTemplateVolumeLandmarkRequest request,
+        HttpContext httpContext,
+        CancellationToken ct
+    )
+    {
+        var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? throw new UnauthorizedAccessException();
+        await mediator.SendAsync(
+            new ChangeTrainingTemplateVolumeLandmarkCommand(trainingTemplateId, Guid.Parse(userId), request.VolumeLandmark), ct
         );
         return TypedResults.NoContent();
     }

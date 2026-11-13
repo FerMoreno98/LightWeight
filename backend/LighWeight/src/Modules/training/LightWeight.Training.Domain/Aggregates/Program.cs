@@ -82,15 +82,17 @@ public sealed class Program : AggregateRoot<Guid>
 
     /// <summary>
     /// Duplicates an active template of this program with its whole hierarchy (sessions and sets).
-    /// The copy gets new ids, is named "{name} (copia)" and is placed at the end of the program
+    /// The copy gets new ids, is named "{name} (copia)" unless a name is given, and is placed at the end of the program
     /// </summary>
     /// <param name="trainingTemplateId">Template to duplicate</param>
+    /// <param name="name">Name of the copy (null gives "{name} (copia)")</param>
+    /// <param name="volumeLandmark">Landmark of the copy (null keeps the original one)</param>
     /// <returns>The new template, already added to the program</returns>
-    public TrainingTemplate DuplicateTrainingTemplate(Guid trainingTemplateId)
+    public TrainingTemplate DuplicateTrainingTemplate(Guid trainingTemplateId, string? name = null, VolumeLandmarks? volumeLandmark = null)
     {
         TrainingTemplate original = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
             ?? throw new TrainingTemplateNotFoundDomainException();
-        TrainingTemplate copy = original.Duplicate(original.CopyName());
+        TrainingTemplate copy = original.Duplicate(name ?? original.CopyName(), volumeLandmark);
         AddTrainingTemplate(copy);
         return copy;
     }
@@ -103,6 +105,16 @@ public sealed class Program : AggregateRoot<Guid>
         TrainingTemplate trainingTemplate = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
             ?? throw new TrainingTemplateNotFoundDomainException();
         trainingTemplate.Rename(name);
+    }
+
+    /// <summary>Changes the volume landmark of an active template of this program</summary>
+    /// <param name="trainingTemplateId">Template to change</param>
+    /// <param name="volumeLandmark">New landmark</param>
+    public void ChangeTrainingTemplateVolumeLandmark(Guid trainingTemplateId, VolumeLandmarks volumeLandmark)
+    {
+        TrainingTemplate trainingTemplate = trainingTemplates.SingleOrDefault(t => t.Id == trainingTemplateId)
+            ?? throw new TrainingTemplateNotFoundDomainException();
+        trainingTemplate.ChangeVolumeLandmark(volumeLandmark);
     }
 
     /// <summary>Shares the program: generates its share token, or returns the current one if it is already shared</summary>
