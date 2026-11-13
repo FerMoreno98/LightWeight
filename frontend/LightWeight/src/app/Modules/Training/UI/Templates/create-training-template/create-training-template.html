@@ -10,7 +10,7 @@
       <div class="flex flex-col items-center gap-3 text-center">
         <p class="text-sm text-soft">Las plantillas pertenecen a un programa y todavía no tienes ninguno.</p>
         <a
-          routerLink="/training/createprogram"
+          [routerLink]="createProgramLink"
           class="btn btn-primary"
         >
           Crear programa
@@ -21,7 +21,7 @@
         <div>
           <div class="flex items-center justify-between">
             <label for="programId" class="block text-sm font-medium text-soft">Programa</label>
-            <a routerLink="/training/createprogram" class="text-xs font-medium text-accent transition hover:text-accent">+ Nuevo programa</a>
+            <a [routerLink]="createProgramLink" class="text-xs font-medium text-accent transition hover:text-accent">+ Nuevo programa</a>
           </div>
           <select
             id="programId"

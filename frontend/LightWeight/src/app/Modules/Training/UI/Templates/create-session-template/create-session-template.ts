@@ -4,6 +4,7 @@ import { TrainingStore } from '../../../state/training.store';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SeriesPerGroupPerSession } from '../../../data/training-api.service';
 import { muscleGroupLabel } from '../../shared/muscle-groups';
+import { TrainingFlow } from '../../shared/training-flow';
 
 @Component({
   selector: 'app-create-session-template',
@@ -16,6 +17,9 @@ export class CreateSessionTemplate {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private flow = inject(TrainingFlow);
+  /** Built once: a new UrlTree on every check would make [routerLink] change all the time */
+  readonly templatesListLink = this.flow.templatesList();
 
   isLoading = this.store.isLoading;
   error = this.store.error;
@@ -47,7 +51,8 @@ export class CreateSessionTemplate {
   }
 
   goToSession(session: SeriesPerGroupPerSession){
-    this.router.navigate(['/training/sessionsets', this.idTrainingTemplate, session.sessionId]);
+    if (!this.idTrainingTemplate) return;
+    this.router.navigateByUrl(this.flow.sessionSets(this.idTrainingTemplate, session.sessionId));
   }
 
   async deleteSession(session: SeriesPerGroupPerSession){

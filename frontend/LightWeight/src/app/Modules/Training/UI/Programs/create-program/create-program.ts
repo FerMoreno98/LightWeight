@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { MuscleGroup } from '../../../data/training-api.service';
 import { MUSCLE_GROUPS, MUSCLE_GROUP_LABELS } from '../../shared/muscle-groups';
+import { TrainingFlow } from '../../shared/training-flow';
 
 @Component({
   selector: 'app-create-program',
@@ -17,6 +18,7 @@ export class CreateProgram {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private location = inject(Location);
+  private flow = inject(TrainingFlow);
   /** Whether the user arrived here from another page of the app (so Cancel can go back to it) */
   private hasPreviousPage = !!this.router.lastSuccessfulNavigation()?.previousNavigation;
 
@@ -51,7 +53,7 @@ export class CreateProgram {
     );
 
     if (id) {
-      this.router.navigate(['/training/trainingtemplate'], { queryParams: { programId: id } });
+      this.router.navigateByUrl(this.flow.programCreated(id));
     }
   }
 
@@ -60,7 +62,7 @@ export class CreateProgram {
     if (this.hasPreviousPage) {
       this.location.back();
     } else {
-      this.router.navigate(['/training/trainingtemplates']);
+      this.router.navigateByUrl(this.flow.templatesList());
     }
   }
 }

@@ -1,9 +1,10 @@
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, UrlTree } from '@angular/router';
 import { Exercise } from '../../../data/training-api.service';
 import { MUSCLE_GROUPS, muscleGroupLabel } from '../../shared/muscle-groups';
+import { TrainingFlow } from '../../shared/training-flow';
 
 @Component({
   selector: 'app-exercise-settings',
@@ -16,6 +17,7 @@ export class ExerciseSettings {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private flow = inject(TrainingFlow);
 
   isLoading = this.store.isLoading;
   error = this.store.error;
@@ -34,6 +36,9 @@ export class ExerciseSettings {
   series: number | null = 1;
   emphasizedMuscleGroups: number[] = [];
 
+  /** Back to the sets of the session. Built once from the route ids (null until they are read) */
+  setsLink: UrlTree | null = null;
+
   isEditMode = false;
   editingSetId: string | null = null;
 
@@ -41,6 +46,7 @@ export class ExerciseSettings {
     this.TemplateId = this.route.snapshot.paramMap.get('templateid');
     this.SessionId = this.route.snapshot.paramMap.get('sessionid');
     const setId = this.route.snapshot.queryParamMap.get('setId');
+    if (this.TemplateId && this.SessionId) this.setsLink = this.flow.sessionSets(this.TemplateId, this.SessionId);
 
     await this.store.GetAllExercises();
     this.Exercises = this.store.exercises();
@@ -85,7 +91,7 @@ export class ExerciseSettings {
 
   backToExercises(){
     if (this.isEditMode){
-      this.router.navigate(['/training/sessionsets', this.TemplateId, this.SessionId]);
+      this.backToSets();
       return;
     }
     this.selectedExercise = null;
@@ -133,7 +139,11 @@ export class ExerciseSettings {
         );
 
     if (success){
-      this.router.navigate(['/training/sessionsets', this.TemplateId, this.SessionId]);
+      this.backToSets();
     }
+  }
+
+  private backToSets(){
+    if (this.setsLink) this.router.navigateByUrl(this.setsLink);
   }
 }

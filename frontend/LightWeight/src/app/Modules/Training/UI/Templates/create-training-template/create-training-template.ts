@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { TrainingFlow } from '../../shared/training-flow';
 
 @Component({
   selector: 'app-create-training-template',
@@ -14,6 +15,9 @@ export class CreateTrainingTemplate {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private flow = inject(TrainingFlow);
+  /** Built once: a new UrlTree on every check would make [routerLink] change all the time */
+  readonly createProgramLink = this.flow.createProgram();
 
   isLoading = this.store.isLoading;
   error = this.store.error;
@@ -45,7 +49,7 @@ export class CreateTrainingTemplate {
     )
 
     if (id){
-      this.router.navigate(['/training/sessiontemplate', id]);
+      this.router.navigateByUrl(this.flow.templateSessions(id));
     }
   }
 }

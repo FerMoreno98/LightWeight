@@ -7,6 +7,7 @@ import { Set } from '../../../data/training-api.service';
 import { TECHNIQUE_LABELS } from '../../shared/cycle-format';
 import { muscleGroupLabel } from '../../shared/muscle-groups';
 import { ExerciseRun, SuperSetUnit, buildUnits, groupConsecutive, orderedSetIds } from '../../shared/superset';
+import { TrainingFlow } from '../../shared/training-flow';
 
 /** Consecutive planned sets of one exercise, with a stable key to select it */
 export interface ExerciseSetGroup extends ExerciseRun<Set> {
@@ -27,6 +28,7 @@ export class SessionSets {
   private store = inject(TrainingStore);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private flow = inject(TrainingFlow);
 
   private _isLoadingSets = signal(true);
   isLoading = this._isLoadingSets.asReadonly();
@@ -79,14 +81,13 @@ export class SessionSets {
   }
 
   addSet(){
-    this.router.navigate(['/training/exercisesettings', this.TemplateId, this.SessionId]);
+    if (!this.TemplateId || !this.SessionId) return;
+    this.router.navigateByUrl(this.flow.exerciseSettings(this.TemplateId, this.SessionId));
   }
 
   selectSet(set: Set){
-    if (this.isSelecting()) return;
-    this.router.navigate(['/training/exercisesettings', this.TemplateId, this.SessionId], {
-      queryParams: { setId: set.id },
-    });
+    if (this.isSelecting() || !this.TemplateId || !this.SessionId) return;
+    this.router.navigateByUrl(this.flow.exerciseSettings(this.TemplateId, this.SessionId, set.id));
   }
 
   async deleteSet(setId: string){
@@ -104,7 +105,8 @@ export class SessionSets {
   }
 
   backToSessions(){
-    this.router.navigate(['/training/sessiontemplate', this.TemplateId]);
+    if (!this.TemplateId) return;
+    this.router.navigateByUrl(this.flow.templateSessions(this.TemplateId));
   }
 
   // ---------------------------------------------------------------- Reorder (drag and drop)
