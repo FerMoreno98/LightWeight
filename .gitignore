@@ -10,3 +10,6 @@ Doc/ServerSetup.md
 
 # Copias de la BD que hace deploy/deploy.sh antes de cada despliegue (en el servidor)
 backups/
+
+# Scripts SQL locales
+/sql/
