@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ExerciseProgressStore } from '../../state/exercise-progress.store';
 import { formatValue } from '../time-chart-options';
+import { ScopeToggle } from '../scope-toggle/scope-toggle';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const kg = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -10,7 +11,7 @@ const kg = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 1, maximumFra
 @Component({
     selector: 'app-progress-list',
     standalone: true,
-    imports: [RouterLink],
+    imports: [RouterLink, ScopeToggle],
     templateUrl: './progress-list.html',
 })
 export class ProgressList implements OnInit {

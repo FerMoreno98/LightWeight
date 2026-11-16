@@ -138,6 +138,62 @@ public class TrainingProjectionsTests
     }
 
     [Fact]
+    public async Task ExercisesProgress_FilteredByMacrocycle_OnlyTheExercisesPerformedInIt()
+    {
+        // Arrange: squat only in the previous macrocycle
+        var data = new TrainingData();
+        Guid previous = Guid.CreateVersion7(), current = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, macrocycleId: previous), data.Squat, 100, 10, 8);
+        data.Set(data.Session(Monday.AddDays(1), macrocycleId: previous), data.Bench, 100, 10, 8);   // 140
+        data.Set(data.Session(Monday.AddDays(7), macrocycleId: current), data.Bench, 100, 10, 7);    // 143.3
+        // Act
+        var exercises = await new GetExercisesProgressQueryHandler(data.Store())
+            .HandleAsync(new GetExercisesProgressQuery(data.UserId, ExercisesMacrocycleId: current));
+        // Assert: the marks are still the historical ones
+        var bench = Assert.Single(exercises);
+        Assert.Equal((data.Bench, 2, 143.3m, 2.4m), (bench.ExerciseId, bench.Sessions, bench.LastEstimatedOneRepMax, bench.Trend));
+    }
+
+    [Fact]
+    public async Task ExercisesProgress_MarksOfTheMacrocycle_IgnoreTheSessionsOfOtherMacrocycles()
+    {
+        // Arrange
+        var data = new TrainingData();
+        Guid previous = Guid.CreateVersion7(), current = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, macrocycleId: previous), data.Squat, 100, 10, 8);
+        data.Set(data.Session(Monday.AddDays(1), macrocycleId: previous), data.Bench, 100, 10, 8);
+        data.Set(data.Session(Monday.AddDays(7), macrocycleId: current), data.Bench, 100, 10, 7);    // 143.3
+        // Act
+        var exercises = await new GetExercisesProgressQueryHandler(data.Store())
+            .HandleAsync(new GetExercisesProgressQuery(data.UserId, MarksMacrocycleId: current));
+        // Assert: no comparison inside the macrocycle; the squat is listed without marks but keeps its last date
+        Assert.Equal([data.Bench, data.Squat], exercises.Select(e => e.ExerciseId));
+        Assert.Equal((1, 143.3m, (decimal?)null), (exercises[0].Sessions, exercises[0].LastEstimatedOneRepMax, exercises[0].Trend));
+        Assert.Equal((0, (decimal?)null, Monday), (exercises[1].Sessions, exercises[1].LastEstimatedOneRepMax, exercises[1].LastPerformedAt));
+    }
+
+    [Fact]
+    public async Task ExerciseProgress_OfAMacrocycle_OnlyItsSessions()
+    {
+        // Arrange
+        var data = new TrainingData();
+        Guid previous = Guid.CreateVersion7(), current = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, macrocycleId: previous), data.Bench, 100, 10, 8);
+        data.Set(data.Session(Monday.AddDays(7), macrocycleId: current), data.Bench, 105, 10, 8);
+        var handler = new GetExerciseProgressQueryHandler(data.Store());
+        // Act
+        var inCurrent = await handler.HandleAsync(new GetExerciseProgressQuery(data.UserId, data.Bench, current));
+        var inOther = await handler.HandleAsync(new GetExerciseProgressQuery(data.UserId, data.Bench, Guid.CreateVersion7()));
+        // Assert: performed, but not in that macrocycle → empty, not null
+        Assert.Equal([147m], inCurrent!.Progression.Select(p => p.EstimatedOneRepMax));
+        Assert.Equal([Monday.AddDays(7)], inCurrent.RecentSessions.Select(s => s.PerformedAt));
+        Assert.NotNull(inOther);
+        Assert.Equal("Press banca", inOther.Name);
+        Assert.Empty(inOther.Progression);
+        Assert.Empty(inOther.RecentSessions);
+    }
+
+    [Fact]
     public async Task ExerciseProgress_OfAnExerciseTheUserNeverDid_IsNull()
     {
         // Arrange: another user did it

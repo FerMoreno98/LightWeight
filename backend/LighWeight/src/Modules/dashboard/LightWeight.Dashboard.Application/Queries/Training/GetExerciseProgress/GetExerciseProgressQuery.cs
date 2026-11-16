@@ -4,8 +4,12 @@ using LightWeight.shared.Mediator;
 
 namespace LightWeight.Dashboard.Application.Queries.Training.GetExerciseProgress;
 
-/// <summary>The whole history of one exercise of the user. Null when the user has never performed it</summary>
-public sealed record GetExerciseProgressQuery(Guid UserId, Guid ExerciseId) : IQuery<ExerciseProgressResponse?>;
+/// <summary>
+/// The history of one exercise of the user. Null when the user has never performed it; empty lists when it was not
+/// performed in the macrocycle asked for
+/// </summary>
+/// <param name="MacrocycleId">Only the sessions of this macrocycle (null: the whole history)</param>
+public sealed record GetExerciseProgressQuery(Guid UserId, Guid ExerciseId, Guid? MacrocycleId = null) : IQuery<ExerciseProgressResponse?>;
 
 public sealed record ExerciseProgressResponse
 (

@@ -31,7 +31,7 @@ Read model of the application. It receives the integration events of the other m
 ### Training (`Projections/Training`, `Projectors/Training`, `Queries/Training`, `Calculations/Training`)
 - `TrainingSessionProjection` (key `SessionId`, with the cycle ids and the wellbeing) and `TrainingSetProjection` (key `SetId`, with what was performed and the facts of its planned set).
 - `TrainingSessionProjector`: `training.session.finished.v1` → `ITrainingProjectionStore.UpsertSessionAsync(session, sets)`, which upserts the session and **replaces its sets in one save**.
-- Queries: `GetTrainingVolume`, `GetSessionsPerformance`, `GetExercisesProgress`, `GetExerciseProgress` (null → 404).
+- Queries: `GetTrainingVolume`, `GetSessionsPerformance`, `GetExercisesProgress` (optional `ExercisesMacrocycleId` and `MarksMacrocycleId`, independent), `GetExerciseProgress` (optional `MacrocycleId`; null → 404, performed but not in the macrocycle → empty lists). The filter is `ExerciseHistory.InMacrocycle`, applied in memory after building the whole history.
 - Calculations: `OneRepMax`, `RepZones`, `ExerciseHistory` (an exercise in a session: its sets, zone and estimates; plus `Trend`), `SetFatigue`, `SessionPerformance`, `WeeklyVolume`. Formulas and limits in `Dashboard.md` → Calculations.
 
 ### Calculations (`Application/Calculations`)
@@ -113,7 +113,7 @@ Training: `UI/training-overview` (home: session performance as `UI/bar-chart` st
 **Done:** BodyMetrics, Training and UserProfile projections, rebuild (answered by every source), read queries and calculations (weekly averages; fat percentage; 1RM, zones, volume, fatigue, session performance, trend), host registration, unit tests, frontend charts (Evolución tab with the fat percentage card, home, Progreso).
 
 **Pending:**
-- Macrocycle/mesocycle filter: optional `?macrocycleId=`/`?mesocycleId=` on the training endpoints (the ids are already stored), cycle events from Training for the selector, and their date ranges for the body measurement charts.
+- Progreso is filtered by the active macrocycle (done). Pending: a mesocycle filter (`MesocycleId` is already stored), cycle events from Training to choose any past cycle, and their date ranges for the body measurement charts.
 
 ## 8. Things NOT to do in this module
 

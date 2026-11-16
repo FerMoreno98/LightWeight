@@ -12,6 +12,19 @@
       </div>
     } @else if (store.detail(); as detail) {
       <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">{{ detail.name }}</h1>
+      <app-scope-toggle
+        label="Marcas"
+        [value]="store.marksScope()"
+        [disabled]="!store.hasMacrocycle()"
+        (changed)="changeMarksScope($event)"
+      />
+
+      @if (detail.recentSessions.length === 0) {
+        <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center text-sm text-muted">
+          No has hecho este ejercicio en el macrociclo actual.
+          <button type="button" (click)="changeMarksScope('history')" class="ml-1 font-medium text-accent hover:underline">Ver el histórico</button>
+        </div>
+      } @else {
 
       <!-- Estimated 1RM and best weight -->
       <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
@@ -90,6 +103,7 @@
           }
         </ul>
       </article>
+      }
     } @else if (store.loading()) {
       @for (i of [1, 2]; track i) {
         <div class="h-80 animate-pulse rounded-xl border border-line bg-surface/60"></div>

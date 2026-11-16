@@ -21,18 +21,20 @@ public sealed class GetExercisesProgressQueryHandler : IQueryHandler<GetExercise
         var sets = await _store.GetSetsAsync(query.UserId, ct: ct);
         return ExerciseHistory.Build(sessions, sets)
             .GroupBy(e => e.ExerciseId)
+            .Where(exercise => query.ExercisesMacrocycleId is not { } macrocycleId
+                || exercise.Any(e => e.Session.MacrocycleId == macrocycleId))
             .Select(exercise =>
             {
-                var history = exercise.ToList();
-                ExerciseInSession last = history[^1];
+                ExerciseInSession last = exercise.Last();
+                var marks = ExerciseHistory.InMacrocycle(exercise, query.MarksMacrocycleId);
                 return new ExerciseProgressSummary
                 (
                     exercise.Key,
                     last.ExerciseName,
                     last.Session.StartedAt,
-                    history.Count,
-                    history.LastOrDefault(e => e.Best is not null)?.Best!.Value,
-                    ExerciseHistory.Trend(history)
+                    marks.Count,
+                    marks.LastOrDefault(e => e.Best is not null)?.Best!.Value,
+                    ExerciseHistory.Trend(marks)
                 );
             })
             .OrderByDescending(e => e.LastPerformedAt)

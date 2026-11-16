@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../Environments/Environment';
@@ -64,7 +64,9 @@ export type RepZone = 'Strength' | 'Hypertrophy' | 'Endurance';
 export interface ExerciseSummary {
     exerciseId: string;
     name: string;
+    /** Last time it was performed, in the whole history */
     lastPerformedAt: string;
+    /** Sessions with the exercise; 0 when it has none in the macrocycle of the marks */
     sessions: number;
     /** Best estimated 1RM of the last session that has one; null for body weight exercises */
     lastEstimatedOneRepMax: number | null;
@@ -124,14 +126,25 @@ export class DashboardApiService {
         return this.http.get<SessionPerformance[]>(`${this.baseUrl}/training/sessions`);
     }
 
-    /** The exercises the user has performed, from the most recently trained */
-    GetExercises(): Observable<ExerciseSummary[]> {
-        return this.http.get<ExerciseSummary[]>(`${this.baseUrl}/training/exercises`);
+    /**
+     * The exercises the user has performed, from the most recently trained
+     * @param exercisesMacrocycleId only the exercises performed in this macrocycle (null: all of them)
+     * @param marksMacrocycleId sessions, 1RM and trend of this macrocycle only (null: the whole history)
+     */
+    GetExercises(exercisesMacrocycleId: string | null, marksMacrocycleId: string | null): Observable<ExerciseSummary[]> {
+        let params = new HttpParams();
+        if (exercisesMacrocycleId) params = params.set('exercisesMacrocycleId', exercisesMacrocycleId);
+        if (marksMacrocycleId) params = params.set('marksMacrocycleId', marksMacrocycleId);
+        return this.http.get<ExerciseSummary[]>(`${this.baseUrl}/training/exercises`, { params });
     }
 
-    /** Whole history of one exercise; 404 if the user never performed it */
-    GetExerciseProgress(exerciseId: string): Observable<ExerciseProgress> {
-        return this.http.get<ExerciseProgress>(`${this.baseUrl}/training/exercises/${exerciseId}`);
+    /**
+     * History of one exercise; 404 if the user never performed it
+     * @param macrocycleId only the sessions of this macrocycle (null: the whole history); empty lists when it has none
+     */
+    GetExerciseProgress(exerciseId: string, macrocycleId: string | null): Observable<ExerciseProgress> {
+        const params = macrocycleId ? new HttpParams().set('macrocycleId', macrocycleId) : undefined;
+        return this.http.get<ExerciseProgress>(`${this.baseUrl}/training/exercises/${exerciseId}`, { params });
     }
 
     /** Empties the projections of the user and fills them again from the source modules */
