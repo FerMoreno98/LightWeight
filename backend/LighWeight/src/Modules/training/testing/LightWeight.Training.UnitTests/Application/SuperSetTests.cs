@@ -26,8 +26,8 @@ public class SuperSetTests
         public TemplateSession Session { get; }
         public List<TemplateSet> Flyes { get; } = new();
         public List<TemplateSet> Dips { get; } = new();
-        public Exercise Fly { get; } = Exercise.Create("Aperturas", true, new List<MuscleGroups> { MuscleGroups.Chest });
-        public Exercise Dip { get; } = Exercise.Create("Fondos", true, new List<MuscleGroups> { MuscleGroups.Triceps });
+        public Exercise Fly { get; } = Exercise.Create("Aperturas", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
+        public Exercise Dip { get; } = Exercise.Create("Fondos", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Triceps });
         public IProgramRepository Programs { get; } = Substitute.For<IProgramRepository>();
         public IExerciseRepository Exercises { get; } = Substitute.For<IExerciseRepository>();
         public ITrainingSessionRepository Sessions { get; } = Substitute.For<ITrainingSessionRepository>();

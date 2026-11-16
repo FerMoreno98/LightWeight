@@ -46,7 +46,7 @@ public class ProgramSharingTests
     }
 
     private static Exercise Bench() =>
-        Exercise.Create("Press banca", true, new List<MuscleGroups> { MuscleGroups.Chest });
+        Exercise.Create("Press banca", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
 
     // ---------------------------------------------------------------- Share / Revoke
 

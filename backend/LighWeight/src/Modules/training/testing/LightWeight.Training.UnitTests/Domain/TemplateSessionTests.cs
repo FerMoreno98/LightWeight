@@ -57,7 +57,7 @@ public class TemplateSessionTests
         Exercise exercise = Exercise.Create
         (
             "EjercicioPrueba",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         TemplateSession session = TemplateSession.Create
@@ -105,13 +105,13 @@ public class TemplateSessionTests
         Exercise exercise = Exercise.Create
         (
             "EjercicioPrueba",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         Exercise exercise2 = Exercise.Create
         (
             "EjercicioPrueba2",
-            true,
+            Laterality.Bilateral,
             muscleGroups2
         );
         TemplateSession session = TemplateSession.Create

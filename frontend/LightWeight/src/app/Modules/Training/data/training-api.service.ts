@@ -3,11 +3,16 @@ import { inject, Service } from '@angular/core';
 import { environment } from '../../../../Environments/Environment';
 import { Observable } from 'rxjs';
 
+/** Whether an exercise is performed with both limbs, one at a time, or either way */
+export type Laterality = 'Bilateral' | 'Unilateral' | 'Both';
 export interface Exercise {
     id: string;
     name: string;
-    isBilateral: boolean;
+    laterality: Laterality;
+    /** Every group it can target: the primary ones followed by the secondary ones (numeric values of the enum) */
     aimMuscleGroups: number[];
+    /** Groups it mainly targets */
+    primaryMuscleGroups: number[];
 }
 /** A session of a template, with the size of its plan */
 export interface Session{
@@ -17,8 +22,9 @@ export interface Session{
     exercisesCount : number
 }
 export type MuscleGroup =
-    | 'Shoulder' | 'Back' | 'Chest' | 'Biceps' | 'Triceps'
-    | 'Glutes' | 'Quads' | 'Hamstring' | 'Calves';
+    | 'Chest' | 'Back' | 'Traps' | 'FrontDelts' | 'SideDelts'
+    | 'RearDelts' | 'Triceps' | 'Biceps' | 'Forearms' | 'Abs'
+    | 'Glutes' | 'Quads' | 'Hamstring' | 'Calves' | 'Adductors';
 export interface SeriesPerGroupPerSession{
     sessionId : string,
     sessionName : string,

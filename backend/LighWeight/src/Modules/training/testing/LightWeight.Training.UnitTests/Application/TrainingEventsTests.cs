@@ -25,8 +25,8 @@ public class TrainingEventsTests
     private sealed class Scenario
     {
         public Guid UserId { get; } = Guid.CreateVersion7();
-        public Exercise Bench { get; } = Exercise.Create("Press banca", true, new List<MuscleGroups> { MuscleGroups.Chest, MuscleGroups.Triceps, MuscleGroups.Shoulder });
-        public Exercise Dumbbells { get; } = Exercise.Create("Press mancuernas", true, new List<MuscleGroups> { MuscleGroups.Chest });
+        public Exercise Bench { get; } = Exercise.Create("Press banca", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest, MuscleGroups.Triceps, MuscleGroups.FrontDelts });
+        public Exercise Dumbbells { get; } = Exercise.Create("Press mancuernas", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
         public Guid PlannedSetId { get; } = Guid.CreateVersion7();
         public Macrocycle Macrocycle { get; }
         public Mesocycle Mesocycle { get; }
@@ -154,7 +154,7 @@ public class TrainingEventsTests
         Assert.True(planned.IsPlanned);
         Assert.Equal("DropSet", planned.Technique);
         Assert.Equal(["Chest"], planned.PlannedMuscleGroups!);
-        Assert.Equal(["Chest", "Triceps", "Shoulder"], planned.ExerciseMuscleGroups);
+        Assert.Equal(["Chest", "Triceps", "FrontDelts"], planned.ExerciseMuscleGroups);
         Assert.Equal((6, 8), (planned.PlannedMinReps, planned.PlannedMaxReps));
     }
 

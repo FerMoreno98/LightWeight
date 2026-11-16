@@ -248,19 +248,19 @@ public class TrainingTemplateTests
         Exercise exercise = Exercise.Create
         (
             "exercis1",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         Exercise exercise2 = Exercise.Create
         (
             "exercis2",
-            true,
+            Laterality.Bilateral,
             new List<MuscleGroups>()
         );
         Exercise exercise3 = Exercise.Create
         (
             "exercis3",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         AdvanceTrainingTechniques advanceTrainingTechniques = AdvanceTrainingTechniques.Create(false,false,false);

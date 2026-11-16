@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
 import { ActivatedRoute, Router, RouterLink, UrlTree } from '@angular/router';
 import { Exercise } from '../../../data/training-api.service';
-import { MUSCLE_GROUPS, muscleGroupLabel } from '../../shared/muscle-groups';
+import { LATERALITY_LABELS, MUSCLE_GROUPS, muscleGroupLabel } from '../../shared/muscle-groups';
 import { TrainingFlow } from '../../shared/training-flow';
 
 @Component({
@@ -69,6 +69,38 @@ export class ExerciseSettings {
           .filter(index => index !== -1);
       }
     }
+  }
+
+  readonly lateralityLabels = LATERALITY_LABELS;
+
+  /** Numeric values of every muscle group, to filter by them */
+  readonly muscleGroups = MUSCLE_GROUPS.map((_, index) => index);
+  /** Text typed in the search box */
+  searchTerm = signal('');
+  /** Primary muscle group to filter by (null: all of them) */
+  groupFilter = signal<number | null>(null);
+
+  /** Exercises whose name contains every word searched (ignoring case and accents) and that mainly target the group */
+  filteredExercises = computed(() => {
+    const words = normalize(this.searchTerm()).split(/\s+/).filter(Boolean);
+    const group = this.groupFilter();
+    return this.store.exercises().filter(exercise =>
+      (group === null || exercise.primaryMuscleGroups.includes(group))
+      && words.every(word => normalize(exercise.name).includes(word)));
+  });
+
+  /** Selects a group, or goes back to all of them when it was already selected */
+  toggleGroupFilter(group: number | null){
+    this.groupFilter.set(this.groupFilter() === group ? null : group);
+  }
+
+  clearFilters(){
+    this.searchTerm.set('');
+    this.groupFilter.set(null);
+  }
+
+  isPrimaryMuscleGroup(exercise: Exercise, group: number): boolean {
+    return exercise.primaryMuscleGroups.includes(group);
   }
 
   muscleGroupLabel(group: number): string {
@@ -146,4 +178,9 @@ export class ExerciseSettings {
   private backToSets(){
     if (this.setsLink) this.router.navigateByUrl(this.setsLink);
   }
+}
+
+/** Lowercase and without accents, so "jalon" finds "Jalón" */
+function normalize(text: string): string {
+  return text.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 }

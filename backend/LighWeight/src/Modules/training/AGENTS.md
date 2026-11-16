@@ -72,14 +72,15 @@ This module handles strength and bodybuilding training planning and logging. It 
 - **DB table**: `training_TrainingTemplates`
 
 ### `Exercise` (AggregateRoot)
-- **Properties**: `Name`, `IsBilateral`, `AimMuscleGroups` (List\<MuscleGroups\>)
+- **Properties**: `Name`, `Laterality` (`Bilateral`, `Unilateral`, `Both`), `PrimaryMuscleGroups` and `SecondaryMuscleGroups` (List\<MuscleGroups\>), `AimMuscleGroups` (computed: primary followed by secondary)
 - **Invariants**:
-  - `AimMuscleGroups` lists the muscle groups this exercise can work (not necessarily all are targeted in every set)
-  - `IsBilateral` indicates whether the exercise involves both limbs simultaneously
+  - `AimMuscleGroups` lists the muscle groups this exercise can work (not necessarily all are targeted in every set). For now every group counts 1 in the volume; the primary/secondary split exists so secondary ones can count less in the future
+  - `Laterality` is only informative for now (shown to the user); it does not change how sets are planned or registered
+  - `UpdateClassification` replaces laterality and groups, keeping the exercise and the sets that use it
 - **Child entities**: None
 - **Domain events it emits**: None
-- **Design note**: Exercises are a global catalog seeded by `Infrastructure/Persistence/Seed/ExerciseSeeder.cs` (no `UserId`, no create command). The `Set` and `TemplateSet` entities reference `ExerciseId` rather than embedding the full value.
-- **DB table**: `training_Exercises` (`_aimMuscleGroups` stored as `jsonb`)
+- **Design note**: Exercises are a global catalog (no `UserId`, no create command). The source of truth is `Infrastructure/Persistence/Seed/catalogo-ejercicios.csv` (embedded resource, columns `grupo_principal;ejercicio;secundarios;lateralidad;nota`, values in Spanish), parsed by `ExerciseCatalog`. On every startup `ExerciseSeeder` syncs it by name: adds new exercises and updates laterality and groups of existing ones; exercises missing from the CSV are kept (sets may use them). `ExerciseCatalogTests` validates the CSV. The `Set` and `TemplateSet` entities reference `ExerciseId` rather than embedding the full value.
+- **DB table**: `training_Exercises` (`_primaryMuscleGroups` / `_secondaryMuscleGroups` stored as `jsonb`)
 
 ### `TemplateSession` (Entity, child of `TrainingTemplate`)
 - **Properties**: `Name`, `Order`, `IsDeleted`, `DeletedAt?`
@@ -136,7 +137,7 @@ This module handles strength and bodybuilding training planning and logging. It 
 | `training_TrainingTemplates` | `Id` (guid PK), `ProgramId`, `TrainingDistribution` (varchar 20), `VolumeLandmark`, `DurationInDays`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `ProgramId` → Programs (cascade) |
 | `training_TemplateSessions` | `Id` (guid PK), `TrainingTemplateId`, `Name` (200), `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `TrainingTemplateId` → TrainingTemplates (cascade) |
 | `training_TemplateSets` | `Id` (guid PK), `TemplateSessionId`, `ExerciseId`, `ExpectedRPE` (decimal 3,1), `SuperSetGroupId?`, `AimMuscleGroups` (jsonb), `RepetitionRange_Min`, `RepetitionRange_Max`, `AdvanceTrainingTechniques`, `Order`, `IsDeleted` (bool, default false), `DeletedAt?` | `TemplateSessionId` → TemplateSessions (cascade), `ExerciseId` → Exercises (cascade) |
-| `training_Exercises` | `Id` (guid PK), `Name` (200), `IsBilateral`, `AimMuscleGroups` (jsonb) | — |
+| `training_Exercises` | `Id` (guid PK), `Name` (200), `Laterality` (varchar 20), `PrimaryMuscleGroups` (jsonb), `SecondaryMuscleGroups` (jsonb) | — |
 
 - **Migrations**: located in `Infrastructure/Migrations/`, naming convention `{yyyyMMddHHmm}_{Description}.cs` (soft delete columns added in `202607291213_AddSoftDeleteToTemplates`)
 - **Program restructure** (`202607291214_RestructureTrainingAroundProgram`): creates `training_Programs` (one Program per pre-existing template, reusing its Id), moves `UserId`/`Name` out of `training_TrainingTemplates` (now `ProgramId`, `DurationInDays`, `Order`), drops `Macrocycles.Periodization`, `Mesocycles.AimMuscleGroups` and `Microcycles.DurationInDays/TrainingDistribution`, adds `Mesocycles.ProgramId`, `Microcycles.TrainingTemplateId/WeekNumber`, `TrainingSessions.TemplateSessionId`, `Sets.TemplateSetId`, and converts `TemplateSets.ExpectedRIR` into `ExpectedRPE` (`10 - RIR`). FKs pointing to templates are `NO ACTION` (templates are only soft deleted). It fails on purpose if there are mesocycles/microcycles, because they cannot be mapped to a program/template automatically
@@ -150,7 +151,7 @@ training/
 ├── LightWeight.Training.Domain/
 │   ├── Aggregates/      # Macrocycle, TrainingSession, Program, Exercise
 │   ├── Entities/        # Mesocycle, Microcycle, Set, TrainingTemplate, TemplateSession, TemplateSet
-│   ├── Enum/            # MuscleGroups, Periodization, TrainingDistribution, TrainingStage, VolumeLandmarks
+│   ├── Enum/            # MuscleGroups, Laterality, Periodization, TrainingDistribution, TrainingStage, VolumeLandmarks
 │   ├── Events/          # TrainingSessionFinishedDomainEvent
 │   ├── Exceptions/
 │   ├── Repositories/    # IMacrocycleRepository, ITrainingSessionRepository, IProgramRepository, IExerciseRepository
@@ -166,10 +167,10 @@ training/
 ├── LightWeight.Training.Infrastructure/
 │   ├── Configurations/  # EF Core configurations
 │   ├── Migrations/      # FluentMigrator (2026072911xx / 2026072912xx)
-│   ├── Persistence/     # TrainingDbContext, UnitOfWork, Repositories/, Seed/
+│   ├── Persistence/     # TrainingDbContext, UnitOfWork, Repositories/, Seed/ (exercise catalog CSV + seeder)
 │   └── DependencyInjection.cs
 ├── LightWeight.Training.Api/   # TrainingModule (endpoints under /api/training)
-└── testing/LightWeight.Training.UnitTests/   # Domain/ and Application/
+└── testing/LightWeight.Training.UnitTests/   # Domain/, Application/ and Infrastructure/ (exercise catalog)
 ```
 
 ## 6. Dependencies

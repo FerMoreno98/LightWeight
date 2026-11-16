@@ -19,7 +19,7 @@ public sealed class GetAllExercisesQueryHandler : IQueryHandler<GetAllExercisesQ
         List<GetAllExercisesResponse> ret = new List<GetAllExercisesResponse>();   
         foreach(var exercise in exercises)
         {
-            var ex = new GetAllExercisesResponse(exercise.Id,exercise.Name,exercise.IsBilateral,exercise.AimMuscleGroups);
+            var ex = new GetAllExercisesResponse(exercise.Id,exercise.Name,exercise.Laterality.ToString(),exercise.AimMuscleGroups,exercise.PrimaryMuscleGroups);
             ret.Add(ex);
         }
 

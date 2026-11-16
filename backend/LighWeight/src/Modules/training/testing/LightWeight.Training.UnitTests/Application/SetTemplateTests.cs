@@ -72,7 +72,7 @@ public class SetTemplateTests
         Exercise exercise = Exercise.Create
         (
             "ValidExerciseName",
-            true,
+            Laterality.Bilateral,
             new List<MuscleGroups>()
         );
         _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
@@ -144,7 +144,7 @@ public class SetTemplateTests
         Exercise exercise = Exercise.Create
         (
             "ValidExerciseName",
-            true,
+            Laterality.Bilateral,
             new List<MuscleGroups>()
         );
         _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
@@ -183,7 +183,7 @@ public class SetTemplateTests
         Exercise exercise = Exercise.Create
         (
             "ValidExerciseName",
-            true,
+            Laterality.Bilateral,
             new List<MuscleGroups>()
         );
         _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
@@ -222,7 +222,7 @@ public class SetTemplateTests
         Exercise exercise = Exercise.Create
         (
             "ValidExerciseName",
-            true,
+            Laterality.Bilateral,
             new List<MuscleGroups>()
         );
         _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
@@ -305,7 +305,7 @@ public class SetTemplateTests
         IProgramRepository _programRepository = Substitute.For<IProgramRepository>();
         ITrainingUnitOfWork _UOW = Substitute.For<ITrainingUnitOfWork>();
         IExerciseRepository _exerciseRepository = Substitute.For<IExerciseRepository>();
-        Exercise exercise = Exercise.Create("Gemelo de pie", true, new List<MuscleGroups> { MuscleGroups.calves });
+        Exercise exercise = Exercise.Create("Gemelo de pie", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Calves });
         _exerciseRepository.GetByIdAsync(exercise.Id).Returns(exercise);
         var (program, sessionTemplate) = CreateProgramWithSession(UserId);
         _programRepository.GetByTemplateSessionIdAsync(sessionTemplate.Id).Returns(program);
@@ -319,7 +319,7 @@ public class SetTemplateTests
         await commandHandler.HandleAsync(command,default);
         // Assert
         TemplateSet set = Assert.Single(sessionTemplate.TemplateExercises);
-        Assert.Equal(MuscleGroups.calves, Assert.Single(set.AimMuscleGroups));
+        Assert.Equal(MuscleGroups.Calves, Assert.Single(set.AimMuscleGroups));
     }
 
     [Theory]
@@ -351,7 +351,7 @@ public class SetTemplateTests
         IExerciseRepository _exerciseRepository = Substitute.For<IExerciseRepository>();
         (Program program, TemplateSession session) = CreateProgramWithSession(userId);
         TrainingTemplate template = program.trainingTemplates.Single();
-        Exercise bench = Exercise.Create("Press banca", true, new List<MuscleGroups> { MuscleGroups.Chest });
+        Exercise bench = Exercise.Create("Press banca", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
         session.AddSet(TemplateSet.Create(bench.Id, RepetitionRange.Create(8, 6), 8.5m, new List<MuscleGroups> { MuscleGroups.Chest }));
         _programRepository.GetByTrainingTemplateIdAsync(template.Id).Returns(program);
         _exerciseRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>()).Returns(new List<Exercise> { bench });

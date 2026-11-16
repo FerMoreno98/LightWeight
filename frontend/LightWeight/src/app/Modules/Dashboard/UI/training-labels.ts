@@ -1,19 +1,22 @@
 import { RepZone } from '../data/dashboard-api.service';
 
-/**
- * Spanish names of the muscle groups. The keys come from the enum of training (its last value is "calves" in
- * lowercase), so they are looked up ignoring the case
- */
+/** Spanish names of the muscle groups. The keys are the names of the enum of training, looked up ignoring the case */
 const MUSCLE_LABELS: Record<string, string> = {
-    shoulder: 'Hombro',
-    back: 'Espalda',
     chest: 'Pecho',
-    biceps: 'Bíceps',
+    back: 'Espalda',
+    traps: 'Trapecio',
+    frontdelts: 'Deltoides anterior',
+    sidedelts: 'Deltoides lateral',
+    reardelts: 'Deltoides posterior',
     triceps: 'Tríceps',
+    biceps: 'Bíceps',
+    forearms: 'Antebrazo',
+    abs: 'Abdomen',
     glutes: 'Glúteos',
     quads: 'Cuádriceps',
     hamstring: 'Isquios',
     calves: 'Gemelos',
+    adductors: 'Aductores',
 };
 
 /** Order in which the muscle groups are listed: the one of the enum of training */

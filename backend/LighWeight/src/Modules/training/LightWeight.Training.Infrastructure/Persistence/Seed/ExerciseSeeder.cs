@@ -1,29 +1,29 @@
 using LightWeight.Training.Domain.Aggregates;
-using LightWeight.Training.Domain.Enum;
 using Microsoft.EntityFrameworkCore;
 
 namespace LightWeight.Training.Infrastructure.Persistence.Seed;
 
+/// <summary>
+/// Keeps the exercises in sync with the catalog (catalogo-ejercicios.csv), matching them by name: new ones are
+/// added and existing ones get the catalog's laterality and muscle groups. Exercises missing from the catalog are
+/// kept, since sets may use them
+/// </summary>
 public static class ExerciseSeeder
 {
     public static async Task SeedAsync(TrainingDbContext dbContext)
     {
-        if (await dbContext.Exercises.AnyAsync())
+        List<CatalogExercise> catalog = ExerciseCatalog.Load();
+        Dictionary<string, Exercise> existing = (await dbContext.Exercises.ToListAsync())
+            .ToDictionary(e => e.Name, StringComparer.OrdinalIgnoreCase);
+
+        foreach (CatalogExercise item in catalog)
         {
-            return;
+            if (existing.TryGetValue(item.Name, out Exercise? exercise))
+                exercise.UpdateClassification(item.Laterality, item.PrimaryMuscleGroups, item.SecondaryMuscleGroups);
+            else
+                dbContext.Exercises.Add(Exercise.Create(item.Name, item.Laterality, item.PrimaryMuscleGroups, item.SecondaryMuscleGroups));
         }
 
-        var exercises = new[]
-        {
-            Exercise.Create("Press banca", true, [MuscleGroups.Chest, MuscleGroups.Triceps, MuscleGroups.Shoulder]),
-            Exercise.Create("Sentadilla", true, [MuscleGroups.Quads, MuscleGroups.Glutes, MuscleGroups.Hamstring]),
-            Exercise.Create("Peso muerto", true, [MuscleGroups.Back, MuscleGroups.Hamstring, MuscleGroups.Glutes]),
-            Exercise.Create("Dominadas", true, [MuscleGroups.Back, MuscleGroups.Biceps]),
-            Exercise.Create("Press militar", true, [MuscleGroups.Shoulder, MuscleGroups.Triceps]),
-            Exercise.Create("Curl de bíceps con mancuerna", false, [MuscleGroups.Biceps]),
-        };
-
-        dbContext.Exercises.AddRange(exercises);
         await dbContext.SaveChangesAsync();
     }
 }

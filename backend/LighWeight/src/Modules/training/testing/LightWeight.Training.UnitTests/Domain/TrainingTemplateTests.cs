@@ -183,7 +183,7 @@ public class TrainingTemplateTests
         Exercise exercise = Exercise.Create
         (
             "EjercicioPrueba",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create
@@ -240,7 +240,7 @@ public class TrainingTemplateTests
         Exercise exercise = Exercise.Create
         (
             "EjercicioPrueba",
-            true,
+            Laterality.Bilateral,
             muscleGroups
         );
         TrainingTemplate trainingTemplate = TrainingTemplate.Create

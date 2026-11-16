@@ -23,8 +23,60 @@
         } @else if (Exercises.length === 0) {
           <p class="text-sm text-muted">No hay ejercicios disponibles.</p>
         } @else {
+          <div class="mb-6 space-y-3">
+            <input
+              type="search"
+              [ngModel]="searchTerm()"
+              (ngModelChange)="searchTerm.set($event)"
+              name="exerciseSearch"
+              placeholder="Buscar ejercicio..."
+              aria-label="Buscar ejercicio"
+              class="input"
+            />
+            <div class="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filtrar por grupo muscular principal">
+              <button
+                type="button"
+                (click)="toggleGroupFilter(null)"
+                [attr.aria-pressed]="groupFilter() === null"
+                class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                [class.border-accent]="groupFilter() === null"
+                [class.bg-accent/15]="groupFilter() === null"
+                [class.text-accent]="groupFilter() === null"
+                [class.border-line-strong]="groupFilter() !== null"
+                [class.bg-canvas]="groupFilter() !== null"
+                [class.text-soft]="groupFilter() !== null"
+              >
+                Todos
+              </button>
+              @for (group of muscleGroups; track group) {
+                <button
+                  type="button"
+                  (click)="toggleGroupFilter(group)"
+                  [attr.aria-pressed]="groupFilter() === group"
+                  class="shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition"
+                  [class.border-accent]="groupFilter() === group"
+                  [class.bg-accent/15]="groupFilter() === group"
+                  [class.text-accent]="groupFilter() === group"
+                  [class.border-line-strong]="groupFilter() !== group"
+                  [class.bg-canvas]="groupFilter() !== group"
+                  [class.text-soft]="groupFilter() !== group"
+                >
+                  {{ muscleGroupLabel(group) }}
+                </button>
+              }
+            </div>
+            <p class="text-xs text-muted">{{ filteredExercises().length }} de {{ Exercises.length }} ejercicios</p>
+          </div>
+
+          @if (filteredExercises().length === 0) {
+            <div class="rounded-xl border border-line bg-surface p-5 text-sm text-muted">
+              Ningún ejercicio coincide con la búsqueda.
+              <button type="button" (click)="clearFilters()" class="ml-1 font-medium text-accent hover:underline">Quitar filtros</button>
+            </div>
+          }
+
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            @for (exercise of Exercises; track exercise.id) {
+            @for (exercise of filteredExercises(); track exercise.id) {
               <button
                 type="button"
                 (click)="selectExercise(exercise)"
@@ -34,18 +86,25 @@
                   <h2 class="text-lg font-semibold text-fg">{{ exercise.name }}</h2>
                   <span
                     class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
-                    [class.bg-accent/15]="exercise.isBilateral"
-                    [class.text-accent]="exercise.isBilateral"
-                    [class.bg-raised]="!exercise.isBilateral"
-                    [class.text-soft]="!exercise.isBilateral"
+                    [class.bg-accent/15]="exercise.laterality === 'Bilateral'"
+                    [class.text-accent]="exercise.laterality === 'Bilateral'"
+                    [class.bg-raised]="exercise.laterality !== 'Bilateral'"
+                    [class.text-soft]="exercise.laterality !== 'Bilateral'"
                   >
-                    {{ exercise.isBilateral ? 'Bilateral' : 'Unilateral' }}
+                    {{ lateralityLabels[exercise.laterality] }}
                   </span>
                 </div>
 
                 <div class="mt-3 flex flex-wrap gap-1.5">
                   @for (group of exercise.aimMuscleGroups; track group) {
-                    <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs text-soft">
+                    <span
+                      class="rounded-full border bg-canvas px-2.5 py-1 text-xs"
+                      [class.border-line-strong]="isPrimaryMuscleGroup(exercise, group)"
+                      [class.font-medium]="isPrimaryMuscleGroup(exercise, group)"
+                      [class.text-fg]="isPrimaryMuscleGroup(exercise, group)"
+                      [class.border-line]="!isPrimaryMuscleGroup(exercise, group)"
+                      [class.text-muted]="!isPrimaryMuscleGroup(exercise, group)"
+                    >
                       {{ muscleGroupLabel(group) }}
                     </span>
                   }
@@ -77,12 +136,12 @@
             <div class="mt-2 flex flex-wrap items-center gap-1.5">
               <span
                 class="rounded-full px-2.5 py-1 text-xs font-medium"
-                [class.bg-accent/15]="selectedExercise.isBilateral"
-                [class.text-accent]="selectedExercise.isBilateral"
-                [class.bg-raised]="!selectedExercise.isBilateral"
-                [class.text-soft]="!selectedExercise.isBilateral"
+                [class.bg-accent/15]="selectedExercise.laterality === 'Bilateral'"
+                [class.text-accent]="selectedExercise.laterality === 'Bilateral'"
+                [class.bg-raised]="selectedExercise.laterality !== 'Bilateral'"
+                [class.text-soft]="selectedExercise.laterality !== 'Bilateral'"
               >
-                {{ selectedExercise.isBilateral ? 'Bilateral' : 'Unilateral' }}
+                {{ lateralityLabels[selectedExercise.laterality] }}
               </span>
               @for (group of selectedExercise.aimMuscleGroups; track group) {
                 <span class="rounded-full border border-line bg-canvas px-2.5 py-1 text-xs text-soft">

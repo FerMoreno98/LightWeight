@@ -9,6 +9,7 @@ public sealed record GetAllExercisesResponse
 (
     Guid Id,
     string Name,
-    bool IsBilateral,
-    IReadOnlyCollection<MuscleGroups> AimMuscleGroups
+    string Laterality,
+    IReadOnlyCollection<MuscleGroups> AimMuscleGroups,
+    IReadOnlyCollection<MuscleGroups> PrimaryMuscleGroups
 );

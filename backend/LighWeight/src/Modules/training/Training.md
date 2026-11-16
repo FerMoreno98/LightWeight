@@ -18,7 +18,7 @@ The analysis of the history (volume, progression, fatigue, performance against w
 | `Macrocycle` | `UserId`, `StartedAt`, `FinishedAt?`, `Stage` (enum), `Comments?` | `Mesocycle` → `Microcycle` | `training_Macrocycles` |
 | `TrainingSession` | `MicrocycleId`, `UserId`, `TemplateSessionId?`, `Name`, `StartAt`, `FinishedAt?`, `Duration`, `Comments?`, `MotivationLevel`, `SleepLevel`, `DOMSLevel` (1-10) | `Set` | `training_TrainingSessions` |
 | `Program` | `UserId`, `Name`, `Periodization` (enum), `AimMuscleGroups` (jsonb), `ShareToken?`, `CopiedFromProgramId?`, `CopiedFromUserId?` | `TrainingTemplate` → `TemplateSession` → `TemplateSet` | `training_Programs` |
-| `Exercise` | `Name`, `IsBilateral`, `AimMuscleGroups` (jsonb) — global catalog, seeded | None | `training_Exercises` |
+| `Exercise` | `Name`, `Laterality`, `PrimaryMuscleGroups` + `SecondaryMuscleGroups` (jsonb) — global catalog, seeded from `Seed/catalogo-ejercicios.csv` | None | `training_Exercises` |
 
 ### Entities (child of aggregates)
 
@@ -46,7 +46,8 @@ The analysis of the history (volume, progression, fatigue, performance against w
 | `Periodization` | `Linear`, `Ondulating`, `block`, `MikeIsraetel` |
 | `TrainingDistribution` | `PushPullLegs`, `UpperLower`, `Weider`, `Phat`, `FullBody`, `Other` |
 | `VolumeLandmarks` | `MV`, `MEV`, `MAV`, `MRV` |
-| `MuscleGroups` | `Shoulder`, `Back`, `Chest`, `Biceps`, `Triceps`, `Glutes`, `Quads`, `Hamstring`, `calves` |
+| `MuscleGroups` | `Chest`, `Back`, `Traps`, `FrontDelts`, `SideDelts`, `RearDelts`, `Triceps`, `Biceps`, `Forearms`, `Abs`, `Glutes`, `Quads`, `Hamstring`, `Calves`, `Adductors` (stored as numbers: new values go at the end) |
+| `Laterality` | `Bilateral`, `Unilateral`, `Both` |
 
 ## Hierarchy
 

@@ -1,16 +1,29 @@
-import { MuscleGroup } from '../../data/training-api.service';
+import { Laterality, MuscleGroup } from '../../data/training-api.service';
+
+/** Spanish names of the lateralities of an exercise */
+export const LATERALITY_LABELS: Record<Laterality, string> = {
+  Bilateral: 'Bilateral',
+  Unilateral: 'Unilateral',
+  Both: 'Bilateral o unilateral',
+};
 
 /** Spanish names of the muscle groups, in the order of the backend enum (its numeric value is the index) */
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
-  Shoulder: 'Hombro',
-  Back: 'Espalda',
   Chest: 'Pecho',
-  Biceps: 'Bíceps',
+  Back: 'Espalda',
+  Traps: 'Trapecio',
+  FrontDelts: 'Deltoides anterior',
+  SideDelts: 'Deltoides lateral',
+  RearDelts: 'Deltoides posterior',
   Triceps: 'Tríceps',
+  Biceps: 'Bíceps',
+  Forearms: 'Antebrazo',
+  Abs: 'Abdomen',
   Glutes: 'Glúteos',
   Quads: 'Cuádriceps',
   Hamstring: 'Isquios',
   Calves: 'Gemelos',
+  Adductors: 'Aductores',
 };
 
 /** Muscle groups in enum order: `MUSCLE_GROUPS[n]` is the group whose numeric value is n */

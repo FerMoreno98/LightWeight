@@ -28,8 +28,8 @@ public class TrainingSessionTests
         public TrainingTemplate Template { get; }
         public TemplateSession TemplateSession { get; }
         public TemplateSet PlannedSet { get; }
-        public Exercise Bench { get; } = Exercise.Create("Press banca", true, new List<MuscleGroups> { MuscleGroups.Chest });
-        public Exercise Dumbbells { get; } = Exercise.Create("Press mancuernas", true, new List<MuscleGroups> { MuscleGroups.Chest });
+        public Exercise Bench { get; } = Exercise.Create("Press banca", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
+        public Exercise Dumbbells { get; } = Exercise.Create("Press mancuernas", Laterality.Bilateral, new List<MuscleGroups> { MuscleGroups.Chest });
         public Macrocycle Macrocycle { get; }
         public Microcycle Week { get; }
 

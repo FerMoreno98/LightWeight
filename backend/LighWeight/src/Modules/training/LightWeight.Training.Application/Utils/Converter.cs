@@ -7,15 +7,21 @@ internal static class Converters
 {
     public static string MapMuscleGroup(MuscleGroups muscleGroups) => muscleGroups switch
     {
-        MuscleGroups.Shoulder => "Shoulder",
-        MuscleGroups.Back => "Back",
         MuscleGroups.Chest => "Chest",
-        MuscleGroups.Biceps => "Biceps",
+        MuscleGroups.Back => "Back",
+        MuscleGroups.Traps => "Traps",
+        MuscleGroups.FrontDelts => "FrontDelts",
+        MuscleGroups.SideDelts => "SideDelts",
+        MuscleGroups.RearDelts => "RearDelts",
         MuscleGroups.Triceps => "Triceps",
+        MuscleGroups.Biceps => "Biceps",
+        MuscleGroups.Forearms => "Forearms",
+        MuscleGroups.Abs => "Abs",
         MuscleGroups.Glutes => "Glutes",
         MuscleGroups.Quads => "Quads",
         MuscleGroups.Hamstring => "Hamstring",
-        MuscleGroups.calves => "Calves",
+        MuscleGroups.Calves => "Calves",
+        MuscleGroups.Adductors => "Adductors",
         _ => throw new ArgumentOutOfRangeException(nameof(muscleGroups), muscleGroups, null)
     };
 

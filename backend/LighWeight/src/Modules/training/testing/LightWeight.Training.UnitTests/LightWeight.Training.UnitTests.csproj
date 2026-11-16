@@ -23,6 +23,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\LightWeight.Training.Domain\LightWeight.Training.Domain.csproj" />
     <ProjectReference Include="..\..\LightWeight.Training.Application\LightWeight.Training.Application.csproj" />
+    <ProjectReference Include="..\..\LightWeight.Training.Infrastructure\LightWeight.Training.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

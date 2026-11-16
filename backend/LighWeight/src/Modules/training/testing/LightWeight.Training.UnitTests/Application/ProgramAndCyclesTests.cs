@@ -878,7 +878,7 @@ public class ProgramAndCyclesTests
         // Assert
         await _programRepository.Received(1).AddAsync
         (
-            Arg.Is<Program>(p => p.AimMuscleGroups.Single() == MuscleGroups.calves),
+            Arg.Is<Program>(p => p.AimMuscleGroups.Single() == MuscleGroups.Calves),
             Arg.Any<CancellationToken>()
         );
     }
