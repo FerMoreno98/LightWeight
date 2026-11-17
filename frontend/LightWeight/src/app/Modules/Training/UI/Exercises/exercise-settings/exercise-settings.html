@@ -75,39 +75,36 @@
             </div>
           }
 
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          @if (filteredExercises().length > 0) {
+            <div class="mb-3 flex items-center justify-end gap-4 text-xs text-muted" aria-hidden="true">
+              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-accent"></span>Principal</span>
+              <span class="inline-flex items-center gap-1.5"><span class="size-2.5 rounded-sm bg-accent/40"></span>Secundario</span>
+            </div>
+          }
+
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             @for (exercise of filteredExercises(); track exercise.id) {
               <button
                 type="button"
                 (click)="selectExercise(exercise)"
-                class="rounded-xl border border-line bg-surface p-5 text-left shadow-lg transition duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/40"
+                class="flex items-center gap-3.5 rounded-xl border border-line bg-surface py-2 pl-2 pr-3.5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-accent hover:shadow-lg hover:shadow-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/40"
               >
-                <div class="flex items-start justify-between gap-2">
-                  <h2 class="text-lg font-semibold text-fg">{{ exercise.name }}</h2>
-                  <span
-                    class="shrink-0 rounded-full px-2.5 py-1 text-xs font-medium"
-                    [class.bg-accent/15]="exercise.laterality === 'Bilateral'"
-                    [class.text-accent]="exercise.laterality === 'Bilateral'"
-                    [class.bg-raised]="exercise.laterality !== 'Bilateral'"
-                    [class.text-soft]="exercise.laterality !== 'Bilateral'"
-                  >
-                    {{ lateralityLabels[exercise.laterality] }}
-                  </span>
-                </div>
-
-                <div class="mt-3 flex flex-wrap gap-1.5">
-                  @for (group of exercise.aimMuscleGroups; track group) {
-                    <span
-                      class="rounded-full border bg-canvas px-2.5 py-1 text-xs"
-                      [class.border-line-strong]="isPrimaryMuscleGroup(exercise, group)"
-                      [class.font-medium]="isPrimaryMuscleGroup(exercise, group)"
-                      [class.text-fg]="isPrimaryMuscleGroup(exercise, group)"
-                      [class.border-line]="!isPrimaryMuscleGroup(exercise, group)"
-                      [class.text-muted]="!isPrimaryMuscleGroup(exercise, group)"
-                    >
-                      {{ muscleGroupLabel(group) }}
-                    </span>
+                <div class="flex h-23 w-20 shrink-0 items-center justify-center rounded-lg bg-canvas py-1">
+                  @defer (on viewport) {
+                    <app-muscle-map [primary]="exercise.primaryMuscleGroups" [secondary]="secondaryMuscleGroups(exercise)" />
+                  } @placeholder {
+                    <div class="h-full w-full"></div>
                   }
+                </div>
+                <div class="flex min-w-0 flex-1 flex-col gap-1">
+                  <h2 class="text-[15px] font-semibold leading-tight text-fg">{{ exercise.name }}</h2>
+                  <p class="text-[13px] font-medium text-accent">{{ primaryLabels(exercise) }}</p>
+                  <p class="text-xs text-muted">
+                    @if (secondaryMuscleGroups(exercise).length) {
+                      También {{ secondaryLabels(exercise) }} ·
+                    }
+                    {{ lateralityLabels[exercise.laterality] }}
+                  </p>
                 </div>
               </button>
             }

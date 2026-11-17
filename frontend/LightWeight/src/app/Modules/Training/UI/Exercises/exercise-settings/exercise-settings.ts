@@ -5,11 +5,12 @@ import { ActivatedRoute, Router, RouterLink, UrlTree } from '@angular/router';
 import { Exercise } from '../../../data/training-api.service';
 import { LATERALITY_LABELS, MUSCLE_GROUPS, muscleGroupLabel } from '../../shared/muscle-groups';
 import { TrainingFlow } from '../../shared/training-flow';
+import { MuscleMap } from '../../shared/muscle-map/muscle-map';
 
 @Component({
   selector: 'app-exercise-settings',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, MuscleMap],
   templateUrl: './exercise-settings.html',
   styleUrl: './exercise-settings.css',
 })
@@ -99,8 +100,18 @@ export class ExerciseSettings {
     this.groupFilter.set(null);
   }
 
-  isPrimaryMuscleGroup(exercise: Exercise, group: number): boolean {
-    return exercise.primaryMuscleGroups.includes(group);
+  /** Groups it targets that are not primary (aimMuscleGroups holds both) */
+  secondaryMuscleGroups(exercise: Exercise): number[] {
+    return exercise.aimMuscleGroups.filter(group => !exercise.primaryMuscleGroups.includes(group));
+  }
+
+  primaryLabels(exercise: Exercise): string {
+    return exercise.primaryMuscleGroups.map(muscleGroupLabel).join(', ');
+  }
+
+  /** Secondary groups in lower case, to go after "También" */
+  secondaryLabels(exercise: Exercise): string {
+    return this.secondaryMuscleGroups(exercise).map(group => muscleGroupLabel(group).toLowerCase()).join(', ');
   }
 
   muscleGroupLabel(group: number): string {
