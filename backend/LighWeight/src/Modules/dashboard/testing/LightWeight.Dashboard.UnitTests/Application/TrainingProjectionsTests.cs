@@ -98,6 +98,23 @@ public class TrainingProjectionsTests
     }
 
     [Fact]
+    public async Task SessionsPerformance_OfAMacrocycle_OnlyItsSessions_ComparedWithinIt()
+    {
+        // Arrange: the first bench of the current macrocycle comes after one of the previous macrocycle
+        var data = new TrainingData();
+        Guid previous = Guid.CreateVersion7(), current = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, macrocycleId: previous), data.Bench, 100, 10, 8);                // 140
+        data.Set(data.Session(Monday.AddDays(7), macrocycleId: current), data.Bench, 100, 10, 7);      // 143.3
+        data.Set(data.Session(Monday.AddDays(14), macrocycleId: current), data.Bench, 100, 8, 8);      // 133.3
+        // Act
+        var all = await new GetSessionsPerformanceQueryHandler(data.Store()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId));
+        var inMacrocycle = await new GetSessionsPerformanceQueryHandler(data.Store()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId, current));
+        // Assert: in the history the first session of the macrocycle is compared with the previous one; within it, it has nothing to compare with
+        Assert.Equal([null, 2.4m, -7m], all.Select(s => s.Performance));
+        Assert.Equal([null, -7m], inMacrocycle.Select(s => s.Performance));
+    }
+
+    [Fact]
     public async Task ExercisesProgress_FromTheMostRecentlyTrained_WithTheirTrend()
     {
         // Arrange

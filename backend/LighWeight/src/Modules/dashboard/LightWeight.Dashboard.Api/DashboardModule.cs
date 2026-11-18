@@ -83,10 +83,11 @@ public static class DashboardModule
         return TypedResults.Ok(volume);
     }
 
-    private static async Task<IResult> GetSessionsPerformance(IMediator mediator, HttpContext httpContext, CancellationToken ct)
+    /// <param name="macrocycleId">Only the sessions of this macrocycle, compared only within it (absent: the whole history)</param>
+    private static async Task<IResult> GetSessionsPerformance(Guid? macrocycleId, IMediator mediator, HttpContext httpContext, CancellationToken ct)
     {
         var sessions = await mediator.QueryAsync<GetSessionsPerformanceQuery, List<SessionPerformanceResponse>>(
-            new GetSessionsPerformanceQuery(UserId(httpContext)), ct);
+            new GetSessionsPerformanceQuery(UserId(httpContext), macrocycleId), ct);
         return TypedResults.Ok(sessions);
     }
 

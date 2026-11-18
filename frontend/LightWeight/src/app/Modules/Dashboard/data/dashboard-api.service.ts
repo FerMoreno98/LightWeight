@@ -122,8 +122,9 @@ export class DashboardApiService {
         return this.http.get<WeeklyVolume[]>(`${this.baseUrl}/training/volume`);
     }
 
-    GetSessionsPerformance(): Observable<SessionPerformance[]> {
-        return this.http.get<SessionPerformance[]>(`${this.baseUrl}/training/sessions`);
+    /** macrocycleId: only its sessions, compared only within it (null: the whole history) */
+    GetSessionsPerformance(macrocycleId: string | null = null): Observable<SessionPerformance[]> {
+        return this.http.get<SessionPerformance[]>(`${this.baseUrl}/training/sessions`, macrocycleId ? { params: { macrocycleId } } : {});
     }
 
     /**

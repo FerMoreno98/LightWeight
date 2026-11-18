@@ -19,7 +19,16 @@ public sealed class GetSessionsPerformanceQueryHandler : IQueryHandler<GetSessio
 
         var sessions = await _store.GetSessionsAsync(query.UserId, ct);
         var sets = await _store.GetSetsAsync(query.UserId, ct: ct);
-        return SessionPerformance.Calculate(sessions, ExerciseHistory.Build(sessions, sets))
+        var history = ExerciseHistory.Build(sessions, sets);
+        // Within a macrocycle each session is only compared with the sessions of that macrocycle, like the session screen
+        // of Training does: its first time of an exercise has nothing to compare with
+        IReadOnlyCollection<TrainingSessionProjection> shown = sessions;
+        if (query.MacrocycleId is { } macrocycleId)
+        {
+            shown = sessions.Where(s => s.MacrocycleId == macrocycleId).ToList();
+            history = ExerciseHistory.InMacrocycle(history, macrocycleId);
+        }
+        return SessionPerformance.Calculate(shown, history)
             .Select(p => new SessionPerformanceResponse
             (
                 p.Session.SessionId,

@@ -5,7 +5,9 @@ using LightWeight.shared.Mediator;
 namespace LightWeight.Dashboard.Application.Queries.Training.GetSessionsPerformance;
 
 /// <summary>Every session of the user, from the oldest, with its performance and the wellbeing it started with</summary>
-public sealed record GetSessionsPerformanceQuery(Guid UserId) : IQuery<List<SessionPerformanceResponse>>;
+/// <param name="MacrocycleId">Only the sessions of this macrocycle, each one compared only with the sessions of it
+/// (null: the whole history, compared with the previous time whatever the macrocycle)</param>
+public sealed record GetSessionsPerformanceQuery(Guid UserId, Guid? MacrocycleId = null) : IQuery<List<SessionPerformanceResponse>>;
 
 /// <param name="Performance">Average change (%) against the previous time of its exercises; null if none could be compared</param>
 /// <param name="ComparedExercises">Exercises that took part in the average</param>

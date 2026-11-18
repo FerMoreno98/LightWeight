@@ -2,6 +2,7 @@ import { Component, computed, inject, OnInit } from '@angular/core';
 import { provideCharts } from 'ng2-charts';
 import { BarController, BarElement, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
 import { TrainingOverviewStore } from '../../state/training-overview.store';
+import { ScopeToggle } from '../scope-toggle/scope-toggle';
 import { SessionPerformance } from '../../data/dashboard-api.service';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
 import { BarChart } from '../bar-chart/bar-chart';
@@ -19,7 +20,7 @@ const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'shor
 @Component({
     selector: 'app-training-overview',
     standalone: true,
-    imports: [LineChart, BarChart],
+    imports: [LineChart, BarChart, ScopeToggle],
     templateUrl: './training-overview.html',
     // Chart.js is only downloaded with the components that draw charts
     providers: [provideCharts({ registerables: [LineController, LineElement, BarController, BarElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
