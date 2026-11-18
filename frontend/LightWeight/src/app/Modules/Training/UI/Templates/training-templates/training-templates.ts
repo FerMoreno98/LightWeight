@@ -1,11 +1,13 @@
-import { Component, ElementRef, computed, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TrainingStore } from '../../../state/training.store';
 import { TrainingTabs } from '../../shared/training-tabs/training-tabs';
 import { muscleGroupLabel } from '../../shared/muscle-groups';
 import { Program, TrainingTemplate, VolumeLandmark } from '../../../data/training-api.service';
-import { PERIODIZATION_LABELS, TRAINING_DISTRIBUTION_LABELS, VOLUME_LANDMARK_LABELS } from '../../shared/program-labels';
+import { PERIODIZATION_LABELS, VOLUME_LANDMARK_LABELS } from '../../shared/program-labels';
+import { LANDMARK_TONES, VOLUME_LANDMARK_ORDER } from '../../shared/volume-gauge/volume-gauge';
+import { TemplateCard } from '../template-card/template-card';
 import { ConfirmDialog } from '../../../../../Shared/confirm-dialog/confirm-dialog';
 import { InfoTooltip } from '../../../../../Shared/info-tooltip/info-tooltip';
 
@@ -22,13 +24,12 @@ export interface ProgramWithTemplates {
 @Component({
   selector: 'app-training-templates',
   standalone: true,
-  imports: [RouterLink, FormsModule, TrainingTabs, ConfirmDialog, InfoTooltip],
+  imports: [RouterLink, FormsModule, TrainingTabs, ConfirmDialog, InfoTooltip, TemplateCard],
   templateUrl: './training-templates.html',
   styleUrl: './training-templates.css',
 })
 export class TrainingTemplates {
   private store = inject(TrainingStore);
-  private router = inject(Router);
 
   // Local flag: two requests run in parallel and each one toggles the store flag
   private _isLoadingPage = signal(true);
@@ -40,7 +41,10 @@ export class TrainingTemplates {
       program,
       templates: this.store.trainingTemplates()
         .filter(t => t.programId === program.id)
-        .sort((a, b) => a.order - b.order),
+        // From less to more volume: the templates of a program are the same week at different levels
+        .sort((a, b) =>
+          VOLUME_LANDMARK_ORDER.indexOf(a.volumeLandmark) - VOLUME_LANDMARK_ORDER.indexOf(b.volumeLandmark)
+          || a.order - b.order),
     }))
   );
 
@@ -64,81 +68,42 @@ export class TrainingTemplates {
     return program.aimMuscleGroups.map(group => muscleGroupLabel(group));
   }
 
-  volumeLandmarkLabel(template: TrainingTemplate): string {
-    return VOLUME_LANDMARK_LABELS[template.volumeLandmark] ?? template.volumeLandmark;
-  }
+  // ---------------------------------------------------------------- Card actions
 
-  trainingDistributionLabel(template: TrainingTemplate): string {
-    return TRAINING_DISTRIBUTION_LABELS[template.trainingDistribution] ?? template.trainingDistribution;
-  }
-
-  totalVolumeEntries(template: TrainingTemplate): [string, number][] {
-    return Object.entries(template.totalVolume).map(([group, count]) => [muscleGroupLabel(group), count]);
-  }
-
-  goToSessions(template: TrainingTemplate) {
-    this.router.navigate(['/training/sessiontemplate', template.id]);
-  }
-
-  async deleteTemplate(template: TrainingTemplate) {
-    await this.store.DeleteTrainingTemplate(template.id);
-  }
-
-  /** Id of the template whose name is being edited (only one at a time) */
-  editingNameId = signal<string | null>(null);
-  editedName = '';
-  private nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
-
-  constructor() {
-    // Focus and select the name as soon as the input appears
-    effect(() => {
-      const input = this.nameInput()?.nativeElement;
-      input?.focus();
-      input?.select();
-    });
-    // Same for the landmark select
-    effect(() => this.landmarkSelect()?.nativeElement.focus());
-  }
-
-  startRename(template: TrainingTemplate) {
-    this.editingNameId.set(template.id);
-    this.editedName = template.name;
-  }
-
-  cancelRename() {
-    this.editingNameId.set(null);
-  }
-
-  async saveRename(template: TrainingTemplate) {
-    // Blur also fires after Enter/Escape: ignore it if the edit was already closed
-    if (this.editingNameId() !== template.id) return;
-    const name = this.editedName.trim();
-    this.editingNameId.set(null);
-    if (!name || name === template.name) return;
+  async renameTemplate(template: TrainingTemplate, name: string) {
     await this.store.RenameTrainingTemplate(template.id, name);
   }
 
-  // ---------------------------------------------------------------- Volume landmark
-
-  readonly volumeLandmarks: VolumeLandmark[] = ['MV', 'MEV', 'MAV', 'MRV'];
-  readonly landmarkLabels = VOLUME_LANDMARK_LABELS;
-  /** Id of the template whose landmark is being edited (only one at a time) */
-  editingLandmarkId = signal<string | null>(null);
-  private landmarkSelect = viewChild<ElementRef<HTMLSelectElement>>('landmarkSelect');
-
-  startLandmarkEdit(template: TrainingTemplate) {
-    this.editingLandmarkId.set(template.id);
-  }
-
-  cancelLandmarkEdit() {
-    this.editingLandmarkId.set(null);
-  }
-
-  async saveLandmark(template: TrainingTemplate, volumeLandmark: VolumeLandmark) {
-    this.editingLandmarkId.set(null);
-    if (volumeLandmark === template.volumeLandmark) return;
+  async changeLandmark(template: TrainingTemplate, volumeLandmark: VolumeLandmark) {
     await this.store.ChangeTrainingTemplateVolumeLandmark(template.id, volumeLandmark);
   }
+
+  /** Template waiting for the confirmation to delete it */
+  deleteTarget = signal<TrainingTemplate | null>(null);
+  isDeleting = signal(false);
+
+  askDelete(template: TrainingTemplate) {
+    this.deleteTarget.set(template);
+  }
+
+  cancelDelete() {
+    if (!this.isDeleting()) this.deleteTarget.set(null);
+  }
+
+  async confirmDelete() {
+    const template = this.deleteTarget();
+    if (!template) return;
+    this.isDeleting.set(true);
+    try {
+      await this.store.DeleteTrainingTemplate(template.id);
+    } finally {
+      this.isDeleting.set(false);
+      this.deleteTarget.set(null);
+    }
+  }
+
+  readonly volumeLandmarks = VOLUME_LANDMARK_ORDER;
+  readonly landmarkLabels = VOLUME_LANDMARK_LABELS;
 
   // ---------------------------------------------------------------- Sharing
 
@@ -286,14 +251,9 @@ export class TrainingTemplates {
     return template.name.slice(0, 200 - suffix.length).trimEnd() + suffix;
   }
 
-  /** Colour of each level, the same scale as the map: it heats up with the volume, MV (deload) is the cool one */
+  /** Button of a level in the duplicate dialog, in the colour of the level when chosen */
   landmarkColor(landmark: VolumeLandmark, selected: boolean): string {
-    const colors: Record<VolumeLandmark, string> = {
-      MV: 'border-info text-info bg-info/15',
-      MEV: 'border-accent text-accent bg-accent/15',
-      MAV: 'border-warning text-warning bg-warning/15',
-      MRV: 'border-danger text-danger bg-danger/15',
-    };
-    return selected ? colors[landmark] : 'border-line-strong text-muted';
+    const tone = LANDMARK_TONES[landmark];
+    return selected ? `${tone.border} ${tone.text} ${tone.soft}` : 'border-line-strong text-muted';
   }
 }

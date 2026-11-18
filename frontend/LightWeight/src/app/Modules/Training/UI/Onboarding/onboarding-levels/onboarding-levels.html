@@ -6,49 +6,52 @@
   </p>
 
   @if (base(); as base) {
-    <div class="mt-6">
-      <p class="text-xs font-semibold uppercase tracking-wider text-muted">Ya tienes</p>
-      <ul class="mt-2 flex flex-wrap gap-2">
-        @for (template of status()!.templates; track template.id) {
-          <li class="rounded-lg border border-line bg-raised px-3 py-2 text-sm">
-            <span class="font-semibold text-fg">{{ template.volumeLandmark }}</span>
-            <span class="text-muted"> · {{ template.name }}</span>
-            @if (template.id === base.id) {
-              <span class="ml-1 text-xs text-accent">(base)</span>
+    <!-- One ladder MV → MRV: the levels the program has are solid, the missing ones dashed to tick them -->
+    <ol class="mt-6 flex flex-col gap-2" aria-label="Niveles de volumen del programa">
+      @for (rung of rungs(); track rung.landmark) {
+        @for (template of rung.templates; track template.id) {
+          <li class="flex min-h-14 items-center gap-3 rounded-lg border border-line bg-raised/40 px-3 py-2.5">
+            <span class="w-12 shrink-0 font-display text-xl font-bold leading-none" [class]="tones[rung.landmark].text">{{ rung.landmark }}</span>
+            <div class="min-w-0 flex-1">
+              <p class="break-words text-sm font-semibold text-fg">
+                {{ template.name }}
+                @if (template.id === base.id) {
+                  <span class="badge badge-accent ml-1 align-middle">base</span>
+                }
+              </p>
+              <p class="text-xs text-muted">{{ template.sessions }} {{ template.sessions === 1 ? 'sesión' : 'sesiones' }}</p>
+            </div>
+            <app-volume-gauge class="w-16 shrink-0" [landmark]="rung.landmark" [showLabels]="false" />
+          </li>
+        }
+        @if (rung.option; as option) {
+          <li class="rounded-lg border px-3 py-2.5 transition"
+              [class]="option.selected ? tones[option.landmark].border + ' bg-raised/40' : 'border-dashed border-line-strong'">
+            <label class="flex min-h-9 cursor-pointer items-center gap-3">
+              <input type="checkbox" class="h-5 w-5 shrink-0 accent-accent"
+                     [id]="'level-' + option.landmark"
+                     [checked]="option.selected"
+                     (change)="toggle(option)" />
+              <span class="w-10 shrink-0 font-display text-xl font-bold leading-none"
+                    [class]="option.selected ? tones[option.landmark].text : 'text-subtle'">{{ option.landmark }}</span>
+              <span class="min-w-0 text-sm" [class]="option.selected ? 'text-soft' : 'text-muted'">
+                {{ option.selected ? landmarkName(option.landmark) : 'Añadir ' + landmarkName(option.landmark) }}
+              </span>
+            </label>
+            @if (option.selected) {
+              <input type="text" class="input mt-2"
+                     [id]="'level-name-' + option.landmark"
+                     [attr.aria-label]="'Nombre de la plantilla ' + option.landmark"
+                     [ngModel]="option.name"
+                     (ngModelChange)="rename(option, $event)" />
             }
           </li>
         }
-      </ul>
-    </div>
+      }
+    </ol>
 
-    @if (options().length > 0) {
-      <div class="mt-6">
-        <p class="text-xs font-semibold uppercase tracking-wider text-muted">Añadir niveles</p>
-        <ul class="mt-2 flex flex-col gap-2">
-          @for (option of options(); track option.landmark) {
-            <li class="flex flex-wrap items-center gap-3 rounded-lg border p-3 transition"
-                [class.border-accent]="option.selected"
-                [class.border-line]="!option.selected">
-              <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
-                <input type="checkbox" class="h-4 w-4 accent-accent"
-                       [id]="'level-' + option.landmark"
-                       [checked]="option.selected"
-                       (change)="toggle(option)" />
-                <span class="text-sm text-soft">{{ landmarkLabels[option.landmark] }}</span>
-              </label>
-              @if (option.selected) {
-                <input type="text" class="input w-full sm:w-48"
-                       [id]="'level-name-' + option.landmark"
-                       [attr.aria-label]="'Nombre de la plantilla ' + option.landmark"
-                       [ngModel]="option.name"
-                       (ngModelChange)="rename(option, $event)" />
-              }
-            </li>
-          }
-        </ul>
-      </div>
-    } @else {
-      <p class="mt-6 text-sm text-soft">Tu programa ya tiene los cuatro niveles.</p>
+    @if (options().length === 0) {
+      <p class="mt-4 text-sm text-soft">Tu programa ya tiene los cuatro niveles.</p>
     }
 
     @if (error()) {

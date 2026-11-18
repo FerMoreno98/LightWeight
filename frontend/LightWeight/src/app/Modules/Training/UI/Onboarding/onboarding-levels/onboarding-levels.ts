@@ -1,9 +1,10 @@
 import { Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { VolumeLandmark } from '../../../data/training-api.service';
+import { SetupTemplate, VolumeLandmark } from '../../../data/training-api.service';
 import { TrainingStore } from '../../../state/training.store';
 import { VOLUME_LANDMARK_LABELS } from '../../shared/program-labels';
+import { LANDMARK_TONES, VolumeGauge } from '../../shared/volume-gauge/volume-gauge';
 import { OnboardingStore } from '../onboarding.store';
 import { baseTemplate, LANDMARK_ORDER, LEVEL_DEFAULT_NAMES, ONBOARDING_BASE, resumeUrl } from '../onboarding-steps';
 
@@ -20,7 +21,7 @@ interface LevelOption {
 @Component({
   selector: 'app-onboarding-levels',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, VolumeGauge],
   templateUrl: './onboarding-levels.html',
 })
 export class OnboardingLevels {
@@ -28,7 +29,7 @@ export class OnboardingLevels {
   private onboarding = inject(OnboardingStore);
   private training = inject(TrainingStore);
 
-  readonly landmarkLabels = VOLUME_LANDMARK_LABELS;
+  readonly tones = LANDMARK_TONES;
 
   status = this.onboarding.status;
   base = computed(() => {
@@ -52,6 +53,22 @@ export class OnboardingLevels {
       .filter(landmark => !present.has(landmark))
       .map(landmark => ({ landmark, selected: false, name: LEVEL_DEFAULT_NAMES[landmark] }));
   });
+
+  /** Each level from MV to MRV with the templates the program has at it, or the option to add it */
+  rungs = computed<{ landmark: VolumeLandmark; templates: SetupTemplate[]; option: LevelOption | null }[]>(() => {
+    const templates = this.status()?.templates ?? [];
+    const options = this.options();
+    return LANDMARK_ORDER.map(landmark => ({
+      landmark,
+      templates: templates.filter(t => t.volumeLandmark === landmark),
+      option: options.find(o => o.landmark === landmark) ?? null,
+    }));
+  });
+
+  /** "Maximum Adaptive Volume" from "MAV — Maximum Adaptive Volume" */
+  landmarkName(landmark: VolumeLandmark): string {
+    return VOLUME_LANDMARK_LABELS[landmark].split(' — ')[1] ?? landmark;
+  }
 
   isCreating = signal(false);
   error = signal<string | null>(null);
