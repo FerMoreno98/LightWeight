@@ -24,7 +24,8 @@
         <div class="h-80 animate-pulse rounded-xl border border-line bg-surface/60"></div>
       }
     }
-  } @else if (store.sessions().length === 0) {
+  } @else if (store.sessions().length === 0 && store.volume().length === 0) {
+    <!-- Nothing finished ever (the weekly volume always covers the whole history) -->
     <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center text-sm text-muted">
       Aún no hay sesiones terminadas.
     </div>
@@ -37,8 +38,22 @@
           1RM estimado de la primera serie de cada ejercicio frente a la última vez en la misma zona de repeticiones, de media.
           Debajo, cómo llegabas: sueño, agujetas y motivación.
         </p>
+        <div class="mt-3">
+          <app-scope-toggle
+            label="Periodo"
+            [value]="store.performanceScope()"
+            [disabled]="!store.hasMacrocycle()"
+            (changed)="store.SetPerformanceScope($event)"
+          />
+        </div>
       </header>
-      @if (hasPerformance()) {
+      @if (store.sessions().length === 0) {
+        <!-- A macrocycle just started: the filter stays so the history can still be seen -->
+        <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-4 py-8 text-center">
+          <p class="text-sm text-muted">Todavía no has terminado ninguna sesión en este macrociclo.</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="store.SetPerformanceScope('history')">Ver el histórico</button>
+        </div>
+      } @else if (hasPerformance()) {
         <app-bar-chart
           label="Rendimiento"
           [points]="performancePoints()"
@@ -48,9 +63,10 @@
         />
       } @else {
         <p class="rounded-xl border border-dashed border-line bg-canvas/40 px-4 py-6 text-center text-sm text-muted">
-          El rendimiento aparece cuando repites un ejercicio en la misma zona de repeticiones.
+          El rendimiento aparece cuando repites un ejercicio en la misma zona de repeticiones{{ store.performanceScope() === 'macrocycle' ? ' dentro de este macrociclo' : '' }}.
         </p>
       }
+      @if (store.sessions().length > 0) {
       <div class="mt-4 border-t border-line/60 pt-4">
         <app-line-chart
           [series]="wellbeingSeries()"
@@ -62,6 +78,7 @@
         />
       </div>
       <p class="mt-3 text-xs text-subtle">La relación se ve con semanas de datos, no con una sesión suelta.</p>
+      }
     </article>
 
     <!-- Weekly volume per muscle group -->
