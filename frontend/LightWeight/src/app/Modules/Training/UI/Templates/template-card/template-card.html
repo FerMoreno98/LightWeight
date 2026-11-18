@@ -115,29 +115,5 @@
     <span class="text-xs text-muted">{{ totalLabel() }}</span>
   </p>
 
-  @if (groups().length > 0) {
-    <ul class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 text-xs" aria-label="Series por grupo muscular">
-      @for (group of visibleGroups(); track group.group) {
-        <li class="contents">
-          <span class="whitespace-nowrap text-soft">{{ group.label }}</span>
-          <span class="h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden="true">
-            <span class="block h-full rounded-full opacity-75" [class]="tone().fill" [style.width.%]="group.sets / maxSets() * 100"></span>
-          </span>
-          <span class="text-right font-semibold tabular-nums text-fg">{{ group.sets }}</span>
-        </li>
-      }
-    </ul>
-    @if (hiddenGroups() > 0) {
-      <button
-        type="button"
-        class="relative z-10 -mb-2 -ml-2 -mt-1 min-h-11 self-start rounded-lg px-2 text-xs font-medium text-subtle transition hover:text-accent"
-        [attr.aria-expanded]="showAllGroups()"
-        (click)="showAllGroups.set(!showAllGroups())"
-      >
-        {{ showAllGroups() ? 'Ver menos' : '+' + hiddenGroups() + (hiddenGroups() === 1 ? ' grupo más' : ' grupos más') }}
-      </button>
-    }
-  } @else {
-    <p class="text-xs text-subtle">Sin series todavía</p>
-  }
+  <app-volume-bars [volume]="template().totalVolume" [fill]="tone().fill" />
 </article>

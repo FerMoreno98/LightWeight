@@ -137,6 +137,22 @@
                     @if (week.durationInDays) { · {{ week.durationInDays }} días }
                     · {{ weekPeriod() }}
                   </p>
+                  @if (weekProgress().total > 0) {
+                    <div class="mt-4 max-w-md">
+                      <div class="grid gap-1" [style.grid-template-columns]="'repeat(' + weekProgress().total + ', minmax(0, 1fr))'" aria-hidden="true">
+                        @for (card of sessionCards(); track card.session.id) {
+                          <span
+                            class="h-1.5 rounded-full"
+                            [class]="card.status === 'done' ? 'bg-accent' : card.status === 'inProgress' ? 'bg-warning/60' : 'bg-raised'"
+                          ></span>
+                        }
+                      </div>
+                      <p class="mt-1.5 flex justify-between gap-3 text-xs text-muted">
+                        <span><span class="font-semibold tabular-nums text-fg">{{ weekProgress().done }} de {{ weekProgress().total }}</span> sesiones hechas</span>
+                        <span class="tabular-nums">{{ weekProgress().setsDone }} / {{ weekProgress().setsTotal }} series</span>
+                      </p>
+                    </div>
+                  }
                 </div>
                 <div class="flex shrink-0 flex-wrap items-center gap-2">
                   <a
@@ -183,34 +199,18 @@
                 </a>
               </div>
             } @else {
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                @for (session of sessions(); track session.id) {
-                  <button
-                    type="button"
-                    (click)="openSession(session)"
-                    class="group flex items-center justify-between gap-4 rounded-xl border border-line bg-surface/80 p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-accent/60"
-                  >
-                    <div class="min-w-0">
-                      <div class="flex items-center gap-2">
-                        <p class="truncate text-base font-semibold text-fg">{{ session.name }}</p>
-                        @switch (sessionStatus(session)) {
-                          @case ('done') {
-                            <span class="shrink-0 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">Hecha</span>
-                          }
-                          @case ('inProgress') {
-                            <span class="shrink-0 rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">En curso</span>
-                          }
-                        }
-                      </div>
-                      <p class="mt-1 text-xs text-muted">
-                        {{ session.exercisesCount }} {{ session.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
-                        · {{ session.setsCount }} {{ session.setsCount === 1 ? 'serie' : 'series' }}
-                      </p>
-                    </div>
-                    <svg class="h-5 w-5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-accent" viewBox="0 0 20 20" fill="currentColor">
-                      <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-                    </svg>
-                  </button>
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                @for (card of sessionCards(); track card.session.id) {
+                  <app-week-session-card
+                    [session]="card.session"
+                    [trainingTemplateId]="week.trainingTemplateId"
+                    [status]="card.status"
+                    [position]="card.position"
+                    [next]="card.next"
+                    [finishedAt]="card.finishedAt"
+                    [volume]="sessionsVolume()?.[card.session.id] ?? null"
+                    [progress]="card.progress"
+                  />
                 }
               </div>
             }

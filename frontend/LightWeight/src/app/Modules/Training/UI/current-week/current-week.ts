@@ -1,9 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { TrainingStore } from '../../state/training.store';
-import { MesocycleTemplate, Session, TrainingSetupStatus } from '../../data/training-api.service';
+import { MesocycleTemplate, MuscleGroup, Session, TrainingSetupStatus } from '../../data/training-api.service';
 import { TRAINING_DISTRIBUTION_LABELS, formatCyclePeriod } from '../shared/cycle-format';
 import { ConfirmDialog } from '../../../../Shared/confirm-dialog/confirm-dialog';
+import { WeekSessionCard, WeekSessionStatus } from './week-session-card/week-session-card';
 
 /**
  * Week the user is training now: the active week of the active mesocycle of the active macrocycle.
@@ -12,13 +13,12 @@ import { ConfirmDialog } from '../../../../Shared/confirm-dialog/confirm-dialog'
 @Component({
   selector: 'app-current-week',
   standalone: true,
-  imports: [RouterLink, ConfirmDialog],
+  imports: [RouterLink, ConfirmDialog, WeekSessionCard],
   templateUrl: './current-week.html',
   styleUrl: './current-week.css',
 })
 export class CurrentWeek {
   private store = inject(TrainingStore);
-  private router = inject(Router);
 
   current = this.store.currentMicrocycle;
   sessions = this.store.sessions;
@@ -44,6 +44,43 @@ export class CurrentWeek {
   /** Template being planned as the next week, to disable the cards and avoid planning it twice */
   planningTemplateId = signal<string | null>(null);
 
+  /** Planned sets per group of each session of the week's template, by session id (null: not loaded) */
+  sessionsVolume = signal<Record<string, Partial<Record<MuscleGroup, number>>> | null>(null);
+  /** What has been done of the session in progress, if there is one */
+  inProgressProgress = signal<{ sessionId: string; sets: number; byGroup: Partial<Record<MuscleGroup, number>> } | null>(null);
+
+  /** The sessions of the week with their state; the next one is the one in progress or, without one, the first pending */
+  sessionCards = computed(() => {
+    const started = this.current()?.trainingSessions ?? [];
+    const cards = this.sessions().map((session, index) => {
+      const run = started.find(s => s.templateSessionId === session.id);
+      const status: WeekSessionStatus = !run ? 'pending' : run.finishedAt ? 'done' : 'inProgress';
+      const progress = this.inProgressProgress();
+      return {
+        session,
+        status,
+        position: index + 1,
+        finishedAt: run?.finishedAt ?? null,
+        progress: status === 'inProgress' && progress?.sessionId === session.id ? progress : null,
+        next: false,
+      };
+    });
+    const next = cards.find(c => c.status === 'inProgress') ?? cards.find(c => c.status === 'pending');
+    if (next) next.next = true;
+    return cards;
+  });
+
+  /** Header of the week: sessions done and planned sets covered (whole sessions for the finished ones) */
+  weekProgress = computed(() => {
+    const cards = this.sessionCards();
+    return {
+      done: cards.filter(c => c.status === 'done').length,
+      total: cards.length,
+      setsDone: cards.reduce((sum, c) => sum + (c.status === 'done' ? c.session.setsCount : c.progress?.sets ?? 0), 0),
+      setsTotal: cards.reduce((sum, c) => sum + c.session.setsCount, 0),
+    };
+  });
+
   async ngOnInit() {
     await this.load();
   }
@@ -55,7 +92,15 @@ export class CurrentWeek {
       if (!(await this.store.GetCurrentMicrocycle())) return;
       const current = this.current();
       if (current?.status === 'InProgress' && current.microcycle?.templateName) {
-        await this.store.GetSessionsFromATrainingTemplate(current.microcycle.trainingTemplateId);
+        const templateId = current.microcycle.trainingTemplateId;
+        const inProgress = current.trainingSessions.find(s => !s.finishedAt && s.templateSessionId);
+        const [, volume, progress] = await Promise.all([
+          this.store.GetSessionsFromATrainingTemplate(templateId),
+          this.store.GetSessionsVolume(templateId),
+          inProgress ? this.store.GetSessionProgress(templateId, inProgress.templateSessionId!) : Promise.resolve(null),
+        ]);
+        this.sessionsVolume.set(volume);
+        this.inProgressProgress.set(progress && inProgress ? { sessionId: inProgress.templateSessionId!, ...progress } : null);
       } else if (current?.status === 'PendingPlanning' && current.mesocycleId) {
         await this.store.GetMesocycleDetail(current.mesocycleId);
       } else if (current?.status === 'NoActiveMacrocycle') {
@@ -73,19 +118,6 @@ export class CurrentWeek {
 
   trainingDistributionLabel(template: MesocycleTemplate): string {
     return TRAINING_DISTRIBUTION_LABELS[template.trainingDistribution] ?? template.trainingDistribution;
-  }
-
-  /** "Hecha" / "En curso" for the sessions already started this week */
-  sessionStatus(session: Session): 'done' | 'inProgress' | null {
-    const started = this.current()?.trainingSessions.find(s => s.templateSessionId === session.id);
-    if (!started) return null;
-    return started.finishedAt ? 'done' : 'inProgress';
-  }
-
-  openSession(session: Session) {
-    const templateId = this.current()?.microcycle?.trainingTemplateId;
-    if (!templateId) return;
-    this.router.navigate(['/training/session', templateId, session.id]);
   }
 
   async planWeek(template: MesocycleTemplate) {

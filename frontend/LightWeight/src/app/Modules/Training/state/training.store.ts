@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from "@angular/core";
-import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram, VolumeLandmark, TrainingSetupStatus } from "../data/training-api.service";
+import { Exercise, Session, TrainingApiService, Set, SeriesPerGroupPerSession, TrainingTemplate, Program, MacrocycleSummary, MacrocycleDetail, MesocycleDetail, CurrentMicrocycle, SessionWorkout, PreviousExercise, SetValues, SharedProgram, VolumeLandmark, TrainingSetupStatus, MuscleGroup } from "../data/training-api.service";
 import { HttpErrorResponse } from "@angular/common/http";
 import { firstValueFrom } from "rxjs";
 
@@ -634,6 +634,45 @@ export class TrainingStore{
             this._isLoading.set(false);
         }
     }
+    /**
+     * Planned sets per muscle group of every session of a template, by session id. Returned, not stored: the home
+     * cards read it alongside the template editor, which keeps its own copy. Null if it fails (the cards do without)
+     */
+    async GetSessionsVolume(TrainingTemplateId : string) : Promise<Record<string, Partial<Record<MuscleGroup, number>>> | null>{
+        try{
+            const series = await firstValueFrom(this.api.GetSeriesPerMuscleGroupPerSession(TrainingTemplateId));
+            return Object.fromEntries(series.map(s => [s.sessionId, s.series]));
+        }catch{
+            return null;
+        }
+    }
+
+    /**
+     * What has been done of a session this week: the planned sets already covered and, per muscle group, how many of
+     * them (a planned set counts once for each group it targets, like the planned volume). Extra sets are left out.
+     * Returned, not stored, so it does not replace the workout or the sets other pages show. Null if it fails
+     */
+    async GetSessionProgress(TrainingTemplateId : string, templateSessionId : string) : Promise<{ sets : number, byGroup : Partial<Record<MuscleGroup, number>> } | null>{
+        try{
+            const [planned, workout] = await Promise.all([
+                firstValueFrom(this.api.GetSetsOfASessionTemplate(TrainingTemplateId, templateSessionId)),
+                firstValueFrom(this.api.GetSessionWorkout(templateSessionId)),
+            ]);
+            // Not a Set: this file imports the Set type of the API
+            const performed : Record<string, true> = Object.fromEntries((workout.session?.sets ?? []).flatMap(s => s.templateSetId ? [[s.templateSetId, true]] : []));
+            const byGroup : Partial<Record<MuscleGroup, number>> = {};
+            let sets = 0;
+            for (const set of planned) {
+                if (!performed[set.id]) continue;
+                sets++;
+                for (const group of set.aimMuscleGroups) byGroup[group] = (byGroup[group] ?? 0) + 1;
+            }
+            return { sets, byGroup };
+        }catch{
+            return null;
+        }
+    }
+
     async GetUserTrainingTemplates() : Promise<boolean>{
         this._isLoading.set(true);
         this._error.set(null);
