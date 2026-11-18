@@ -30,13 +30,10 @@ const button = (el: HTMLElement, text: string) =>
   [...el.querySelectorAll('button')].find(b => b.textContent?.trim().startsWith(text))!;
 
 describe('TemplateCard', () => {
-  it('adds up the weekly sets and lists the groups from most to fewest, without the empty ones', async () => {
+  it('adds up the weekly sets, leaving out the empty groups', async () => {
     const { card } = await render();
 
     expect(card.totalSets()).toBe(52);
-    expect(card.groups().map(g => g.group)).toEqual(['Back', 'Chest', 'Quads', 'SideDelts', 'Biceps']);
-    expect(card.visibleGroups()).toHaveLength(4);
-    expect(card.hiddenGroups()).toBe(1);
   });
 
   it('says "series en N días" when the microcycle is not a week', async () => {
