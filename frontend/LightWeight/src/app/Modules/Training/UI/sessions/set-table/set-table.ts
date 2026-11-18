@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { SetRow } from '../session-workout.model';
+import { SetRow, Trend } from '../session-workout.model';
 
 export type SetField = 'weight' | 'repetitions' | 'rpe';
 
@@ -14,6 +14,8 @@ export interface RowView {
   /** Which values are hints (the previous time, the target) and not typed or saved ones */
   hint: Record<SetField, boolean>;
   previous: string;
+  /** Only in a finished session: what was done today against the previous time */
+  comparison?: { today: string; rpe: string | null; change: string; trend: Trend | 'skipped' | null };
 }
 
 /** A line of the table: a set, or a divider (a new target, a round of a superset, the extra sets) */
@@ -31,6 +33,53 @@ export type TableEntry =
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block' },
   template: `
+    @if (mode() === 'compare') {
+      <!-- Finished session: the previous time against today, set by set -->
+      <table class="w-full table-fixed border-collapse text-sm tabular-nums">
+        <colgroup><col class="w-9" /><col class="w-[27%]" /><col class="w-[31%]" /><col /></colgroup>
+        <thead>
+          <tr class="text-[10px] font-semibold uppercase tracking-wider text-subtle">
+            <th class="pb-1 pl-1 text-left font-semibold">#</th>
+            <th class="pb-1 text-left font-semibold">Anterior</th>
+            <th class="pb-1 text-left font-semibold">Hoy</th>
+            <th class="pb-1 pr-1 text-right font-semibold">Cambio</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of entries(); track entry.key; let first = $first) {
+            @if (entry.kind === 'divider') {
+              <tr>
+                <td colspan="4"
+                    class="px-1 pb-0.5 text-[11px] font-semibold tracking-wide"
+                    [class]="(first ? 'pt-0.5 ' : 'border-t border-line pt-2 ') + (entry.tone === 'round' ? 'text-info' : entry.tone === 'extra' ? 'text-subtle' : 'text-accent')">
+                  {{ entry.label }}
+                </td>
+              </tr>
+            } @else {
+              @let row = entry.row;
+              @let cmp = entry.view.comparison;
+              <tr class="border-t border-line/50 first:border-t-0">
+                <td class="py-2 pl-1 text-xs font-bold text-subtle">{{ row.label ?? row.position }}</td>
+                <td class="truncate py-2 text-subtle">{{ entry.view.previous }}</td>
+                <td class="py-2" [class]="cmp?.trend === 'skipped' ? 'italic text-subtle' : 'font-semibold text-fg'">
+                  {{ cmp?.today ?? '—' }}
+                  @if (cmp?.rpe) {
+                    <span class="ml-0.5 text-xs font-normal text-muted">&#64;{{ cmp!.rpe }}</span>
+                  }
+                </td>
+                <td class="py-2 pr-1 text-right text-xs font-semibold" [class]="trendClass(cmp?.trend ?? null)">
+                  @switch (cmp?.trend) {
+                    @case ('up') { <span aria-hidden="true">↑ </span><span class="sr-only">Mejor: </span> }
+                    @case ('down') { <span aria-hidden="true">↓ </span><span class="sr-only">Peor: </span> }
+                  }
+                  {{ cmp?.change ?? '' }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    } @else {
     <table class="w-full table-fixed border-collapse text-sm tabular-nums">
       <colgroup>
         <col class="w-9" /><col class="w-[22%]" /><col /><col /><col /><col class="w-12" />
@@ -96,12 +145,15 @@ export type TableEntry =
         }
       </tbody>
     </table>
+    }
   `,
 })
 export class SetTable {
   entries = input.required<TableEntry[]>();
   /** Sets can be typed and marked (the session is in progress) */
   editable = input(false);
+  /** record: the sets to type and mark · compare: a finished session against the previous time */
+  mode = input<'record' | 'compare'>('record');
 
   toggle = output<SetRow>();
   open = output<{ row: SetRow; field: SetField }>();
@@ -122,6 +174,10 @@ export class SetTable {
       return `${text} border-transparent ${view.status === 'unsaved' ? 'bg-warning/10' : 'bg-accent/12'}`;
     }
     return `${text} border-line-strong bg-canvas ${this.editable() ? 'hover:border-accent/60' : ''}`;
+  }
+
+  trendClass(trend: Trend | 'skipped' | null): string {
+    return trend === 'up' ? 'text-accent' : trend === 'down' ? 'text-danger' : 'text-subtle';
   }
 
   checkClass(view: RowView): string {

@@ -12,7 +12,7 @@ import { SetSheet } from '../set-sheet/set-sheet';
 import { RestStart, RestTimer } from '../rest-timer/rest-timer';
 import {
   DraftValues, ExtraGroup, PlannedBlock, RowValues, SetRow, WorkoutItem,
-  completeValues, defaultValues, formatDuration, formatLoad, formatNumber, formatShortSet, formatTime,
+  compareSet, completeValues, defaultValues, formatDuration, formatLoad, formatNumber, formatShortSet, formatTime,
   schemeOf, targetLabel, targetOf, targetTranches, valuesOf,
 } from '../session-workout.model';
 
@@ -221,7 +221,8 @@ export class SessionPlan {
         ...this.performed().map(s => s.exerciseId),
         ...this.drafts().added.map(a => a.exerciseId),
       ];
-      await this.store.GetPreviousPerformance(exerciseIds, this.session()?.id ?? null, true);
+      // "The previous time" is the one before this session, also when an old session is opened
+      await this.store.GetPreviousPerformance(exerciseIds, this.session()?.id ?? null, true, this.session()?.startAt ?? null);
     } finally {
       this.isLoading.set(false);
     }
@@ -402,6 +403,7 @@ export class SessionPlan {
     const hintRpe = row.target ? formatNumber(row.target.rpe) : '—';
     return {
       done,
+      comparison: this.isFinished() ? this.comparisonOf(row) : undefined,
       status: change && change.op !== 'remove' ? change.status : null,
       weight: typed.weight !== undefined ? formatLoad(typed.weight, isBodyWeight) : hintWeight !== undefined ? formatLoad(hintWeight, isBodyWeight) : '—',
       repetitions: typed.repetitions !== undefined ? String(typed.repetitions) : hintReps,
@@ -410,6 +412,26 @@ export class SessionPlan {
       previous: row.previous ? formatShortSet(row.previous) : '—',
     };
   }
+
+  /** A finished session: what was done in a set against the same set the previous time, or that it was skipped */
+  private comparisonOf(row: SetRow): RowView['comparison'] {
+    if (!row.performed) return { today: '—', rpe: null, change: 'Saltada', trend: 'skipped' };
+    const today = valuesOf(row.performed);
+    return { today: formatShortSet(today), rpe: formatNumber(today.rpe), ...compareSet(today, row.previous, row.planned?.technique ?? null) };
+  }
+
+  /** Header of a finished session: sets done of the planned ones, and in how many it went better than the previous time */
+  finishedSummary = computed(() => {
+    const rows = this.allRows();
+    const performed = rows.filter(r => r.performed);
+    const compared = performed.map(r => compareSet(valuesOf(r.performed!), r.previous, r.planned?.technique ?? null)).filter(c => c.trend !== null);
+    return {
+      done: performed.length,
+      planned: rows.filter(r => r.planned).length,
+      better: compared.filter(c => c.trend === 'up').length,
+      compared: compared.length,
+    };
+  });
 
   private entry(row: SetRow): TableEntry {
     return { kind: 'row', key: row.key, row, view: this.viewOf(row) };
@@ -778,7 +800,7 @@ export class SessionPlan {
         extraRows: { ...d.extraRows, [key]: (d.extraRows[key] ?? 0) + 1 },
       }));
     }
-    await this.store.GetPreviousPerformance([exercise.id], this.session()?.id ?? null);
+    await this.store.GetPreviousPerformance([exercise.id], this.session()?.id ?? null, false, this.session()?.startAt ?? null);
   }
 
   /** The pending sets of a block go back to the planned exercise (the recorded ones keep theirs) */

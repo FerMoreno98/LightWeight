@@ -516,7 +516,7 @@ public class TrainingSessionTests
         var scenario = new Scenario();
         var excluded = Guid.CreateVersion7();
         var performedAt = DateTime.UtcNow.AddDays(-7);
-        scenario.Sessions.GetLastSetsOfExercisesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<IReadOnlyCollection<Guid>>(), excluded)
+        scenario.Sessions.GetLastSetsOfExercisesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<IReadOnlyCollection<Guid>>(), excluded, Arg.Any<DateTime?>())
             .Returns(new List<ExercisePerformance>
             {
                 new(scenario.Bench.Id, Guid.CreateVersion7(), performedAt, new List<PerformedSet> { new(8, 80m, 8m, false), new(7, 80m, 8.5m, false) })
@@ -533,7 +533,29 @@ public class TrainingSessionTests
         (
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == scenario.Week.Id),
             Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Single() == scenario.Bench.Id),
-            excluded
+            excluded,
+            null
+        );
+    }
+
+    [Fact]
+    public async Task GetPreviousPerformance_OnlyLooksBeforeTheGivenMoment()
+    {
+        // Arrange
+        var scenario = new Scenario();
+        var before = DateTime.UtcNow.AddDays(-14);
+        scenario.Sessions.GetLastSetsOfExercisesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<Guid?>(), Arg.Any<DateTime?>())
+            .Returns(new List<ExercisePerformance>());
+        var handler = new GetPreviousPerformanceQueryHandler(scenario.Sessions, scenario.Macrocycles);
+        // Act
+        await handler.HandleAsync(new GetPreviousPerformanceQuery(new[] { scenario.Bench.Id }, null, scenario.UserId, before), default);
+        // Assert
+        await scenario.Sessions.Received(1).GetLastSetsOfExercisesAsync
+        (
+            Arg.Any<IReadOnlyCollection<Guid>>(),
+            Arg.Any<IReadOnlyCollection<Guid>>(),
+            null,
+            before
         );
     }
 
@@ -548,6 +570,6 @@ public class TrainingSessionTests
         var result = await handler.HandleAsync(new GetPreviousPerformanceQuery(new[] { scenario.Bench.Id }, null, scenario.UserId), default);
         // Assert
         Assert.Empty(result);
-        await scenario.Sessions.DidNotReceive().GetLastSetsOfExercisesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<Guid?>());
+        await scenario.Sessions.DidNotReceive().GetLastSetsOfExercisesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<Guid?>(), Arg.Any<DateTime?>());
     }
 }

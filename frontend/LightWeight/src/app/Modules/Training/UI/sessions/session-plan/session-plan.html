@@ -47,7 +47,14 @@
               <span class="badge badge-warning">{{ unsavedCount() }} sin guardar</span>
             }
           </div>
-          @if (progress().total > 0) {
+          @if (isFinished()) {
+            <p class="text-sm text-muted">
+              <span class="font-semibold tabular-nums text-fg">{{ finishedSummary().done }} de {{ finishedSummary().planned }}</span> series planificadas
+              @if (finishedSummary().compared > 0) {
+                · mejor que la vez anterior en <span class="font-semibold tabular-nums text-accent">{{ finishedSummary().better }} de {{ finishedSummary().compared }}</span>
+              }
+            </p>
+          } @else if (progress().total > 0) {
             <div>
               <div class="h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden="true">
                 <div class="h-full rounded-full bg-accent transition-[width] duration-300" [style.width.%]="progress().done / progress().total * 100"></div>
@@ -148,7 +155,7 @@
                     }
                   </ul>
                   <div class="rounded-lg border border-line bg-surface p-2">
-                    <app-set-table [entries]="card.entries" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
+                    <app-set-table [entries]="card.entries" [mode]="isFinished() ? 'compare' : 'record'" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
                   </div>
                 </article>
               }
@@ -173,6 +180,10 @@
               Añadir ejercicio
             </button>
           }
+        }
+
+        @if (isFinished() && !completedWeek()) {
+          <a routerLink="/home" class="btn btn-primary mt-8 w-full">Volver a la semana</a>
         }
 
         @if (canRecord()) {
@@ -225,7 +236,7 @@
         <ng-container *ngTemplateOutlet="exerciseMenu; context: { $implicit: card.heading }" />
       }
     </div>
-    <app-set-table [entries]="card.entries" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
+    <app-set-table [entries]="card.entries" [mode]="isFinished() ? 'compare' : 'record'" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
     @if (canRecord() && !isSelecting()) {
       <button type="button" (click)="addSet(card.key)" class="mt-1 min-h-9 rounded-md px-2 text-xs font-semibold text-subtle transition hover:text-accent">+ Añadir serie</button>
     }

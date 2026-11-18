@@ -234,12 +234,12 @@ export class TrainingStore{
     }
 
     /** Loads the last performance of the given exercises and merges it with the ones already loaded */
-    async GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null, reset = false) : Promise<boolean>{
+    async GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null, reset = false, before : string | null = null) : Promise<boolean>{
         if (reset) this._previousPerformance.set({});
         const missing = exerciseIds.filter((id, i) => exerciseIds.indexOf(id) === i && !this._previousPerformance()[id]);
         if (missing.length === 0) return true;
         try{
-            const previous = await firstValueFrom(this.api.GetPreviousPerformance(missing, excludeSessionId));
+            const previous = await firstValueFrom(this.api.GetPreviousPerformance(missing, excludeSessionId, before));
             this._previousPerformance.update(current => {
                 const next = { ...current };
                 for (const exercise of previous) next[exercise.exerciseId] = exercise;

@@ -59,7 +59,8 @@ public class TrainingSessionRepository : ITrainingSessionRepository
     (
         IReadOnlyCollection<Guid> MicrocycleIds,
         IReadOnlyCollection<Guid> ExerciseIds,
-        Guid? ExcludeSessionId
+        Guid? ExcludeSessionId,
+        DateTime? Before = null
     )
     {
         if(MicrocycleIds.Count == 0 || ExerciseIds.Count == 0) return new();
@@ -68,7 +69,7 @@ public class TrainingSessionRepository : ITrainingSessionRepository
 
         // Only the sets of the requested exercises are read; picking the latest session per exercise is done in memory
         var rows = await _dbContext.TrainingSessions
-            .Where(t => microcycleIds.Contains(t.MicrocycleId) && t.Id != ExcludeSessionId)
+            .Where(t => microcycleIds.Contains(t.MicrocycleId) && t.Id != ExcludeSessionId && (Before == null || t.StartAt < Before))
             .SelectMany(t => t.Sets
                 .Where(s => exerciseIds.Contains(s.ExerciseId))
                 .Select(s => new
