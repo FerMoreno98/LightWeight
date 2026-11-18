@@ -14,13 +14,13 @@ internal sealed class TrainingData
     public List<TrainingSessionProjection> Sessions { get; } = [];
     public List<TrainingSetProjection> Sets { get; } = [];
 
-    public TrainingSessionProjection Session(DateTime startedAt, Guid? microcycleId = null, int week = 1, string name = "Torso A", int motivation = 7, int sleep = 7, int doms = 3)
+    public TrainingSessionProjection Session(DateTime startedAt, Guid? microcycleId = null, Guid? macrocycleId = null, int week = 1, string name = "Torso A", int motivation = 7, int sleep = 7, int doms = 3)
     {
         var session = new TrainingSessionProjection
         {
             SessionId = Guid.CreateVersion7(),
             UserId = UserId,
-            MacrocycleId = Guid.Empty,
+            MacrocycleId = macrocycleId ?? Guid.Empty,
             MesocycleId = Guid.Empty,
             MicrocycleId = microcycleId ?? Guid.CreateVersion7(),
             WeekNumber = week,

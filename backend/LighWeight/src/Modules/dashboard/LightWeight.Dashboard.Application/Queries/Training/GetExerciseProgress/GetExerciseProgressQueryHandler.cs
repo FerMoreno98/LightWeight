@@ -23,13 +23,14 @@ public sealed class GetExerciseProgressQueryHandler : IQueryHandler<GetExerciseP
         var sets = await _store.GetSetsAsync(query.UserId, query.ExerciseId, ct);
         if (sets.Count == 0) return null;
         var sessions = await _store.GetSessionsAsync(query.UserId, ct);
-        var history = ExerciseHistory.Build(sessions, sets);
-        if (history.Count == 0) return null;
+        var wholeHistory = ExerciseHistory.Build(sessions, sets);
+        if (wholeHistory.Count == 0) return null;
+        var history = ExerciseHistory.InMacrocycle(wholeHistory, query.MacrocycleId);
 
         return new ExerciseProgressResponse
         (
             query.ExerciseId,
-            history[^1].ExerciseName,
+            wholeHistory[^1].ExerciseName,
             history
                 .Where(e => e.Best is not null || e.BestWeight is not null)
                 .Select(e => new ProgressionPoint

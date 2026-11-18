@@ -1,7 +1,25 @@
 <main class="min-h-screen px-4 py-10">
   <div class="mx-auto max-w-3xl">
     <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">Progreso</h1>
-    <p class="mt-1 text-sm text-muted">Tus ejercicios, del último que has entrenado al más antiguo. Entra en uno para ver todo su histórico.</p>
+    <p class="mt-1 text-sm text-muted">Tus ejercicios, del último que has entrenado al más antiguo. Entra en uno para ver su evolución.</p>
+
+    <div class="mt-6 space-y-2">
+      <app-scope-toggle
+        label="Ejercicios"
+        [value]="store.exercisesScope()"
+        [disabled]="!store.hasMacrocycle()"
+        (changed)="store.SetExercisesScope($event)"
+      />
+      <app-scope-toggle
+        label="Marcas"
+        [value]="store.marksScope()"
+        [disabled]="!store.hasMacrocycle()"
+        (changed)="store.SetMarksScope($event)"
+      />
+      @if (store.listLoaded() && !store.hasMacrocycle()) {
+        <p class="text-xs text-subtle">No tienes un macrociclo activo: se muestra todo el histórico.</p>
+      }
+    </div>
 
     <input
       type="search"
@@ -9,7 +27,7 @@
       (input)="search.set($any($event.target).value)"
       placeholder="Buscar ejercicio…"
       aria-label="Buscar ejercicio"
-      class="mt-6 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-fg placeholder-subtle outline-none focus:border-accent"
+      class="mt-4 w-full rounded-lg border border-line bg-canvas px-3 py-2 text-sm text-fg placeholder-subtle outline-none focus:border-accent"
     />
 
     @if (store.error(); as error) {
@@ -25,7 +43,12 @@
         }
       } @else if (store.exercises().length === 0) {
         <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-12 text-center text-sm text-muted">
-          Aún no has terminado ninguna sesión.
+          @if (store.exercisesScope() === 'macrocycle') {
+            Aún no has terminado ninguna sesión en este macrociclo.
+            <button type="button" (click)="store.SetExercisesScope('history')" class="ml-1 font-medium text-accent hover:underline">Ver el histórico</button>
+          } @else {
+            Aún no has terminado ninguna sesión.
+          }
         </div>
       } @else {
         @for (exercise of exercises(); track exercise.exerciseId) {
@@ -36,11 +59,17 @@
             <div class="min-w-0">
               <p class="truncate font-medium text-fg">{{ exercise.name }}</p>
               <p class="mt-0.5 text-xs text-muted">
-                {{ daysAgo(exercise.lastPerformedAt) }} · {{ exercise.sessions }} {{ exercise.sessions === 1 ? 'sesión' : 'sesiones' }}
+                {{ daysAgo(exercise.lastPerformedAt) }}
+                @if (exercise.sessions > 0) {
+                  · {{ exercise.sessions }} {{ exercise.sessions === 1 ? 'sesión' : 'sesiones' }}
+                }
               </p>
             </div>
             <div class="shrink-0 text-right">
-              @if (exercise.lastEstimatedOneRepMax !== null) {
+              @if (exercise.sessions === 0) {
+                <p class="text-sm text-muted">sin marcas</p>
+                <p class="text-xs text-subtle">en este macrociclo</p>
+              } @else if (exercise.lastEstimatedOneRepMax !== null) {
                 <p class="text-sm text-fg">1RM est. <span class="font-semibold tabular-nums">{{ oneRepMax(exercise.lastEstimatedOneRepMax) }}</span></p>
                 @if (exercise.trend !== null) {
                   <p class="text-xs font-medium tabular-nums" [class]="trendClass(exercise.trend)">{{ trend(exercise.trend) }}</p>

@@ -89,8 +89,8 @@ All endpoints require authentication and work on the projections of the authenti
 | `GET` | `/bodymetrics/skinfolds` | — | `[{ measuredAt, abdominal, …, calf, summatory, fatPercentage }]` — whole history, summatory only with the six; fatPercentage also needs the sex of the user |
 | `GET` | `/training/volume` | — | `[{ microcycleId, weekNumber, startedAt, setsByMuscle: { "Chest": 12, … } }]` |
 | `GET` | `/training/sessions` | — | `[{ sessionId, name, startedAt, performance (% or null), comparedExercises, motivation, sleep, doms }]` |
-| `GET` | `/training/exercises` | — | `[{ exerciseId, name, lastPerformedAt, sessions, lastEstimatedOneRepMax, trend }]`, from the most recently trained |
-| `GET` | `/training/exercises/{exerciseId}` | — | `{ name, progression[…], fatigue[{ performedAt, zone, firstToSecond, firstToLast }], recentSessions[…] }`; **404** if the user never performed it (same answer for an id that does not exist, so other users' data cannot be probed) |
+| `GET` | `/training/exercises` | `?exercisesMacrocycleId=` (only the exercises performed in it), `?marksMacrocycleId=` (sessions, 1RM and trend with its sessions only; 0 / null when it has none). Independent, both optional | `[{ exerciseId, name, lastPerformedAt, sessions, lastEstimatedOneRepMax, trend }]`, from the most recently trained (`lastPerformedAt` always from the whole history) |
+| `GET` | `/training/exercises/{exerciseId}` | `?macrocycleId=` (only its sessions; empty lists when there are none) | `{ name, progression[…], fatigue[{ performedAt, zone, firstToSecond, firstToLast }], recentSessions[…] }`; **404** if the user never performed it (same answer for an id that does not exist, so other users' data cannot be probed) |
 
 ## Frontend
 
@@ -110,6 +110,7 @@ Training charts:
   * **Recalcular**: commented out in the template. Sessions finished before the event existed need one call to `POST /rebuild` to reach the charts.
 * **Progreso** (`/progress`, in the Entrenamiento menu):
   * The list of exercises: search, last session, current estimated 1RM, trend with arrow and number.
+  * Two independent filters, "Macrociclo actual / Histórico" (both on the macrocycle by default, kept while the app is open): **Ejercicios** (which ones are listed) and **Marcas** (sessions, 1RM, trend and the detail). So the exercises of the current macrocycle can be seen with their historical marks. The active macrocycle comes from `GET /api/training/microcycle/current`; without one, both show the history.
   * **`/progress/:exerciseId`**: estimated 1RM and best weight (hollow points = less precise; the tooltip shows the wellbeing of the session), performance lost between sets by zone (1ª→2ª / 1ª→última), and the last 10 sessions as a table.
 
 ## Open Notes
@@ -117,6 +118,6 @@ Training charts:
 * **Projections can get out of sync, and that is accepted by design.** The projectors run synchronously inside the request of the source module, after its commit. If a projector fails, the measurement is saved but the projection misses it; the failure is logged. In a modular monolith everything runs in the same process, so such a failure means a bug or an unhandled edge case: it is diagnosed with logs and repaired with "Rebuild". An outbox was evaluated and **discarded** (2026-10-16); do not add one without revisiting this decision.
 * **A failing subscriber does not fail the request.** `EventPublisher` logs the event, the handler and the exception, and continues with the next subscriber, because the data of the user is already saved. The projection stays behind until a call to `POST /rebuild`, and a rebuild with a partial failure answers 204 with the error in the log only.
 * **The rebuild is not atomic.** Emptying and refilling are separate writes; if it fails halfway, running it again leaves everything right.
-* **Range:** the charts show the whole history. Training projections already store their cycle ids, so the macrocycle/mesocycle filter will be an optional `?macrocycleId=`/`?mesocycleId=` on the training endpoints, with no change in training. Training will publish its cycle start/finish events for the selector and for the body measurement charts, where a cycle translates to its date range. Pending decision: whether, with a cycle filtered, the trend and the “previous time” only compare inside that cycle.
+* **Range:** Progreso filters by macrocycle (see Endpoints); with the marks filtered, the trend only compares inside the macrocycle (the first session of the macrocycle has no comparison). The other charts show the whole history. A mesocycle filter would be the same `WHERE` on `MesocycleId`. Choosing any past cycle (not only the active one) needs its list: Training would publish its cycle start/finish events for the selector and for the body measurement charts, where a cycle translates to its date range.
 * **Fat percentage:** done. The dashboard keeps the sex from `userprofile.profile.recorded.v1` and calculates it when reading the skinfolds (`FatPercentage` in `GET /bodymetrics/skinfolds`), with the Yuhasz formula duplicated from bodymetrics.
 * **Future sources:** Nutrition (FatSecret data: calories and macros) and NEAT. Each one will publish its integration events and subscribe to `dashboard.rebuild.requested.v1`.

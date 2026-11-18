@@ -3,7 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { provideCharts } from 'ng2-charts';
 import { Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
-import { ExerciseProgressStore } from '../../state/exercise-progress.store';
+import { ExerciseProgressStore, ProgressScope } from '../../state/exercise-progress.store';
+import { ScopeToggle } from '../scope-toggle/scope-toggle';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
 import { CHART_DEFAULTS, SERIES_COLORS } from '../chart-theme';
 import { techniqueLabel, wellbeingLine, ZONE_LABELS, ZONE_ORDER } from '../training-labels';
@@ -19,7 +20,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
 @Component({
     selector: 'app-exercise-progress',
     standalone: true,
-    imports: [LineChart, RouterLink],
+    imports: [LineChart, RouterLink, ScopeToggle],
     templateUrl: './exercise-progress.html',
     // Chart.js is only downloaded with the components that draw charts
     providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
@@ -81,6 +82,12 @@ export class ExerciseProgressPage implements OnInit {
                 const exerciseId = params.get('exerciseId');
                 if (exerciseId) this.store.LoadExercise(exerciseId);
             });
+    }
+
+    /** The marks filter is the same as in the list: changing it here also applies when going back */
+    changeMarksScope(scope: ProgressScope) {
+        const exerciseId = this.route.snapshot.paramMap.get('exerciseId');
+        if (exerciseId) this.store.SetMarksScope(scope, exerciseId);
     }
 
     date(value: string): string {

@@ -59,6 +59,10 @@ public static class ExerciseHistory
             .ToList();
     }
 
+    /// <summary>The sessions of the macrocycle, keeping their order (all of them when no macrocycle is given)</summary>
+    public static List<ExerciseInSession> InMacrocycle(IEnumerable<ExerciseInSession> history, Guid? macrocycleId)
+        => macrocycleId is { } id ? history.Where(e => e.Session.MacrocycleId == id).ToList() : history.ToList();
+
     /// <summary>
     /// Change (%) of the best estimated 1RM of the last session against the previous session in the same zone.
     /// Null when there is no previous comparable session

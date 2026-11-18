@@ -90,17 +90,22 @@ public static class DashboardModule
         return TypedResults.Ok(sessions);
     }
 
-    private static async Task<IResult> GetExercisesProgress(IMediator mediator, HttpContext httpContext, CancellationToken ct)
+    /// <param name="exercisesMacrocycleId">Only the exercises performed in this macrocycle (absent: all of them)</param>
+    /// <param name="marksMacrocycleId">Marks computed only with this macrocycle (absent: the whole history)</param>
+    private static async Task<IResult> GetExercisesProgress(Guid? exercisesMacrocycleId, Guid? marksMacrocycleId, IMediator mediator,
+        HttpContext httpContext, CancellationToken ct)
     {
         var exercises = await mediator.QueryAsync<GetExercisesProgressQuery, List<ExerciseProgressSummary>>(
-            new GetExercisesProgressQuery(UserId(httpContext)), ct);
+            new GetExercisesProgressQuery(UserId(httpContext), exercisesMacrocycleId, marksMacrocycleId), ct);
         return TypedResults.Ok(exercises);
     }
 
-    private static async Task<IResult> GetExerciseProgress(Guid exerciseId, IMediator mediator, HttpContext httpContext, CancellationToken ct)
+    /// <param name="macrocycleId">Only the sessions of this macrocycle (absent: the whole history)</param>
+    private static async Task<IResult> GetExerciseProgress(Guid exerciseId, Guid? macrocycleId, IMediator mediator, HttpContext httpContext,
+        CancellationToken ct)
     {
         var progress = await mediator.QueryAsync<GetExerciseProgressQuery, ExerciseProgressResponse?>(
-            new GetExerciseProgressQuery(UserId(httpContext), exerciseId), ct);
+            new GetExerciseProgressQuery(UserId(httpContext), exerciseId, macrocycleId), ct);
         // Not performed by this user (or not existing): the same answer, so no ids of other users can be probed
         return progress is null ? TypedResults.NotFound() : TypedResults.Ok(progress);
     }
