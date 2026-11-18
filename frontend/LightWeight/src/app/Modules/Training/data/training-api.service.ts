@@ -370,10 +370,12 @@ export class TrainingApiService {
     GetSessionWorkout(templateSessionId : string) : Observable<SessionWorkout>{
         return this.http.get<SessionWorkout>(`${this.baseUrl}/training-session/workout/${templateSessionId}`);
     }
-    GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null) : Observable<PreviousExercise[]>{
+    /** before: only sessions started before this moment (ISO), so an old session is compared with the one before it */
+    GetPreviousPerformance(exerciseIds : string[], excludeSessionId : string | null, before : string | null = null) : Observable<PreviousExercise[]>{
         let params = new HttpParams();
         for (const id of exerciseIds) params = params.append('exerciseIds', id);
         if (excludeSessionId) params = params.set('excludeSessionId', excludeSessionId);
+        if (before) params = params.set('before', before);
         return this.http.get<PreviousExercise[]>(`${this.baseUrl}/training-session/previous`, { params });
     }
     StartTrainingSession

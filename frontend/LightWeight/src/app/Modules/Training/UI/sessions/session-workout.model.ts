@@ -126,6 +126,60 @@ export function valuesOf(set: { weight: number; repetitions: number; rpe: number
   return { weight: set.weight, repetitions: set.repetitions, rpe: set.rpe, isBodyWeight: set.isBodyWeight };
 }
 
+// ---------------------------------------------------------------- Comparing with the previous time
+
+/** Above this (reps + reps in reserve) there is no estimation, as in the dashboard */
+const ESTIMATED_UP_TO = 30;
+
+/**
+ * Estimated 1RM with Epley's formula counting the reps left in reserve (RIR = 10 - RPE): weight × (1 + (reps + RIR) / 30).
+ * The same rule as the dashboard (OneRepMax.Estimate): no estimation for body weight sets, sets with a technique
+ * (they perform worse by design), without load or reps, or too long
+ */
+export function estimateOneRepMax(set: RowValues, technique: AdvancedTechnique | null): number | null {
+  if (set.isBodyWeight || technique || set.weight <= 0 || set.repetitions <= 0) return null;
+  const toFailure = set.repetitions + (10 - set.rpe);
+  if (toFailure > ESTIMATED_UP_TO) return null;
+  return Math.round(set.weight * (1 + toFailure / 30) * 10) / 10;
+}
+
+export type Trend = 'up' | 'down' | 'same';
+
+/** What changed in a set against the same set the previous time, and whether it went better or worse overall */
+export interface SetComparison {
+  /** "+5 kg −2 rep", "+1 rep", "RPE 8 → 9", "=" */
+  change: string;
+  /** Null when there is nothing to compare with */
+  trend: Trend | null;
+}
+
+const signed = (value: number, unit: string) => `${value > 0 ? '+' : '−'}${formatNumber(Math.abs(value))}${unit}`;
+
+/**
+ * Compares a set with the same one the previous time. The overall trend uses the estimated 1RM, so 125×10 after
+ * 120×12 can still be better; when there is no estimation (body weight, techniques) more load wins, then more reps,
+ * then a lower RPE (the same work felt easier)
+ */
+export function compareSet(today: RowValues, previous: RowValues | null, technique: AdvancedTechnique | null): SetComparison {
+  if (!previous) return { change: 'Primera vez', trend: null };
+  const weight = today.weight - previous.weight;
+  const reps = today.repetitions - previous.repetitions;
+  const rpe = today.rpe - previous.rpe;
+  const parts = [weight !== 0 ? signed(weight, ' kg') : '', reps !== 0 ? signed(reps, ' rep') : ''].filter(Boolean);
+  const change = parts.length ? parts.join(' ') : rpe !== 0 ? `RPE ${formatNumber(previous.rpe)} → ${formatNumber(today.rpe)}` : '=';
+
+  const now = estimateOneRepMax(today, technique);
+  const before = estimateOneRepMax(previous, technique);
+  let difference: number;
+  if (now !== null && before !== null && today.isBodyWeight === previous.isBodyWeight) {
+    difference = now - before;
+  } else {
+    difference = weight !== 0 ? weight : reps !== 0 ? reps : -rpe;
+  }
+  const trend: Trend = Math.abs(difference) < 0.05 ? 'same' : difference > 0 ? 'up' : 'down';
+  return { change, trend };
+}
+
 // ---------------------------------------------------------------- Formats
 
 const NUMBER_FORMAT = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });

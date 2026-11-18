@@ -20,11 +20,13 @@ public interface ITrainingSessionRepository
     /// <param name="MicrocycleIds">Weeks to search in (e.g. the weeks of the active macrocycle)</param>
     /// <param name="ExerciseIds">Exercises to look for</param>
     /// <param name="ExcludeSessionId">Session to ignore (usually the one in progress)</param>
+    /// <param name="Before">Only sessions started before this moment (UTC), to compare an old session with the one before it; null = any</param>
     Task<List<ExercisePerformance>> GetLastSetsOfExercisesAsync
     (
         IReadOnlyCollection<Guid> MicrocycleIds,
         IReadOnlyCollection<Guid> ExerciseIds,
-        Guid? ExcludeSessionId
+        Guid? ExcludeSessionId,
+        DateTime? Before = null
     );
 }
 

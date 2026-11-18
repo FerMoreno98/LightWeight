@@ -7,7 +7,9 @@ namespace LightWeight.Training.Application.Queries.TrainingSessions.GetPreviousP
 /// whatever template that session followed
 /// </summary>
 /// <param name="ExcludeSessionId">Session to ignore (usually the one in progress)</param>
-public sealed record GetPreviousPerformanceQuery(IReadOnlyCollection<Guid> ExerciseIds, Guid? ExcludeSessionId, Guid UserId)
+/// <param name="Before">Only sessions started before this moment (UTC): the start of the session being looked at, so an old
+/// session is compared with the one before it and not with a later one. Null = the most recent</param>
+public sealed record GetPreviousPerformanceQuery(IReadOnlyCollection<Guid> ExerciseIds, Guid? ExcludeSessionId, Guid UserId, DateTime? Before = null)
     : IQuery<List<GetPreviousPerformanceResponse>>;
 
 /// <param name="PerformedAt">Start of the session the sets belong to</param>

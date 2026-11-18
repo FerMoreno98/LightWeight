@@ -200,4 +200,19 @@ describe('SessionPlan', () => {
     expect(page.uncheckedPlanned()).toBe(6);
     expect(page.finishMessage()).toContain('Quedan 6 series planificadas sin marcar');
   });
+
+  it('once finished, compares every set with the previous time and counts the skipped ones', async () => {
+    const { page, store, squat } = await render();
+    await page.toggle(squat()[0]);                       // 100×5 @ 8, the same as last time
+    page.openSheet(squat()[1], 'weight');
+    await page.saveSheet({ weight: 82.5, repetitions: 11, rpe: 9 });
+    const workout = store.sessionWorkout()!;
+    store.sessionWorkout.set({ ...workout, session: { ...workout.session!, finishedAt: '2026-11-18T18:40:00Z', duration: '01:10:00' } });
+
+    const rows = squat();
+    expect(page.viewOf(rows[0]).comparison).toEqual({ today: '100×5', rpe: '8', change: '=', trend: 'same' });
+    expect(page.viewOf(rows[1]).comparison).toEqual({ today: '82,5×11', rpe: '9', change: '+2,5 kg', trend: 'up' });
+    expect(page.viewOf(rows[2]).comparison).toEqual({ today: '—', rpe: null, change: 'Saltada', trend: 'skipped' });
+    expect(page.finishedSummary()).toEqual({ done: 2, planned: 7, better: 1, compared: 2 });
+  });
 });

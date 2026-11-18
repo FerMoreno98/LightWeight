@@ -1,4 +1,4 @@
-import { SetRow, completeValues, defaultValues, formatLoad, formatShortSet, schemeOf, targetTranches } from './session-workout.model';
+import { SetRow, compareSet, completeValues, defaultValues, estimateOneRepMax, formatLoad, formatShortSet, schemeOf, targetTranches } from './session-workout.model';
 
 const t = (min: number, max: number, rpe: number) => ({ min, max, rpe, technique: null });
 
@@ -56,5 +56,43 @@ describe('formats', () => {
     expect(formatLoad(0, true)).toBe('PC');
     expect(formatLoad(10, true)).toBe('PC+10');
     expect(formatShortSet({ weight: 0, repetitions: 9, isBodyWeight: true })).toBe('PC×9');
+  });
+});
+
+describe('estimateOneRepMax', () => {
+  const v = (weight: number, repetitions: number, rpe: number, isBodyWeight = false) => ({ weight, repetitions, rpe, isBodyWeight });
+
+  it('uses the same formula as the dashboard: 100 kg × 10 @ RPE 8 is 140 kg', () => {
+    expect(estimateOneRepMax(v(100, 10, 8), null)).toBe(140);
+  });
+
+  it('does not estimate body weight sets, techniques or too long sets', () => {
+    expect(estimateOneRepMax(v(0, 10, 8, true), null)).toBeNull();
+    expect(estimateOneRepMax(v(60, 12, 9), 'DropSet')).toBeNull();
+    expect(estimateOneRepMax(v(20, 30, 8), null)).toBeNull();
+  });
+});
+
+describe('compareSet', () => {
+  const v = (weight: number, repetitions: number, rpe: number, isBodyWeight = false) => ({ weight, repetitions, rpe, isBodyWeight });
+
+  it('names what changed and judges the whole set by its estimated 1RM', () => {
+    // 125 × 10 @ 8 → 175 kg against 120 × 12 @ 8 → 176 kg: more load, but slightly worse; 125 × 11 → 179,2 kg is better
+    expect(compareSet(v(125, 10, 8), v(120, 12, 8), null)).toEqual({ change: '+5 kg −2 rep', trend: 'down' });
+    expect(compareSet(v(125, 11, 8), v(120, 12, 8), null)).toEqual({ change: '+5 kg −1 rep', trend: 'up' });
+  });
+
+  it('counts the same set with a lower RPE as better', () => {
+    expect(compareSet(v(80, 10, 8), v(80, 10, 9), null)).toEqual({ change: 'RPE 9 → 8', trend: 'up' });
+    expect(compareSet(v(80, 10, 8), v(80, 10, 8), null)).toEqual({ change: '=', trend: 'same' });
+  });
+
+  it('without an estimation, more load wins, then more reps', () => {
+    expect(compareSet(v(0, 10, 8, true), v(0, 9, 8, true), null)).toEqual({ change: '+1 rep', trend: 'up' });
+    expect(compareSet(v(5, 8, 8, true), v(0, 10, 8, true), null)).toEqual({ change: '+5 kg −2 rep', trend: 'up' });
+  });
+
+  it('has nothing to compare with the first time', () => {
+    expect(compareSet(v(80, 10, 8), null, null)).toEqual({ change: 'Primera vez', trend: null });
   });
 });

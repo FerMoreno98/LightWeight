@@ -424,6 +424,7 @@ public static class TrainingModule
     (
         [FromQuery] Guid[] exerciseIds,
         [FromQuery] Guid? excludeSessionId,
+        [FromQuery] DateTime? before,
         IMediator mediator,
         HttpContext httpContext,
         CancellationToken ct
@@ -431,8 +432,10 @@ public static class TrainingModule
     {
         var userId = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
                      ?? throw new UnauthorizedAccessException();
+        // The column is a timestamptz: the moment has to reach the database as UTC
+        DateTime? beforeUtc = before is DateTime b ? DateTime.SpecifyKind(b.ToUniversalTime(), DateTimeKind.Utc) : null;
         var previous = await mediator.QueryAsync<GetPreviousPerformanceQuery, List<GetPreviousPerformanceResponse>>(
-            new GetPreviousPerformanceQuery(exerciseIds, excludeSessionId, Guid.Parse(userId)), ct
+            new GetPreviousPerformanceQuery(exerciseIds, excludeSessionId, Guid.Parse(userId), beforeUtc), ct
         );
         return TypedResults.Ok(previous);
     }

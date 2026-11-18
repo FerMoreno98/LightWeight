@@ -32,7 +32,8 @@ public sealed class GetPreviousPerformanceQueryHandler : IQueryHandler<GetPrevio
         (
             microcycleIds,
             query.ExerciseIds,
-            query.ExcludeSessionId
+            query.ExcludeSessionId,
+            query.Before
         );
         return performances
             .Select(p => new GetPreviousPerformanceResponse
