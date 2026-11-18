@@ -2,11 +2,13 @@ import { Component, computed, inject, OnInit } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { provideCharts } from 'ng2-charts';
-import { Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
+import { BarController, BarElement, CategoryScale, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip } from 'chart.js';
 import { BodyMetricsChartsStore } from '../../state/body-metrics-charts.store';
 import { EvolutionPoint } from '../../data/dashboard-api.service';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
-import { CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { CHART_CHROME, CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { CHART_PLUGINS } from '../chart-plugins';
+import { ChangeBars, ChangeItem } from '../change-bars/change-bars';
 import { SelectedField, SeriesSelection } from '../series-selection';
 import { MeasureField, PERIMETERS_CONFIG, SKINFOLDS_CONFIG } from '../../../BodyMetrics/UI/measurement-config';
 
@@ -21,11 +23,16 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
 @Component({
     selector: 'app-body-metrics-charts',
     standalone: true,
-    imports: [LineChart, NgTemplateOutlet, RouterLink],
+    imports: [LineChart, ChangeBars, NgTemplateOutlet, RouterLink],
     templateUrl: './body-metrics-charts.html',
     // Registered here and not in app.config: Chart.js is only downloaded when the charts are opened.
-    // Only the pieces the line charts use, to keep the chunk small
-    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
+    // Only the pieces the charts use, to keep the chunk small
+    providers: [
+        provideCharts({
+            registerables: [LineController, LineElement, PointElement, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend, ...CHART_PLUGINS],
+            defaults: CHART_DEFAULTS,
+        }),
+    ],
 })
 export class BodyMetricsCharts implements OnInit {
     store = inject(BodyMetricsChartsStore);
@@ -38,24 +45,27 @@ export class BodyMetricsCharts implements OnInit {
 
     weightSeries = computed<ChartSeries[]>(() => {
         const { points, weeklyAverages } = this.store.weight();
+        // The weekly average is the trend to read; each weigh-in stays as a faint dot behind it
         return [
             {
-                label: 'Pesajes',
-                color: SERIES_COLORS[0],
-                // Thin: the daily ups and downs stay visible but the weekly average stands out
-                lineWidth: 1,
-                points: points.map(p => ({ x: Date.parse(p.measuredAt), y: p.weight })),
-            },
-            {
                 label: 'Media semanal',
-                color: SERIES_COLORS[1],
-                lineWidth: 3,
+                color: CHART_CHROME.accent,
+                lineWidth: 2.5,
+                area: true,
+                quietPoints: true,
+                endLabel: true,
                 // Drawn in the middle of its week, where it belongs
                 points: weeklyAverages.map(a => ({
                     x: Date.parse(a.weekStart) + HALF_WEEK_MS,
                     y: a.average,
                     note: `semana del ${dayMonth.format(new Date(a.weekStart))}, ${a.count} ${a.count === 1 ? 'pesaje' : 'pesajes'}`,
                 })),
+            },
+            {
+                label: 'Pesajes',
+                color: CHART_CHROME.muted,
+                style: 'dots',
+                points: points.map(p => ({ x: Date.parse(p.measuredAt), y: p.weight })),
             },
         ];
     });
@@ -74,6 +84,25 @@ export class BodyMetricsCharts implements OnInit {
     private perimeterSelection = new SeriesSelection(computed(() => this.perimeterFields().map(f => f.key)), () => 'waist');
     selectedPerimeters = this.perimeterSelection.selected;
     perimeterSeries = computed(() => this.seriesOf(this.selectedPerimeters(), PERIMETERS_CONFIG.fields, this.store.perimeters()));
+
+    /** Change of each selected perimeter from its first measurement to its last one (only with two or more) */
+    perimeterChanges = computed<ChangeItem[]>(() => {
+        const points = this.store.perimeters();
+        return this.selectedPerimeters().flatMap(s => {
+            const measured = points.filter(p => p[s.key] != null);
+            if (measured.length < 2) return [];
+            const first = measured[0];
+            const last = measured[measured.length - 1];
+            return [{
+                label: PERIMETERS_CONFIG.fields.find(f => f.key === s.key)?.label ?? s.key,
+                color: SERIES_COLORS[s.slot],
+                from: first[s.key] as number,
+                to: last[s.key] as number,
+                fromDate: dayMonth.format(new Date(first.measuredAt)),
+                toDate: dayMonth.format(new Date(last.measuredAt)),
+            }];
+        });
+    });
 
     togglePerimeter(key: string) {
         this.perimeterSelection.toggle(key);

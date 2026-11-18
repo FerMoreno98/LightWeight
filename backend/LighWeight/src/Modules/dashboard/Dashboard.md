@@ -96,22 +96,24 @@ All endpoints require authentication and work on the projections of the authenti
 
 The charts are grouped by area: body measurements (and, in the future, nutrition) on one side, training on another. The body measurement charts are the **"Evolución" tab of `/bodymetrics`**, built with Chart.js through ng2-charts:
 
-* **Peso**: each weigh-in as a point and the weekly average as a line (drawn in the middle of its week).
-* **Perímetros**: the perimeters chosen with a selector (waist by default, up to 4 at once).
+* **Peso**: the weekly average as the main line, with a gradient area and its last value written at the end (drawn in the middle of its week); each weigh-in as a faint dot behind it.
+* **Perímetros**: the perimeters chosen with a selector (waist by default, up to 4 at once). Below, "Cambio desde la primera medida": horizontal bars with the cm gained or lost by each selected perimeter (only with two or more measurements), in the color of its line.
 * **Sumatorio de pliegues**: only the measurements with the six skinfolds.
 * **Pliegues**: the skinfolds chosen with a selector (up to 4). Separate from the summatory because their scales are very different (one axis per chart).
 * **Recalcular**: commented out in the template. `POST /rebuild` stays available as a repair tool.
 
+Common to every time chart (`time-chart-options.ts`, `chart-plugins.ts`): a dashed vertical line at the hovered date, the current value written at the end of the main lines (`endLabel`), axis numbers in Barlow Condensed and a compact tooltip with no arrow. The bars over time take their width from the median gap between their dates (`bar-width.ts`), not the smallest one as Chart.js does, so two sessions on one day or two weeks started together do not turn every bar into a line. Chosen on 2026-11-18 from a mock with options per chart (https://claude.ai/artifact/MSC4MQKBh8RU834buLQeiU).
+
 Training charts:
 
 * **Home** (below the current week):
-  * **Session performance**: lollipops around 0 (blue better, red worse, with the sign in the label; a dot keeps 0 % visible; the axis covers at least ±5 % and is clipped at ±25 %, where an arrow marks a value out of scale with its real value in the tooltip; excluded exercises appear in the tooltip), stacked over **sleep, DOMS and motivation** on the same date axis, so a bad session and a bad night fall on the same vertical.
-  * **Weekly volume** per muscle group (chips, up to 4).
+  * **Session performance**: bars around 0 (blue better, red worse, with the sign in the label) with the moving average of the last 4 sessions over them, the trend to read first; the axis covers at least ±5 % and is clipped at ±25 %, where a triangle marks a value out of scale with its real value in the tooltip; excluded exercises appear in the tooltip. Under it, **sleep, DOMS and motivation** as three thin rows (1-10) on the same date axis, so a bad session and a bad night fall on the same vertical (the Y axis has a fixed width in every time chart for that).
+  * **Weekly volume** per muscle group (chips, up to 4) as stacked bars: the height is the total of the selected groups, shown in the tooltip.
   * **Recalcular**: commented out in the template. Sessions finished before the event existed need one call to `POST /rebuild` to reach the charts.
 * **Progreso** (`/progress`, in the Entrenamiento menu):
   * The list of exercises: search, last session, current estimated 1RM, trend with arrow and number.
   * Two independent filters, "Macrociclo actual / Histórico" (both on the macrocycle by default, kept while the app is open): **Ejercicios** (which ones are listed) and **Marcas** (sessions, 1RM, trend and the detail). So the exercises of the current macrocycle can be seen with their historical marks. The active macrocycle comes from `GET /api/training/microcycle/current`; without one, both show the history.
-  * **`/progress/:exerciseId`**: estimated 1RM and best weight (hollow points = less precise; the tooltip shows the wellbeing of the session), performance lost between sets by zone (1ª→2ª / 1ª→última), and the last 10 sessions as a table.
+  * **`/progress/:exerciseId`**: estimated 1RM (with area) and best weight, points only on hover except the hollow ones (less precise; the tooltip shows the wellbeing of the session), performance lost between sets by zone (1ª→2ª / 1ª→última), and the last 10 sessions as a table.
 
 ## Open Notes
 
