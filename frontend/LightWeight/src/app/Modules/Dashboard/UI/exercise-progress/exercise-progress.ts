@@ -7,6 +7,7 @@ import { ExerciseProgressStore, ProgressScope } from '../../state/exercise-progr
 import { ScopeToggle } from '../scope-toggle/scope-toggle';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
 import { CHART_DEFAULTS, SERIES_COLORS } from '../chart-theme';
+import { CHART_PLUGINS } from '../chart-plugins';
 import { techniqueLabel, wellbeingLine, ZONE_LABELS, ZONE_ORDER } from '../training-labels';
 import { RepZone } from '../../data/dashboard-api.service';
 
@@ -23,7 +24,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
     imports: [LineChart, RouterLink, ScopeToggle],
     templateUrl: './exercise-progress.html',
     // Chart.js is only downloaded with the components that draw charts
-    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
+    providers: [provideCharts({ registerables: [LineController, LineElement, PointElement, LinearScale, Tooltip, Legend, ...CHART_PLUGINS], defaults: CHART_DEFAULTS })],
 })
 export class ExerciseProgressPage implements OnInit {
     store = inject(ExerciseProgressStore);
@@ -48,9 +49,9 @@ export class ExerciseProgressPage implements OnInit {
         });
         const series: ChartSeries[] = [];
         if (progression.some(p => p.estimatedOneRepMax !== null))
-            series.push({ label: '1RM estimado', color: SERIES_COLORS[0], points: progression.map(p => point(p, p.estimatedOneRepMax, p.lowPrecision)) });
+            series.push({ label: '1RM estimado', color: SERIES_COLORS[0], area: true, quietPoints: true, endLabel: true, points: progression.map(p => point(p, p.estimatedOneRepMax, p.lowPrecision)) });
         if (progression.some(p => p.bestWeight !== null))
-            series.push({ label: 'Mejor peso', color: SERIES_COLORS[1], points: progression.map(p => point(p, p.bestWeight)) });
+            series.push({ label: 'Mejor peso', color: SERIES_COLORS[1], quietPoints: true, endLabel: true, points: progression.map(p => point(p, p.bestWeight)) });
         return series;
     });
 

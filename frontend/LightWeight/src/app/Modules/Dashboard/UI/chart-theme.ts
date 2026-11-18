@@ -32,10 +32,24 @@ export const CHART_CHROME = {
     muted: token('muted', '#a3b1ab'),
     /** Legend and tooltip text */
     text: token('fg', '#e9efec'),
+    /** Weekly weight average: the protagonist of its chart */
+    accent: token('accent', '#3ddc97'),
     grid: 'rgba(163, 177, 171, 0.12)',
-    tooltipBackground: token('canvas', '#0f1412'),
+    /** Zero line of the charts around zero: stronger than the rest of the grid */
+    zero: token('muted', '#a3b1ab'),
+    tooltipBackground: token('raised', '#1e2723'),
     tooltipBorder: token('line-strong', '#3f4e48'),
 } as const;
+
+/** Numbers of the axes and the labels drawn on the canvas, like the numbers of the rest of the app */
+export const DISPLAY_FONT = "'Barlow Condensed', 'Arial Narrow', system-ui, sans-serif";
+
+/** A #rrggbb color with transparency */
+export function withAlpha(hex: string, alpha: number): string {
+    const n = parseInt(hex.slice(1, 7), 16);
+    if (!/^#[0-9a-f]{6}$/i.test(hex) || Number.isNaN(n)) return hex;
+    return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
 
 /** Same text font as the rest of the app (the canvas does not inherit it from CSS) */
 export const CHART_DEFAULTS = {

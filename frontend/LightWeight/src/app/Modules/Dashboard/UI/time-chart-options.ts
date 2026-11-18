@@ -1,5 +1,5 @@
 import { ChartOptions, TooltipItem } from 'chart.js';
-import { CHART_CHROME } from './chart-theme';
+import { CHART_CHROME, DISPLAY_FONT } from './chart-theme';
 import { timeAxis } from './line-chart/time-axis';
 
 /** A value at a moment. Everything but x/y is optional extra information for the tooltip and the marks */
@@ -41,14 +41,26 @@ export interface TimeChartSettings {
     /** Fixed Y range (e.g. 1-10); otherwise it follows the data */
     yRange?: { min: number; max: number };
     showLegend: boolean;
+    /** Indexes of the datasets whose last value is written at the end of the line */
+    endLabels?: number[];
 }
+
+/**
+ * Fixed width of the Y axis: two charts stacked on the same dates (performance over wellbeing) keep each date on
+ * the same vertical even if their labels are not equally long
+ */
+export const Y_AXIS_WIDTH = 52;
+/** Room at the right for the end labels ("82,4 kg") */
+export const END_LABEL_ROOM = 52;
+
+const tickFont = { family: DISPLAY_FONT, size: 13, weight: 500 } as const;
 
 /**
  * Options shared by the line and bar charts over time: the time axis, the dark theme and a tooltip that can
  * show a custom title, a note and extra lines per point
  */
 export function timeChartOptions(settings: TimeChartSettings): ChartOptions<'line' | 'bar'> {
-    const { unit, signed = false, yRange, showLegend } = settings;
+    const { unit, signed = false, yRange, showLegend, endLabels = [] } = settings;
     // Range and ticks calculated here: Chart.js' linear scale does not know the numbers are dates
     const axis = timeAxis(settings.xs);
 
@@ -57,6 +69,7 @@ export function timeChartOptions(settings: TimeChartSettings): ChartOptions<'lin
         maintainAspectRatio: false,
         // Hover anywhere: the nearest point by date, with every series of that date
         interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        layout: { padding: { top: 4, right: endLabels.length > 0 ? END_LABEL_ROOM : 8 } },
         scales: {
             x: {
                 type: 'linear',
@@ -69,6 +82,7 @@ export function timeChartOptions(settings: TimeChartSettings): ChartOptions<'lin
                 border: { color: CHART_CHROME.grid },
                 ticks: {
                     color: CHART_CHROME.muted,
+                    font: tickFont,
                     maxRotation: 0,
                     callback: value => (axis?.unit === 'month' ? monthYear : dayMonth).format(new Date(Number(value))),
                 },
@@ -79,14 +93,19 @@ export function timeChartOptions(settings: TimeChartSettings): ChartOptions<'lin
                 grace: yRange ? undefined : '10%',
                 grid: { color: CHART_CHROME.grid },
                 border: { display: false },
+                afterFit: scale => {
+                    scale.width = Y_AXIS_WIDTH;
+                },
                 ticks: {
                     color: CHART_CHROME.muted,
+                    font: tickFont,
                     maxTicksLimit: 6,
                     callback: value => formatValue(Number(value), unit, signed),
                 },
             },
         },
         plugins: {
+            endLabel: { datasets: endLabels, format: value => formatValue(value, unit, signed) },
             // A single series is named by the card title; two or more need the legend
             legend: {
                 display: showLegend,
@@ -98,13 +117,21 @@ export function timeChartOptions(settings: TimeChartSettings): ChartOptions<'lin
                 borderColor: CHART_CHROME.tooltipBorder,
                 borderWidth: 1,
                 titleColor: CHART_CHROME.text,
+                titleFont: { family: DISPLAY_FONT, size: 15, weight: 600 },
                 bodyColor: CHART_CHROME.text,
+                bodyFont: { size: 13 },
                 footerColor: CHART_CHROME.muted,
                 footerFont: { weight: 'normal' },
-                padding: 10,
+                padding: { x: 12, y: 10 },
+                cornerRadius: 8,
+                // No arrow: the vertical line already points at the date
+                caretSize: 0,
                 usePointStyle: true,
                 boxWidth: 8,
                 boxHeight: 8,
+                boxPadding: 4,
+                // The series always in the same order, whatever is drawn on top
+                itemSort: (a, b) => a.datasetIndex - b.datasetIndex,
                 callbacks: {
                     title: items => {
                         if (!items.length) return '';

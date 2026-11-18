@@ -8,6 +8,8 @@ import { ChartSeries, LineChart } from '../line-chart/line-chart';
 import { BarChart } from '../bar-chart/bar-chart';
 import { ChartPoint, formatValue } from '../time-chart-options';
 import { CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { CHART_PLUGINS } from '../chart-plugins';
+import { StackedBarChart } from '../stacked-bar-chart/stacked-bar-chart';
 import { SeriesSelection } from '../series-selection';
 import { MUSCLE_ORDER, muscleLabel, wellbeingLine } from '../training-labels';
 
@@ -20,10 +22,10 @@ const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'shor
 @Component({
     selector: 'app-training-overview',
     standalone: true,
-    imports: [LineChart, BarChart, ScopeToggle],
+    imports: [LineChart, BarChart, StackedBarChart, ScopeToggle],
     templateUrl: './training-overview.html',
     // Chart.js is only downloaded with the components that draw charts
-    providers: [provideCharts({ registerables: [LineController, LineElement, BarController, BarElement, PointElement, LinearScale, Tooltip, Legend], defaults: CHART_DEFAULTS })],
+    providers: [provideCharts({ registerables: [LineController, LineElement, BarController, BarElement, PointElement, LinearScale, Tooltip, Legend, ...CHART_PLUGINS], defaults: CHART_DEFAULTS })],
 })
 export class TrainingOverview implements OnInit {
     store = inject(TrainingOverviewStore);
@@ -84,6 +86,9 @@ export class TrainingOverview implements OnInit {
         const series = (label: string, color: string, value: (s: (typeof sessions)[number]) => number): ChartSeries => ({
             label,
             color,
+            area: true,
+            quietPoints: true,
+            endLabel: true,
             points: sessions.map(s => ({
                 x: Date.parse(s.startedAt),
                 y: value(s),
@@ -100,6 +105,9 @@ export class TrainingOverview implements OnInit {
             series('Motivación', SERIES_COLORS[2], s => s.motivation),
         ];
     });
+
+    /** One row per measure: each one is read alone and they are compared looking down the same date */
+    wellbeingRows = computed(() => this.wellbeingSeries().map(s => [s]));
 
     // ---------------------------------------------------------------- Common
 
