@@ -216,6 +216,11 @@ export class TrainingStore{
         }
     }
 
+    /** Hides the last error, when the page already shows the problem in its own way (e.g. a set left unsaved) */
+    ClearError(){
+        this._error.set(null);
+    }
+
     /** Loads what has been done this week for a session of a template */
     async GetSessionWorkout(templateSessionId : string) : Promise<boolean>{
         this._error.set(null);

@@ -1,246 +1,294 @@
-<div class="min-h-screen px-4 py-10">
+<div class="min-h-screen px-4 pt-10 pb-28">
   <div class="mx-auto max-w-3xl">
 
     @if (error()) {
       <div class="mb-4 rounded-lg border border-danger/30 bg-danger/10 p-3 text-sm text-danger">{{ error() }}</div>
     }
 
-    @if (focusView(); as view) {
-      <app-exercise-focus
-        [view]="view"
-        [busy]="isSaving()"
-        (save)="saveSet($event)"
-        (remove)="removeSet($event)"
-        (selectSet)="selectSet($event)"
-        (close)="focus.set(null)"
-        (replaceExercise)="openPicker('replace')"
-        (restorePlanned)="restorePlanned()"
-        (previousExercise)="moveExercise(-1)"
-        (nextExercise)="moveExercise(1)"
-        (selectMember)="selectMember($event)"
-      />
-    } @else {
-      <div class="fade-slide-in">
-        <a
-          routerLink="/home"
-          class="mb-4 inline-flex items-center gap-2 text-sm text-muted transition hover:text-fg"
-        >
-          <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
-          </svg>
-          Volver a la semana
-        </a>
+    <div class="fade-slide-in">
+      <a routerLink="/home" class="mb-4 inline-flex min-h-11 items-center gap-2 text-sm text-muted transition hover:text-fg">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Volver a la semana
+      </a>
 
-        <!-- Header -->
-        <div class="mb-8 flex flex-wrap items-start justify-between gap-4">
-          <div class="min-w-0">
-            <div class="flex flex-wrap items-center gap-2">
-              <h1 class="font-display uppercase leading-none text-3xl font-bold text-fg">{{ templateSession()?.name ?? 'Sesión' }}</h1>
-              @if (session()) {
-                @if (isFinished()) {
-                  <span class="rounded-full border border-line-strong bg-canvas px-2.5 py-0.5 text-xs text-soft">Hecha · {{ durationLabel() }}</span>
-                } @else {
-                  <span class="rounded-full border border-accent/40 bg-accent/10 px-2.5 py-0.5 text-xs font-medium text-accent">En curso · desde {{ startedAtLabel() }}</span>
-                }
+      <!-- Header -->
+      <header class="mb-6 flex flex-col gap-3">
+        <div class="flex items-start gap-2">
+          <h1 class="min-w-0 flex-1 break-words font-display text-3xl font-bold uppercase leading-none text-fg">{{ templateSession()?.name ?? 'Sesión' }}</h1>
+          @if (canRecord()) {
+            <div class="relative" data-menu-root>
+              <button type="button" class="btn-icon -mt-2 -mr-2 text-subtle hover:bg-raised hover:text-fg"
+                      (click)="toggleMenu('session')" [attr.aria-expanded]="openMenu() === 'session'" aria-label="Más acciones de la sesión">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+              </button>
+              @if (openMenu() === 'session') {
+                <div class="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/40">
+                  @if (items().length >= 2) {
+                    <button type="button" class="flex min-h-11 w-full items-center px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="startSelecting()">Juntar en superserie</button>
+                  }
+                  <button type="button" class="flex min-h-11 w-full items-center px-3 text-left text-sm text-danger hover:bg-danger/10"
+                          [disabled]="isDiscarding() || isFinishing()" (click)="askDiscard()">Descartar entrenamiento</button>
+                </div>
               }
             </div>
-            @if (templateSession(); as templateSession) {
-              <p class="mt-1 text-sm text-muted">
-                {{ templateSession.exercisesCount }} {{ templateSession.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
-                · {{ templateSession.setsCount }} {{ templateSession.setsCount === 1 ? 'serie' : 'series' }}
-              </p>
-            }
-          </div>
-
-          @if (!isLoading()) {
-            @if (workout()?.canStart) {
-              <button
-                type="button"
-                (click)="isStartOpen.set(true)"
-                class="btn btn-primary"
-              >
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.34-5.89a1.5 1.5 0 0 0 0-2.54L6.3 2.84Z" />
-                </svg>
-                Iniciar entrenamiento
-              </button>
-            } @else if (canRecord()) {
-              <div class="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  (click)="isConfirmingDiscard.set(true)"
-                  [disabled]="isDiscarding() || isFinishing()"
-                  class="btn btn-danger disabled:cursor-wait"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
-                  </svg>
-                  {{ isDiscarding() ? 'Descartando...' : 'Descartar' }}
-                </button>
-                <button
-                  type="button"
-                  (click)="isConfirmingFinish.set(true)"
-                  [disabled]="isFinishing() || isDiscarding()"
-                  class="btn btn-secondary disabled:cursor-wait"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
-                  </svg>
-                  {{ isFinishing() ? 'Finalizando...' : 'Finalizar entrenamiento' }}
-                </button>
-              </div>
-            }
           }
         </div>
 
-        @if (completedWeek(); as weekNumber) {
-          <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/10 p-4">
-            <div>
-              <p class="text-sm font-semibold text-accent">¡Semana {{ weekNumber }} completada!</p>
-              <p class="mt-0.5 text-sm text-soft">Has terminado todas sus sesiones, así que la semana se ha cerrado.</p>
-            </div>
-            <a
-              routerLink="/home"
-              class="btn btn-primary"
-            >
-              Planificar la siguiente
-            </a>
-          </div>
-        }
-
-        @if (!isLoading() && !session() && !workout()?.canStart) {
-          <div class="mb-6 rounded-lg border border-line bg-canvas/60 p-3 text-sm text-muted">
-            Esta sesión no es de la semana en curso, así que solo puedes consultar su plan.
-          </div>
-        }
-
-        @if (isLoading()) {
-          <div class="flex flex-col gap-3">
-            @for (skeleton of [1, 2, 3]; track skeleton) {
-              <div class="h-20 animate-pulse rounded-xl border border-line bg-surface/60"></div>
-            }
-          </div>
-        } @else if (items().length === 0) {
-          <div class="flex flex-col items-center gap-3 rounded-xl border border-dashed border-line bg-canvas/40 px-6 py-14 text-center">
-            <p class="text-sm font-medium text-soft">Esta sesión todavía no tiene series</p>
-          </div>
-        } @else {
-          <!-- Superset toolbar -->
-          @if (canRecord() && items().length >= 2) {
-            @if (isSelecting()) {
-              <div class="sticky top-2 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-info/30 bg-canvas/95 p-4 shadow-lg shadow-black/30 backdrop-blur">
-                <p class="text-sm text-soft">Marca los ejercicios que vas a hacer alternando.</p>
-                <div class="flex items-center gap-2">
-                  <button
-                    type="button"
-                    (click)="cancelSelecting()"
-                    class="btn btn-secondary"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    (click)="joinSelected()"
-                    [disabled]="!canJoin() || isSavingSuperSet()"
-                    class="rounded-lg bg-info px-4 py-2 text-sm font-semibold text-accent-ink transition hover:bg-info disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Juntar en superserie
-                  </button>
-                </div>
-              </div>
+        @if (session()) {
+          <div class="flex flex-wrap items-center gap-2">
+            @if (isFinished()) {
+              <span class="badge badge-neutral">Hecha · {{ durationLabel() }}</span>
             } @else {
-              <div class="mb-3 flex justify-end">
-                <button
-                  type="button"
-                  (click)="startSelecting()"
-                  class="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-info transition hover:bg-info/10"
-                >
-                  <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                  </svg>
-                  Superseries
-                </button>
+              <span class="badge badge-accent">En curso · desde {{ startedAtLabel() }}</span>
+            }
+            @if (unsavedCount() > 0) {
+              <span class="badge badge-warning">{{ unsavedCount() }} sin guardar</span>
+            }
+          </div>
+          @if (progress().total > 0) {
+            <div>
+              <div class="h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden="true">
+                <div class="h-full rounded-full bg-accent transition-[width] duration-300" [style.width.%]="progress().done / progress().total * 100"></div>
               </div>
-            }
+              <p class="mt-1.5 flex justify-between gap-3 text-xs text-muted">
+                <span><span class="font-semibold tabular-nums text-fg">{{ progress().done }} de {{ progress().total }}</span> series</span>
+                <span class="tabular-nums">{{ progress().exercisesDone }} de {{ progress().exercises }} ejercicios</span>
+              </p>
+            </div>
           }
+        } @else if (templateSession(); as templateSession) {
+          <p class="text-sm text-muted">
+            {{ templateSession.exercisesCount }} {{ templateSession.exercisesCount === 1 ? 'ejercicio' : 'ejercicios' }}
+            · {{ templateSession.setsCount }} {{ templateSession.setsCount === 1 ? 'serie' : 'series' }}
+          </p>
+        }
 
-          <!-- Planned exercises and supersets -->
-          <ol class="flex flex-col gap-3">
-            @for (unit of mainUnits(); track $index) {
-              <li>
-                @if (unit.kind === 'single') {
-                  <ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: unit.item, label: null }" />
-                } @else {
-                  @let progress = supersetProgress(unit);
-                  <div class="rounded-xl border border-info/30 bg-info/10 p-3">
-                    <div class="mb-2 flex items-center justify-between gap-3 px-1">
-                      <button
-                        type="button"
-                        (click)="openSuperSet(unit)"
-                        [disabled]="!session() || isSelecting()"
-                        class="inline-flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-info enabled:hover:text-info disabled:cursor-default"
-                      >
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
-                        </svg>
-                        Superserie {{ unit.label }}
-                        @if (session()) {
-                          <span class="font-normal normal-case tracking-normal text-muted">
-                            · {{ progress.done ? 'Completada' : 'Ronda ' + progress.round + '/' + progress.rounds }}
-                          </span>
-                        }
-                      </button>
-                      @if (canRecord() && !isSelecting()) {
-                        <button
-                          type="button"
-                          (click)="separate(unit)"
-                          [disabled]="isSavingSuperSet()"
-                          class="btn btn-ghost btn-sm"
-                        >
-                          Separar
-                        </button>
+        @if (!isLoading() && workout()?.canStart) {
+          <button type="button" (click)="isStartOpen.set(true)" class="btn btn-primary self-start">
+            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.34-5.89a1.5 1.5 0 0 0 0-2.54L6.3 2.84Z" />
+            </svg>
+            Iniciar entrenamiento
+          </button>
+        }
+      </header>
+
+      @if (completedWeek(); as weekNumber) {
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-accent/40 bg-accent/10 p-4">
+          <div>
+            <p class="text-sm font-semibold text-accent">¡Semana {{ weekNumber }} completada!</p>
+            <p class="mt-0.5 text-sm text-soft">Has terminado todas sus sesiones, así que la semana se ha cerrado.</p>
+          </div>
+          <a routerLink="/home" class="btn btn-primary">Planificar la siguiente</a>
+        </div>
+      }
+
+      @if (!isLoading() && !session() && !workout()?.canStart) {
+        <div class="mb-6 rounded-lg border border-line bg-canvas/60 p-3 text-sm text-muted">
+          Esta sesión no es de la semana en curso, así que solo puedes consultar su plan.
+        </div>
+      }
+
+      @if (isLoading()) {
+        <div class="flex flex-col gap-3">
+          @for (skeleton of [1, 2, 3]; track skeleton) {
+            <div class="skeleton h-40"></div>
+          }
+        </div>
+      } @else if (cards().length === 0 && extraCards().length === 0 && !canRecord()) {
+        <div class="empty-state">
+          <p class="text-sm font-medium text-soft">Esta sesión todavía no tiene series</p>
+        </div>
+      } @else {
+        @if (isSelecting()) {
+          <div class="sticky top-[calc(env(safe-area-inset-top,0px)+0.5rem)] z-20 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-info/30 bg-canvas/95 p-4 shadow-lg shadow-black/30 backdrop-blur">
+            <p class="text-sm text-soft">Marca los ejercicios que vas a hacer alternando.</p>
+            <div class="flex items-center gap-2">
+              <button type="button" (click)="cancelSelecting()" class="btn btn-secondary">Cancelar</button>
+              <button type="button" (click)="joinSelected()" [disabled]="!canJoin() || isSavingSuperSet()"
+                      class="btn bg-info text-accent-ink hover:bg-info/85">Juntar en superserie</button>
+            </div>
+          </div>
+        }
+
+        <ol class="flex flex-col gap-3">
+          @for (card of cards(); track card.key) {
+            <li>
+              @if (card.kind === 'exercise') {
+                <ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: card }" />
+              } @else {
+                <article class="rounded-xl border border-info/30 bg-info/5 p-3">
+                  <div class="mb-2 flex items-center justify-between gap-3 px-1">
+                    <p class="text-xs font-bold uppercase tracking-wider text-info">
+                      Superserie {{ card.label }}
+                      @if (session()) {
+                        <span class="font-medium normal-case tracking-normal text-muted">· {{ card.progress }}</span>
                       }
-                    </div>
-                    <div class="flex flex-col gap-2">
-                      @for (item of unit.items; track item.key; let i = $index) {
-                        <ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: item, label: unit.label + (i + 1) }" />
-                      }
-                    </div>
+                    </p>
+                    @if (canRecord() && !isSelecting()) {
+                      <button type="button" (click)="separate(card.unit)" [disabled]="isSavingSuperSet()" class="btn btn-ghost btn-sm">Separar</button>
+                    }
                   </div>
-                }
-              </li>
-            }
-          </ol>
-
-          <!-- Extra exercises performed alone -->
-          @if (extraItems().length || canRecord()) {
-            <h2 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wider text-subtle">Extra</h2>
-            <ul class="flex flex-col gap-3">
-              @for (item of extraItems(); track item.key) {
-                <li>
-                  <ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: item, label: null }" />
-                </li>
+                  <ul class="mb-2 flex flex-col gap-1">
+                    @for (member of card.members; track member.key) {
+                      <li class="flex items-start gap-2 px-1">
+                        @if (isSelecting()) {
+                          <ng-container *ngTemplateOutlet="selectBox; context: { $implicit: member }" />
+                        }
+                        <span class="mt-0.5 inline-flex h-6 min-w-7 shrink-0 items-center justify-center rounded-full bg-info/20 px-1.5 text-xs font-bold text-info">{{ member.label }}</span>
+                        <div class="min-w-0 flex-1">
+                          <ng-container *ngTemplateOutlet="exerciseName; context: { $implicit: member }" />
+                        </div>
+                        @if (canRecord() && !isSelecting()) {
+                          <ng-container *ngTemplateOutlet="exerciseMenu; context: { $implicit: member }" />
+                        }
+                      </li>
+                    }
+                  </ul>
+                  <div class="rounded-lg border border-line bg-surface p-2">
+                    <app-set-table [entries]="card.entries" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
+                  </div>
+                </article>
               }
-            </ul>
-            @if (canRecord() && !isSelecting()) {
-              <button
-                type="button"
-                (click)="openPicker('extra')"
-                class="mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong px-4 py-3 text-sm text-soft transition hover:border-accent/60 hover:text-fg"
-              >
-                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
-                </svg>
-                Añadir ejercicio
-              </button>
+            </li>
+          }
+        </ol>
+
+        <!-- Extra exercises performed alone -->
+        @if (extraCards().length || canRecord()) {
+          <h2 class="mt-8 mb-3 text-sm font-semibold uppercase tracking-wider text-subtle">Extra</h2>
+          <ul class="flex flex-col gap-3">
+            @for (card of extraCards(); track card.key) {
+              <li><ng-container *ngTemplateOutlet="exerciseCard; context: { $implicit: card }" /></li>
             }
+          </ul>
+          @if (canRecord() && !isSelecting()) {
+            <button type="button" (click)="openPicker('extra')"
+                    class="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-line-strong px-4 text-sm text-soft transition hover:border-accent/60 hover:text-fg">
+              <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M10 4a1 1 0 0 1 1 1v4h4a1 1 0 1 1 0 2h-4v4a1 1 0 1 1-2 0v-4H5a1 1 0 1 1 0-2h4V5a1 1 0 0 1 1-1Z" />
+              </svg>
+              Añadir ejercicio
+            </button>
           }
         }
-      </div>
-    }
+
+        @if (canRecord()) {
+          <div class="mt-8">
+            @if (unsavedCount() > 0) {
+              <p class="mb-2 text-sm text-warning">
+                Sin conexión: {{ unsavedCount() }} {{ unsavedCount() === 1 ? 'serie se guardará' : 'series se guardarán' }} en cuanto vuelva.
+              </p>
+            }
+            <button type="button" (click)="askFinish()" [disabled]="hasPending() || isFinishing() || isDiscarding()"
+                    class="btn w-full disabled:cursor-wait" [class]="uncheckedPlanned() === 0 ? 'btn-primary' : 'btn-secondary'">
+              @if (hasPending()) {
+                Guardando {{ pendingCount() || '' }} {{ pendingCount() === 1 ? 'serie' : 'series' }}…
+              } @else {
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
+                </svg>
+                {{ isFinishing() ? 'Finalizando...' : 'Finalizar entrenamiento' }}
+              }
+            </button>
+          </div>
+        }
+      }
+    </div>
 
   </div>
 </div>
+
+<!-- An exercise on its own: heading and table -->
+<ng-template #exerciseCard let-card>
+  <article class="rounded-xl border bg-surface p-3" [class]="card.complete ? 'border-accent/35' : 'border-line'">
+    <div class="mb-1 flex items-start gap-3 px-1">
+      @if (isSelecting()) {
+        <ng-container *ngTemplateOutlet="selectBox; context: { $implicit: card.heading }" />
+      }
+      @if (card.number !== null) {
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+              [class]="card.complete ? 'bg-accent text-accent-ink' : 'bg-accent/10 text-accent'" aria-hidden="true">
+          @if (card.complete) {
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+          } @else {
+            {{ card.number }}
+          }
+        </span>
+      }
+      <div class="min-w-0 flex-1 pt-0.5">
+        <ng-container *ngTemplateOutlet="exerciseName; context: { $implicit: card.heading }" />
+      </div>
+      @if (canRecord() && !isSelecting()) {
+        <ng-container *ngTemplateOutlet="exerciseMenu; context: { $implicit: card.heading }" />
+      }
+    </div>
+    <app-set-table [entries]="card.entries" [editable]="canRecord() && !isSelecting()" (toggle)="toggle($event)" (open)="openSheet($event.row, $event.field)" />
+    @if (canRecord() && !isSelecting()) {
+      <button type="button" (click)="addSet(card.key)" class="mt-1 min-h-9 rounded-md px-2 text-xs font-semibold text-subtle transition hover:text-accent">+ Añadir serie</button>
+    }
+  </article>
+</ng-template>
+
+<!-- Name and scheme of an exercise: "Press banca → Press con mancuernas" when it was replaced -->
+<ng-template #exerciseName let-heading>
+  <p class="break-words text-[15px] font-semibold leading-snug text-fg">
+    @if (heading.replacedFrom) {
+      <span class="font-medium text-subtle line-through">{{ heading.replacedFrom }}</span>
+      <span class="text-warning"> → {{ heading.name }}</span>
+    } @else {
+      {{ heading.name }}
+    }
+  </p>
+  <p class="mt-0.5 text-xs text-muted">{{ heading.scheme }}</p>
+</ng-template>
+
+<!-- ⋯ of an exercise: replace it (or go back to the planned one) and add a set -->
+<ng-template #exerciseMenu let-heading>
+  <div class="relative shrink-0" data-menu-root>
+    <button type="button" class="btn-icon -mt-2 -mr-2 text-subtle hover:bg-raised hover:text-fg"
+            (click)="toggleMenu(heading.key)" [attr.aria-expanded]="openMenu() === heading.key" [attr.aria-label]="'Acciones de ' + heading.name">
+      <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+    </button>
+    @if (openMenu() === heading.key) {
+      <div class="absolute right-0 top-full z-30 mt-1 w-56 overflow-hidden rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/40">
+        @if (heading.isPlan) {
+          @if (heading.replacedFrom) {
+            <button type="button" class="flex min-h-11 w-full items-center px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="restorePlanned(heading.key)">Volver al planificado</button>
+          }
+          <button type="button" class="flex min-h-11 w-full items-center px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="openPicker('replace', heading.key)">Cambiar ejercicio</button>
+        }
+        <button type="button" class="flex min-h-11 w-full items-center px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="addSet(heading.key)">Añadir serie</button>
+      </div>
+    }
+  </div>
+</ng-template>
+
+<!-- Checkbox of an exercise while choosing the ones of an improvised superset -->
+<ng-template #selectBox let-heading>
+  <button type="button" role="checkbox" [attr.aria-checked]="isSelected(heading.key)" [attr.aria-label]="'Seleccionar ' + heading.name"
+          (click)="toggleSelected(heading.key)"
+          class="-m-2 flex size-11 shrink-0 items-center justify-center">
+    <span class="flex size-5 items-center justify-center rounded border-2" [class]="isSelected(heading.key) ? 'border-info bg-info text-accent-ink' : 'border-line-strong'">
+      @if (isSelected(heading.key)) {
+        <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" /></svg>
+      }
+    </span>
+  </button>
+</ng-template>
+
+<app-set-sheet
+  [row]="sheet()?.row ?? null"
+  [initial]="sheet()?.initial ?? {}"
+  [focusField]="sheet()?.field ?? 'weight'"
+  [done]="sheet()?.done ?? false"
+  (save)="saveSheet($event)"
+  (closed)="closeSheet($event)"
+/>
+
+<app-rest-timer [start]="rest()" (dismissed)="rest.set(null)" />
 
 <app-start-session-dialog
   [open]="isStartOpen()"
@@ -251,12 +299,12 @@
 />
 
 <app-exercise-picker
-  [open]="pickerMode() !== null"
-  [title]="pickerMode() === 'replace' ? 'Cambiar ejercicio' : 'Añadir ejercicio'"
+  [open]="picker() !== null"
+  [title]="picker()?.mode === 'replace' ? 'Cambiar ejercicio' : 'Añadir ejercicio'"
   [exercises]="exercises()"
   [excludedId]="pickerExcludedId()"
   (picked)="pickExercise($event)"
-  (cancelled)="pickerMode.set(null)"
+  (cancelled)="picker.set(null)"
 />
 
 <app-confirm-dialog
@@ -272,90 +320,10 @@
 <app-confirm-dialog
   [open]="isConfirmingFinish()"
   title="¿Finalizar el entrenamiento?"
-  message="Se guardará la duración y ya no podrás registrar ni corregir series de esta sesión. Si era la última sesión pendiente, la semana se cerrará."
+  [message]="finishMessage()"
   [confirmLabel]="isFinishing() ? 'Finalizando...' : 'Finalizar'"
   [danger]="false"
   [busy]="isFinishing()"
   (confirmed)="finishSession()"
   (cancelled)="isConfirmingFinish.set(false)"
 />
-
-<!-- One exercise of the list: planned (with its progress) or extra (with its last set) -->
-<ng-template #exerciseCard let-item let-label="label">
-  <button
-    type="button"
-    (click)="openItem(item)"
-    [disabled]="!session()"
-    class="group flex w-full items-center gap-4 rounded-xl border p-4 text-left transition enabled:hover:border-accent/60 disabled:cursor-default"
-    [class]="item.kind === 'extra'
-      ? 'border-dashed border-line-strong bg-surface/60'
-      : (session() && doneCount(item.block) === item.block.sets.length ? 'border-accent/30 bg-surface/80' : 'border-line bg-surface/80')"
-  >
-    @if (isSelecting()) {
-      <input
-        type="checkbox"
-        [checked]="isSelected(item)"
-        tabindex="-1"
-        class="pointer-events-none h-5 w-5 shrink-0 rounded border-line-strong bg-canvas accent-info"
-        [attr.aria-label]="'Seleccionar ' + itemExercise(item).exerciseName"
-      />
-    }
-    @if (label) {
-      <span class="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-info/25 px-2 text-sm font-bold text-info">{{ label }}</span>
-    }
-
-    @if (item.kind === 'plan') {
-      @let block = item.block;
-      @let done = doneCount(block);
-      @let complete = done === block.sets.length;
-      @if (!label) {
-        <span
-          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold"
-          [class]="complete && session() ? 'bg-accent text-accent-ink' : 'bg-accent/10 text-accent'"
-        >
-          @if (complete && session()) {
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m5 13 4 4L19 7" />
-            </svg>
-          } @else {
-            {{ block.index + 1 }}
-          }
-        </span>
-      }
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-base font-semibold text-fg">
-          @if (replacementName(block); as replacement) {
-            <span class="text-subtle line-through">{{ block.exerciseName }}</span>
-            <span class="text-warning"> → {{ replacement }}</span>
-          } @else {
-            {{ block.exerciseName }}
-          }
-        </p>
-        <p class="mt-0.5 text-xs text-muted">
-          {{ block.sets.length }} × {{ block.sets[0].repetitionRangeMin }}–{{ block.sets[0].repetitionRangeMax }} @ RPE {{ block.sets[0].expectedRPE }}
-          @if (techniqueLabel(block); as technique) { · {{ technique }} }
-        </p>
-        @if (lastPerformance(item); as last) {
-          <p class="mt-0.5 truncate text-xs text-subtle">Última: {{ last }}</p>
-        }
-      </div>
-      @if (session()) {
-        <span class="shrink-0 text-sm font-semibold" [class]="complete ? 'text-accent' : 'text-muted'">
-          {{ done }}/{{ block.sets.length }}
-        </span>
-      }
-    } @else {
-      <div class="min-w-0 flex-1">
-        <p class="truncate text-base font-semibold text-fg">{{ item.group.exerciseName }}</p>
-        <p class="mt-0.5 truncate text-xs text-muted">{{ formatPerformedSet(item.group.sets[item.group.sets.length - 1]) }}</p>
-      </div>
-      <span class="shrink-0 text-sm font-semibold text-muted">{{ item.group.sets.length }} {{ item.group.sets.length === 1 ? 'serie' : 'series' }}</span>
-    }
-
-    @if (session() && !isSelecting()) {
-      <svg class="h-5 w-5 shrink-0 text-subtle transition group-hover:translate-x-0.5 group-hover:text-accent" viewBox="0 0 20 20" fill="currentColor">
-        <path fill-rule="evenodd" d="M7.05 4.55a.75.75 0 0 1 1.06 0l5 5a.75.75 0 0 1 0 1.06l-5 5a.75.75 0 1 1-1.06-1.06L11.44 10 7.05 5.61a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
-      </svg>
-    }
-  </button>
-</ng-template>
