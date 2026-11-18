@@ -1,0 +1,143 @@
+<!-- The name link stretches over the whole card (after:inset-0); the controls sit above it with z-10 -->
+<article [class.z-20]="menuOpen()"
+  class="relative flex h-full flex-col gap-3 rounded-xl border border-line bg-surface p-4 shadow-lg shadow-black/20 transition duration-200 hover:border-line-strong has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent/50 pointer-fine:hover:-translate-y-0.5"
+>
+  <div class="flex items-start gap-2">
+    <div class="min-w-0 flex-1">
+      @if (renaming()) {
+        <input
+          #nameInput
+          type="text"
+          [(ngModel)]="editedName"
+          maxlength="200"
+          (keydown.enter)="saveRename()"
+          (keydown.escape)="cancelRename()"
+          (blur)="saveRename()"
+          aria-label="Nombre de la plantilla"
+          class="input relative z-10 font-semibold"
+        />
+      } @else {
+        <h3 class="line-clamp-2 break-words text-lg font-semibold leading-tight text-fg" [title]="template().name">
+          <a
+            [routerLink]="['/training/sessiontemplate', template().id]"
+            class="focus-visible:outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
+          >{{ template().name }}</a>
+        </h3>
+      }
+      <p class="mt-1 text-xs text-muted">{{ distribution() }} · {{ template().durationInDays }} días</p>
+    </div>
+
+    <div class="relative z-10 -mr-2 -mt-2">
+      <button
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-controls]="'template-menu-' + template().id"
+        class="btn-icon text-subtle hover:bg-raised hover:text-fg"
+        aria-label="Acciones de la plantilla"
+      >
+        @if (busy()) {
+          <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+          </svg>
+        } @else {
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+          </svg>
+        }
+      </button>
+      @if (menuOpen()) {
+        <div
+          [id]="'template-menu-' + template().id"
+          class="absolute right-0 top-full z-30 mt-1 w-52 overflow-hidden rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/40"
+        >
+          <button type="button" class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="startRename()">
+            <svg class="h-4 w-4 text-subtle" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+            </svg>
+            Renombrar
+          </button>
+          <button type="button" class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm text-soft hover:bg-line hover:text-fg" (click)="startLandmarkEdit()">
+            <svg class="h-4 w-4 text-subtle" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" d="M4 18h3v-4H4zM10.5 18h3V10h-3zM17 18h3V6h-3z" />
+            </svg>
+            Cambiar nivel
+          </button>
+          <button
+            type="button"
+            class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm text-soft hover:bg-line hover:text-fg disabled:cursor-wait disabled:opacity-50"
+            [disabled]="duplicateDisabled()"
+            (click)="onDuplicate()"
+          >
+            <svg class="h-4 w-4 text-subtle" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="8" y="8" width="12" height="12" rx="2" stroke-linejoin="round" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+            </svg>
+            Duplicar
+          </button>
+          <div class="my-1 h-px bg-line"></div>
+          <button type="button" class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm text-danger hover:bg-danger/10" (click)="onRemove()">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+            </svg>
+            Borrar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  @if (editingLandmark()) {
+    <fieldset class="relative z-10">
+      <legend class="sr-only">Nivel de volumen de la plantilla</legend>
+      <div class="grid grid-cols-4 gap-1.5">
+        @for (landmark of landmarks; track landmark) {
+          <button
+            type="button"
+            class="min-h-11 rounded-lg border text-sm font-bold transition"
+            [class]="landmarkButtonClass(landmark)"
+            [attr.aria-pressed]="landmark === template().volumeLandmark"
+            [title]="landmarkLabels[landmark]"
+            (click)="chooseLandmark(landmark)"
+          >
+            {{ landmark }}
+          </button>
+        }
+      </div>
+    </fieldset>
+  } @else {
+    <app-volume-gauge [landmark]="template().volumeLandmark" />
+  }
+
+  <p class="flex items-baseline gap-1.5">
+    <span class="font-display text-3xl font-bold leading-none tabular-nums text-fg">{{ totalSets() }}</span>
+    <span class="text-xs text-muted">{{ totalLabel() }}</span>
+  </p>
+
+  @if (groups().length > 0) {
+    <ul class="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1.5 text-xs" aria-label="Series por grupo muscular">
+      @for (group of visibleGroups(); track group.group) {
+        <li class="contents">
+          <span class="whitespace-nowrap text-soft">{{ group.label }}</span>
+          <span class="h-1.5 overflow-hidden rounded-full bg-raised" aria-hidden="true">
+            <span class="block h-full rounded-full opacity-75" [class]="tone().fill" [style.width.%]="group.sets / maxSets() * 100"></span>
+          </span>
+          <span class="text-right font-semibold tabular-nums text-fg">{{ group.sets }}</span>
+        </li>
+      }
+    </ul>
+    @if (hiddenGroups() > 0) {
+      <button
+        type="button"
+        class="relative z-10 -mb-2 -ml-2 -mt-1 min-h-11 self-start rounded-lg px-2 text-xs font-medium text-subtle transition hover:text-accent"
+        [attr.aria-expanded]="showAllGroups()"
+        (click)="showAllGroups.set(!showAllGroups())"
+      >
+        {{ showAllGroups() ? 'Ver menos' : '+' + hiddenGroups() + (hiddenGroups() === 1 ? ' grupo más' : ' grupos más') }}
+      </button>
+    }
+  } @else {
+    <p class="text-xs text-subtle">Sin series todavía</p>
+  }
+</article>
