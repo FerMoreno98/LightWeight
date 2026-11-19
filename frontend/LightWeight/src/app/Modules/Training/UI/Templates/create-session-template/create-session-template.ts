@@ -1,21 +1,21 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TrainingStore } from '../../../state/training.store';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink, UrlTree } from '@angular/router';
 import { SeriesPerGroupPerSession } from '../../../data/training-api.service';
-import { muscleGroupLabel } from '../../shared/muscle-groups';
 import { TrainingFlow } from '../../shared/training-flow';
+import { ConfirmDialog } from '../../../../../Shared/confirm-dialog/confirm-dialog';
+import { SessionCard } from '../session-card/session-card';
 
 @Component({
   selector: 'app-create-session-template',
   standalone: true,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, SessionCard, ConfirmDialog],
   templateUrl: './create-session-template.html',
   styleUrl: './create-session-template.css',
 })
 export class CreateSessionTemplate {
   private store = inject(TrainingStore);
-  private router = inject(Router);
   private route = inject(ActivatedRoute);
   protected flow = inject(TrainingFlow);
   /** Built once: a new UrlTree on every check would make [routerLink] change all the time */
@@ -50,17 +50,40 @@ export class CreateSessionTemplate {
     this.name = '';
   }
 
-  goToSession(session: SeriesPerGroupPerSession){
-    if (!this.idTrainingTemplate) return;
-    this.router.navigateByUrl(this.flow.sessionSets(this.idTrainingTemplate, session.sessionId));
+  /**
+   * Link of each session card, built once per list of sessions: a new UrlTree on every check
+   * would make [routerLink] change all the time
+   */
+  sessionLinks = computed(() => {
+    const links = new Map<string, UrlTree>();
+    if (this.idTrainingTemplate)
+      for (const session of this.Sessions())
+        links.set(session.sessionId, this.flow.sessionSets(this.idTrainingTemplate, session.sessionId));
+    return links;
+  });
+
+  /** Session waiting for the confirmation to delete it */
+  deleteTarget = signal<SeriesPerGroupPerSession | null>(null);
+  isDeleting = signal(false);
+
+  askDelete(session: SeriesPerGroupPerSession){
+    this.deleteTarget.set(session);
   }
 
-  async deleteSession(session: SeriesPerGroupPerSession){
-    await this.store.DeleteTemplateSession(session.sessionId);
+  cancelDelete(){
+    if (!this.isDeleting()) this.deleteTarget.set(null);
   }
 
-  seriesEntries(session: SeriesPerGroupPerSession): [string, number][] {
-    return Object.entries(session.series).map(([group, count]) => [muscleGroupLabel(group), count]);
+  async confirmDelete(){
+    const session = this.deleteTarget();
+    if (!session) return;
+    this.isDeleting.set(true);
+    try {
+      await this.store.DeleteTemplateSession(session.sessionId);
+    } finally {
+      this.isDeleting.set(false);
+      this.deleteTarget.set(null);
+    }
   }
 
   async onSubmit(values:{

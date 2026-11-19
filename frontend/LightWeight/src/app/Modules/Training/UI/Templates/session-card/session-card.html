@@ -1,0 +1,51 @@
+<!-- The name link stretches over the whole card (after:inset-0); the controls sit above it with z-10 -->
+<article [class.z-20]="menuOpen()"
+  class="relative flex h-full flex-col gap-3 rounded-xl border border-line bg-surface p-4 shadow-lg shadow-black/20 transition duration-200 hover:border-line-strong has-[a:focus-visible]:ring-2 has-[a:focus-visible]:ring-accent/50 pointer-fine:hover:-translate-y-0.5"
+>
+  <div class="flex items-start gap-2.5">
+    <span class="flex h-7 min-w-7 shrink-0 items-center justify-center rounded-lg bg-accent/10 px-1.5 font-display text-base font-bold tabular-nums text-accent" aria-hidden="true">
+      {{ position() }}
+    </span>
+    <h3 class="line-clamp-2 min-w-0 flex-1 break-words pt-0.5 text-lg font-semibold leading-tight text-fg" [title]="session().sessionName">
+      <a
+        [routerLink]="link()"
+        class="focus-visible:outline-none after:absolute after:inset-0 after:rounded-xl after:content-['']"
+      ><span class="sr-only">Sesión {{ position() }}: </span>{{ session().sessionName }}</a>
+    </h3>
+
+    <div class="relative z-10 -mr-2 -mt-2">
+      <button
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-controls]="'session-menu-' + session().sessionId"
+        class="btn-icon text-subtle hover:bg-raised hover:text-fg"
+        aria-label="Acciones de la sesión"
+      >
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" />
+        </svg>
+      </button>
+      @if (menuOpen()) {
+        <div
+          [id]="'session-menu-' + session().sessionId"
+          class="absolute right-0 top-full z-30 mt-1 w-52 overflow-hidden rounded-lg border border-line bg-raised py-1 shadow-xl shadow-black/40"
+        >
+          <button type="button" class="flex min-h-11 w-full items-center gap-3 px-3 text-left text-sm text-danger hover:bg-danger/10" (click)="onRemove()">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m2 0-1 12a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L6 7h12Z" />
+            </svg>
+            Borrar
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <p class="flex items-baseline gap-1.5">
+    <span class="font-display text-3xl font-bold leading-none tabular-nums text-fg">{{ totalSets() }}</span>
+    <span class="text-xs text-muted">{{ totalSets() === 1 ? 'serie' : 'series' }}</span>
+  </p>
+
+  <app-volume-bars [volume]="session().series" />
+</article>
