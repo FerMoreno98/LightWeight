@@ -85,6 +85,52 @@ export class SessionSets {
     this.router.navigateByUrl(this.flow.exerciseSettings(this.TemplateId, this.SessionId));
   }
 
+  /** Key of the exercise whose new set is being created (null when none) */
+  addingToKey = signal<number | null>(null);
+
+  /**
+   * Adds one more set to an exercise: a copy of its last set, placed right after it.
+   * When the exercise is in a superset the new set joins it too, so it adds one more round
+   */
+  async addSetToGroup(group: ExerciseSetGroup){
+    if (!this.TemplateId || !this.SessionId || this.addingToKey() !== null) return;
+    const last = group.sets[group.sets.length - 1];
+    const previousIds = new globalThis.Set(this.Sets().map(s => s.id));
+    this.addingToKey.set(group.key);
+    try {
+      const created = await this.store.CreateTemplateSet(
+        last.exerciseId,
+        this.SessionId,
+        last.repetitionRangeMin,
+        last.repetitionRangeMax,
+        last.technique === 'DropSet',
+        last.technique === 'Cluster',
+        last.technique === 'MyoRep',
+        last.aimMuscleGroups,
+        last.expectedRPE,
+        1
+      );
+      if (!created) return;
+      await this.store.GetSetsFromASessionTemplate(this.TemplateId, this.SessionId);
+      const newSet = this.Sets().find(s => !previousIds.has(s.id));
+      if (!newSet) return;
+
+      // The backend appends it at the end of the session: move it right after the last set of the exercise
+      const ids = this.Sets().map(s => s.id).filter(id => id !== newSet.id);
+      ids.splice(ids.indexOf(last.id) + 1, 0, newSet.id);
+      if (!await this.store.ReorderTemplateSets(this.SessionId, ids)) return;
+
+      if (last.superSetGroupId) {
+        const superSetIds = this.Sets()
+          .filter(s => s.superSetGroupId === last.superSetGroupId)
+          .map(s => s.id);
+        await this.store.CreateTemplateSuperSet(this.TemplateId, this.SessionId, [...superSetIds, newSet.id]);
+      }
+    } finally {
+      this.addingToKey.set(null);
+    }
+  }
+
   selectSet(set: Set){
     if (this.isSelecting() || !this.TemplateId || !this.SessionId) return;
     this.router.navigateByUrl(this.flow.exerciseSettings(this.TemplateId, this.SessionId, set.id));
