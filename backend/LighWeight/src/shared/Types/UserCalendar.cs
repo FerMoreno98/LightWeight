@@ -1,4 +1,4 @@
-namespace LightWeight.Nutrition.Application.Utils;
+namespace LightWeight.shared.Types;
 
 /// <summary>Calendar days of the user. The time zone is fixed to Europe/Madrid until users have their own</summary>
 public static class UserCalendar

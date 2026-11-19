@@ -68,7 +68,7 @@ A `dashboard_NutritionDays` projection. Calculated when reading: kcal and carboh
 ## Implementation notes
 
 - **Handlers** (`Application/Events`): `FatSecretDiarySyncedIntegrationEventHandler` (loads the period, `DiarySynchronization.Apply`, adds/removes, saves), `RebuildRequestedIntegrationEventHandler` (read-only, `AsNoTracking`), `DiaryDayDomainEventsHandler` (domain → integration events, built in `NutritionIntegrationEventMapper`). No commands, queries nor endpoints: the data only arrives from DeviceIntegration and is read by the Dashboard. `LightWeight.Nutrition.Api` stays empty until an endpoint is needed.
-- **Today** comes from `Application/Utils/UserCalendar.Today(IClock.UtcNow)` (Europe/Madrid, via `TimeZoneInfo`; the Docker runtime image, Ubuntu 24.04, has the tz data).
+- **Today** comes from `shared/Types/UserCalendar.Today(IClock.UtcNow)` (Europe/Madrid, via `TimeZoneInfo`; the Docker runtime image, Ubuntu 24.04, has the tz data). DeviceIntegration uses the same one.
 - **A failing synchronization saves nothing** (an invalid day throws before `SaveChanges`); `EventPublisher` logs it and the next night tries again.
 - **Schema** `nutrition`, table `nutrition_DiaryDays`: `Id` uuid PK, `UserId`, `Date` date, `Calories` decimal(7,2), `Protein`/`Carbohydrate`/`Fat` decimal(6,2); unique index `Ux_DiaryDays_UserId_Date`. `Intake` is a `ComplexProperty` (same row). Migrations `2026111910xx` (shared `VersionInfo`: keep using this range).
 
@@ -76,7 +76,9 @@ A `dashboard_NutritionDays` projection. Calculated when reading: kcal and carboh
 
 **Done (2026-11-19):** domain, integration contracts, Application handlers, Infrastructure (schema, migrations, repository, UnitOfWork with event dispatch), host registration (`AddNutritionModule`), unit tests for domain and application; checked against Postgres (create, no-op, update, delete, rebuild).
 
-**Pending:** the FatSecret connection and nightly run in DeviceIntegration, and the Dashboard projection and charts.
+**Done (2026-11-19) in DeviceIntegration:** linking FatSecret, history import and nightly run.
+
+**Pending:** the Dashboard projection and charts.
 
 ## Ideas for later
 

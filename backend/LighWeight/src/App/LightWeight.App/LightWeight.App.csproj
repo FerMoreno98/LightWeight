@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\Modules\bodymetrics\LightWeight.BodyMetrics.Api\LightWeight.BodyMetrics.Api.csproj" />
     <ProjectReference Include="..\..\Modules\dashboard\LightWeight.Dashboard.Api\LightWeight.Dashboard.Api.csproj" />
     <ProjectReference Include="..\..\Modules\nutrition\LightWeight.Nutrition.Api\LightWeight.Nutrition.Api.csproj" />
+    <ProjectReference Include="..\..\Modules\deviceintegration\LightWeight.DeviceIntegration.Api\LightWeight.DeviceIntegration.Api.csproj" />
   </ItemGroup>
 
 </Project>

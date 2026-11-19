@@ -48,6 +48,12 @@ export const routes: Routes =
         loadComponent: () => import('../app/Modules/Training/UI/Share/shared-program/shared-program').then(m => m.SharedProgramPage)
     },
     {
+        // FatSecret sends the user back here after authorizing LightWeight (FatSecret:CallbackUrl of the API)
+        path: 'integrations/fatsecret/callback',
+        canActivate: [profileCompletedGuard],
+        loadComponent: () => import('../app/Modules/DeviceIntegration/UI/fatsecret-callback-page/fatsecret-callback-page').then(m => m.FatSecretCallbackPage)
+    },
+    {
         path: 'profile',
         canActivate: [profileCompletedGuard],
         loadChildren: () => import ('../app/Modules/UserProfile/UserProfile.Routes').then(m=>m.UserProfileRoutes)

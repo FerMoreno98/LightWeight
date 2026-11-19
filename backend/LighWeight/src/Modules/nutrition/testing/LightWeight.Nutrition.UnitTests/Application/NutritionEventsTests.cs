@@ -1,5 +1,4 @@
 using LightWeight.Nutrition.Application.Events;
-using LightWeight.Nutrition.Application.Utils;
 using LightWeight.Nutrition.Domain.Aggregates;
 using LightWeight.Nutrition.Domain.Events;
 using LightWeight.Nutrition.Domain.Repositories;

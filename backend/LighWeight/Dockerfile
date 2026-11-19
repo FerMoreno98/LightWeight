@@ -45,6 +45,12 @@ COPY src/Modules/nutrition/LightWeight.Nutrition.Application/*.csproj ./Modules/
 COPY src/Modules/nutrition/LightWeight.Nutrition.Infrastructure/*.csproj ./Modules/nutrition/LightWeight.Nutrition.Infrastructure/
 COPY src/Modules/nutrition/LightWeight.Nutrition.Api/*.csproj ./Modules/nutrition/LightWeight.Nutrition.Api/
 
+# --- Módulo: deviceintegration ---
+COPY src/Modules/deviceintegration/LightWeight.DeviceIntegration.Domain/*.csproj ./Modules/deviceintegration/LightWeight.DeviceIntegration.Domain/
+COPY src/Modules/deviceintegration/LightWeight.DeviceIntegration.Application/*.csproj ./Modules/deviceintegration/LightWeight.DeviceIntegration.Application/
+COPY src/Modules/deviceintegration/LightWeight.DeviceIntegration.Infrastructure/*.csproj ./Modules/deviceintegration/LightWeight.DeviceIntegration.Infrastructure/
+COPY src/Modules/deviceintegration/LightWeight.DeviceIntegration.Api/*.csproj ./Modules/deviceintegration/LightWeight.DeviceIntegration.Api/
+
 # --- Shared ---
 COPY src/shared/*.csproj ./shared/ 
 

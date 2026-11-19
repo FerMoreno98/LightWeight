@@ -4,12 +4,13 @@ import { AuthStore } from '../../../Auth/state/auth.store';
 import { ProfileData } from '../../data/user-profile-api.service';
 import { UserProfileStore } from '../../state/user-profile.store';
 import { ProfileForm } from '../profile-form/profile-form';
+import { FatSecretCard } from '../../../DeviceIntegration/UI/fatsecret-card/fatsecret-card';
 
 /** Edit the profile and log out. The guard has already loaded it, unless it could not be checked */
 @Component({
     selector: 'app-profile-page',
     standalone: true,
-    imports: [ProfileForm],
+    imports: [ProfileForm, FatSecretCard],
     templateUrl: './profile-page.html',
 })
 export class ProfilePage implements OnInit {

@@ -1,4 +1,3 @@
-using LightWeight.Nutrition.Application.Utils;
 using LightWeight.Nutrition.Domain.Aggregates;
 using LightWeight.Nutrition.Domain.Repositories;
 using LightWeight.Nutrition.Domain.Services;

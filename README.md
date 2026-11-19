@@ -29,9 +29,9 @@ Aplicación para planificar y registrar entrenamientos de fuerza / culturismo, c
 | **UserProfile** | ✅ | — | Datos personales y fase de entrenamiento (volumen / definición / mantenimiento) |
 | **Training** | 🚧 | 🚧 | Programas, plantillas, sesiones y series; ciclos de planificación; publica cada sesión terminada para el dashboard |
 | **BodyMetrics** | ✅ | ✅ | Peso, perímetros y pliegues: registrar, corregir y borrar; publica eventos para el dashboard |
-| **Nutrition** | 🚧 | — | Totales diarios (kcal y macros) del diario de FatSecret para relacionarlos con el rendimiento; módulo hecho, falta la conexión con FatSecret |
+| **Nutrition** | ✅ | — | Totales diarios (kcal y macros) del diario de FatSecret para relacionarlos con el rendimiento; faltan la proyección y las gráficas del dashboard |
 | **NEAT** | 🧩 | — | Actividad física fuera del entrenamiento |
-| **DeviceIntegration** | 📝 | — | Básculas, wearables (AmazFit), apps de nutrición (FatSecret, OAuth 1.0 de tres pasos) |
+| **DeviceIntegration** | 🚧 | 🚧 | FatSecret hecho: conectar la cuenta (OAuth 1.0) desde el perfil, importar el historial y pasada nocturna a las 03:30; faltan básculas y wearables (AmazFit) |
 | **Dashboard** | 🚧 | 🚧 | Read model para gráficas a partir de eventos: evolución de medidas (pestaña "Evolución"), rendimiento de sesión y volumen en la home, y "Progreso" por ejercicio (1RM estimado, fatiga entre series por zona); falta el filtro por macrociclo |
 
 ✅ funcional · 🚧 en desarrollo · 🧩 esqueleto de proyectos · 📝 solo diseño (`.md`)

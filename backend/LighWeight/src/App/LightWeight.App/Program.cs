@@ -7,6 +7,8 @@ using LightWeight.App.Extensions;
 using LightWeight.Auth.Infrastructure;
 using LightWeight.BodyMetrics.Infrastructure;
 using LightWeight.Dashboard.Infrastructure;
+using LightWeight.DeviceIntegration.Infrastructure;
+using LightWeight.DeviceIntegration.Api;
 using LightWeight.Nutrition.Infrastructure;
 using LightWeight.shared.Migrations;
 using LightWeight.UserProfile.Infrastructure;
@@ -62,6 +64,7 @@ builder.Services
     .AddTrainingModule(builder.Configuration)
     .AddBodyMetricsModule(builder.Configuration)
     .AddNutritionModule(builder.Configuration)
+    .AddDeviceIntegrationModule(builder.Configuration)
     .AddDashboardModule(builder.Configuration);
 builder.Services.AddAuthRateLimiting();
 
@@ -122,6 +125,7 @@ app.MapUserProfileEndpoints();
 app.MapTrainingEndpoints();
 app.MapBodyMetricsEndpoints();
 app.MapDashboardEndpoints();
+app.MapDeviceIntegrationEndpoints();
 
 
 

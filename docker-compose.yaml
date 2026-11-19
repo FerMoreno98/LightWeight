@@ -19,6 +19,11 @@ services:
       - Jwt__AccessTokenExpirationMinutes=15
       # Plain http on localhost: the refresh cookie cannot be Secure here (true by default)
       - Auth__RefreshCookie__Secure=false
+      # Optional: without the keys linking FatSecret is off (see .env.example)
+      - FatSecret__ConsumerKey=${FATSECRET_CONSUMER_KEY:-}
+      - FatSecret__ConsumerSecret=${FATSECRET_CONSUMER_SECRET:-}
+      - FatSecret__TokenEncryptionKey=${FATSECRET_TOKEN_ENCRYPTION_KEY:-}
+      - FatSecret__CallbackUrl=http://localhost:4200/integrations/fatsecret/callback
     depends_on:
       db:
         condition: service_healthy

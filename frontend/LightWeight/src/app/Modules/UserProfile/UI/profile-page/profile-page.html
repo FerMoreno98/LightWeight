@@ -31,6 +31,8 @@
       }
     </div>
 
+    <app-fatsecret-card />
+
     <button type="button" class="btn btn-secondary mt-6 w-full" [disabled]="loggingOut()" (click)="logout()">
       {{ loggingOut() ? 'Cerrando sesión...' : 'Cerrar sesión' }}
     </button>
