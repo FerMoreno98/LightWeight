@@ -45,16 +45,16 @@ FatSecret offers three levels: totals per day (`food_entries.get_month`: one cal
 
 FatSecret's `date_int` is a calendar day (days since 1970-01-01) with no time zone. Sessions are stored in UTC (`StartedAt`). The day of a session is its `StartedAt` converted to **Europe/Madrid** — the same zone used to compute `today`. There is no user time zone in the project yet; if one is added (UserProfile), it replaces the fixed zone.
 
-## Events Emitted (planned)
+## Events Emitted
 
 | Integration event | Payload | When |
 |---|---|---|
 | `nutrition.day.recorded.v1` | `DiaryDayId`, `UserId`, `Date`, `Calories`, `Protein`, `Carbohydrate`, `Fat` | A day is created or its totals change, and for every day during a rebuild |
 | `nutrition.day.deleted.v1` | `DiaryDayId`, `UserId`, `Date` | A recorded day no longer has entries in FatSecret |
 
-Consumers upsert by `DiaryDayId` (same pattern as BodyMetrics).
+Consumers upsert by `DiaryDayId` (same pattern as BodyMetrics). Contracts: `shared/Contracts/Nutrition/NutritionIntegrationEvents.cs`; the synced event, `shared/Contracts/DeviceIntegration/DeviceIntegrationIntegrationEvents.cs`.
 
-## Events Subscribed To (planned)
+## Events Subscribed To
 
 | Integration event | Origin | Action |
 |---|---|---|
@@ -65,11 +65,18 @@ Consumers upsert by `DiaryDayId` (same pattern as BodyMetrics).
 
 A `dashboard_NutritionDays` projection. Calculated when reading: kcal and carbohydrate (g/kg) of the previous day and the same day of each session, 7-day average protein (g/kg) and kcal; the body weight for g/kg is the weekly average the Dashboard already has. Shown as extra rows under sleep/DOMS/motivation in the session performance chart.
 
+## Implementation notes
+
+- **Handlers** (`Application/Events`): `FatSecretDiarySyncedIntegrationEventHandler` (loads the period, `DiarySynchronization.Apply`, adds/removes, saves), `RebuildRequestedIntegrationEventHandler` (read-only, `AsNoTracking`), `DiaryDayDomainEventsHandler` (domain → integration events, built in `NutritionIntegrationEventMapper`). No commands, queries nor endpoints: the data only arrives from DeviceIntegration and is read by the Dashboard. `LightWeight.Nutrition.Api` stays empty until an endpoint is needed.
+- **Today** comes from `Application/Utils/UserCalendar.Today(IClock.UtcNow)` (Europe/Madrid, via `TimeZoneInfo`; the Docker runtime image, Ubuntu 24.04, has the tz data).
+- **A failing synchronization saves nothing** (an invalid day throws before `SaveChanges`); `EventPublisher` logs it and the next night tries again.
+- **Schema** `nutrition`, table `nutrition_DiaryDays`: `Id` uuid PK, `UserId`, `Date` date, `Calories` decimal(7,2), `Protein`/`Carbohydrate`/`Fat` decimal(6,2); unique index `Ux_DiaryDays_UserId_Date`. `Intake` is a `ComplexProperty` (same row). Migrations `2026111910xx` (shared `VersionInfo`: keep using this range).
+
 ## State
 
-**Done (2026-11-19):** domain — `DiaryDay`, `DailyIntake`, `DiaryPeriod`, `DiarySynchronization`, domain events and exceptions, `IDiaryDayRepository`, `INutritionUnitOfWork`; unit tests.
+**Done (2026-11-19):** domain, integration contracts, Application handlers, Infrastructure (schema, migrations, repository, UnitOfWork with event dispatch), host registration (`AddNutritionModule`), unit tests for domain and application; checked against Postgres (create, no-op, update, delete, rebuild).
 
-**Pending:** integration contracts, Application (synced-event handler, rebuild handler, mapper), Infrastructure (schema `nutrition`, table `nutrition_DiaryDays` with unique `(UserId, Date)`, migrations, UnitOfWork), host registration, the FatSecret connection in DeviceIntegration, the Dashboard projection and charts.
+**Pending:** the FatSecret connection and nightly run in DeviceIntegration, and the Dashboard projection and charts.
 
 ## Ideas for later
 

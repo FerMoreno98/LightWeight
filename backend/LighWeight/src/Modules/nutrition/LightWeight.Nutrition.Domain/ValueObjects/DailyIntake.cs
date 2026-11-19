@@ -11,22 +11,17 @@ namespace LightWeight.Nutrition.Domain.ValueObjects;
 /// </remarks>
 public sealed record DailyIntake : ValueObject
 {
-    private DailyIntake(decimal calories, decimal protein, decimal carbohydrate, decimal fat)
-    {
-        Calories = calories;
-        Protein = protein;
-        Carbohydrate = carbohydrate;
-        Fat = fat;
-    }
+    /// <summary>Used by EF Core to materialize the complex property</summary>
+    private DailyIntake() { }
 
     /// <summary>Energy in kcal</summary>
-    public decimal Calories { get; }
+    public decimal Calories { get; private init; }
     /// <summary>Protein in g</summary>
-    public decimal Protein { get; }
+    public decimal Protein { get; private init; }
     /// <summary>Carbohydrate in g</summary>
-    public decimal Carbohydrate { get; }
+    public decimal Carbohydrate { get; private init; }
     /// <summary>Fat in g</summary>
-    public decimal Fat { get; }
+    public decimal Fat { get; private init; }
 
     public static DailyIntake Create(decimal calories, decimal protein, decimal carbohydrate, decimal fat)
     {
@@ -34,7 +29,7 @@ public sealed record DailyIntake : ValueObject
         EnsureNotNegative(protein, nameof(Protein));
         EnsureNotNegative(carbohydrate, nameof(Carbohydrate));
         EnsureNotNegative(fat, nameof(Fat));
-        return new DailyIntake(calories, protein, carbohydrate, fat);
+        return new DailyIntake { Calories = calories, Protein = protein, Carbohydrate = carbohydrate, Fat = fat };
     }
 
     private static void EnsureNotNegative(decimal value, string nutrient)

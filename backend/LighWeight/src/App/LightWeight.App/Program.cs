@@ -7,6 +7,7 @@ using LightWeight.App.Extensions;
 using LightWeight.Auth.Infrastructure;
 using LightWeight.BodyMetrics.Infrastructure;
 using LightWeight.Dashboard.Infrastructure;
+using LightWeight.Nutrition.Infrastructure;
 using LightWeight.shared.Migrations;
 using LightWeight.UserProfile.Infrastructure;
 using LightWeight.Training.Infrastructure;
@@ -60,6 +61,7 @@ builder.Services
     .AddUserProfileModule(builder.Configuration)
     .AddTrainingModule(builder.Configuration)
     .AddBodyMetricsModule(builder.Configuration)
+    .AddNutritionModule(builder.Configuration)
     .AddDashboardModule(builder.Configuration);
 builder.Services.AddAuthRateLimiting();
 

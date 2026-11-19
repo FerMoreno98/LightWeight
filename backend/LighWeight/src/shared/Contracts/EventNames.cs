@@ -54,6 +54,23 @@ public static class EventNames
         public const string SessionFinished = "training.session.finished.v1";
     }
 
+    /// <summary>Events emitted by the <b>nutrition</b> module.</summary>
+    public static class Nutrition
+    {
+        /// <summary><c>nutrition.day.recorded.v1</c> (created, its totals changed or republished on a rebuild)</summary>
+        public const string DayRecorded = "nutrition.day.recorded.v1";
+
+        /// <summary><c>nutrition.day.deleted.v1</c></summary>
+        public const string DayDeleted = "nutrition.day.deleted.v1";
+    }
+
+    /// <summary>Events emitted by the <b>deviceintegration</b> module.</summary>
+    public static class DeviceIntegration
+    {
+        /// <summary><c>deviceintegration.fatsecret.diary.synced.v1</c> (daily totals of a period of the FatSecret diary)</summary>
+        public const string FatSecretDiarySynced = "deviceintegration.fatsecret.diary.synced.v1";
+    }
+
     /// <summary>Events emitted by the <b>dashboard</b> module.</summary>
     public static class Dashboard
     {

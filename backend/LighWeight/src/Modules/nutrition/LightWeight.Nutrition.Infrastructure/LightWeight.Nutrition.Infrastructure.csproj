@@ -2,6 +2,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LightWeight.Nutrition.Domain\LightWeight.Nutrition.Domain.csproj" />
+    <ProjectReference Include="..\LightWeight.Nutrition.Application\LightWeight.Nutrition.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentMigrator" Version="8.0.1" />
+    <PackageReference Include="FluentMigrator.Runner.Postgres" Version="8.0.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.8" />
+    <PackageReference Include="Npgsql" Version="10.0.3" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.2" />
   </ItemGroup>
 
   <PropertyGroup>
