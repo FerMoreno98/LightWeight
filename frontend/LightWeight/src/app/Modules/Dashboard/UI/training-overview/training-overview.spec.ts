@@ -70,6 +70,21 @@ describe('TrainingOverview', () => {
     expect(el.textContent).not.toContain('Kcal · día anterior');
   });
 
+  it('needs two sessions on two different days before drawing the wellbeing rows', async () => {
+    const one = await render([week], [session], null);
+    expect(one.textContent).toContain('Aún hay poco para comparar');
+    expect(one.textContent).not.toContain('Agujetas');
+    TestBed.resetTestingModule();
+
+    const sameDay = await render([week], [session, { ...session, sessionId: 's2', startedAt: '2026-10-05T19:30:00Z' }], null);
+    expect(sameDay.textContent).not.toContain('Agujetas');
+    TestBed.resetTestingModule();
+
+    const twoDays = await render([week], [session, { ...session, sessionId: 's2', startedAt: '2026-10-07T17:30:00Z' }], null);
+    expect(twoDays.textContent).toContain('Agujetas');
+    expect(twoDays.textContent).not.toContain('Aún hay poco para comparar');
+  });
+
   it('says there is nothing yet only when no session was ever finished', async () => {
     const el = await render([], []);
 

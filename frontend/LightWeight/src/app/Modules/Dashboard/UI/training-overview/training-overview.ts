@@ -34,11 +34,12 @@ const NUTRITION_COLORS = { calories: SERIES_COLORS[3], carbohydrate: '#a98ae8', 
 /** Orientative range of daily protein, g per kg of body weight */
 const PROTEIN_BAND = { min: 1.6, max: 2.2 };
 /**
- * Below this, the Nutrición rows are replaced by a message: one point says nothing. Sessions with diary the day
- * before, and different diary days among them (two sessions of the same day use the same day of diary)
+ * Below this, the rows under the performance (wellbeing or nutrition) are replaced by a message: one point says
+ * nothing. Sessions, and different days among them: two sessions of the same day are one day of sleep and one day
+ * of diary. For the nutrition rows only the sessions with diary the day before count
  */
-export const MIN_SESSIONS_WITH_DIARY = 2;
-export const MIN_DIARY_DAYS = 2;
+export const MIN_SESSIONS = 2;
+export const MIN_DAYS = 2;
 /** Calendar day of a session in Madrid, the same zone as the diary days */
 const madridDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -46,6 +47,11 @@ const madridDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Madrid', 
  * Overview of the training in the home: weekly volume per muscle group, and the performance of each session
  * stacked over the wellbeing it started with, to see at a glance why a session went better or worse
  */
+function enoughToCompare(sessions: SessionPerformance[]): boolean {
+    const days = new Set(sessions.map(s => madridDay.format(new Date(s.startedAt))));
+    return sessions.length >= MIN_SESSIONS && days.size >= MIN_DAYS;
+}
+
 @Component({
     selector: 'app-training-overview',
     standalone: true,
@@ -153,11 +159,13 @@ export class TrainingOverview implements OnInit {
     private sessionsWithDiary = computed(() => this.store.sessions().filter(s => s.nutrition?.previousDayCalories != null));
 
     /** Enough to compare: two sessions with diary the day before, on two different days of diary */
-    nutritionReady = computed(() => {
-        const sessions = this.sessionsWithDiary();
-        const days = new Set(sessions.map(s => madridDay.format(new Date(s.startedAt))));
-        return sessions.length >= MIN_SESSIONS_WITH_DIARY && days.size >= MIN_DIARY_DAYS;
-    });
+    nutritionReady = computed(() => enoughToCompare(this.sessionsWithDiary()));
+
+    /** The same rule for the wellbeing: two sessions on two different days */
+    wellbeingReady = computed(() => enoughToCompare(this.store.sessions()));
+
+    /** The rows of the selected tab can be drawn; otherwise a message explains what is missing */
+    rowsReady = computed(() => (this.context() === 'nutrition' ? this.nutritionReady() : this.wellbeingReady()));
 
     nutritionRows = computed<ContextRow[]>(() => {
         const sessions = this.store.sessions();

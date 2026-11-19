@@ -79,9 +79,13 @@
               [class]="context() === 'nutrition' ? 'bg-raised text-fg' : 'text-muted hover:text-fg'">Nutrición</button>
           </div>
         }
-        @if (context() === 'nutrition' && !nutritionReady()) {
+        @if (!rowsReady()) {
           <div class="rounded-xl border border-dashed border-line bg-canvas/40 px-4 py-6 text-center text-sm text-muted">
-            Aún hay poco para comparar. Cuando tengas al menos dos sesiones con tu diario de FatSecret del día anterior, en días distintos, verás aquí cómo se relaciona lo que comes con tu rendimiento.
+            @if (context() === 'nutrition') {
+              Aún hay poco para comparar. Cuando tengas al menos dos sesiones con tu diario de FatSecret del día anterior, en días distintos, verás aquí cómo se relaciona lo que comes con tu rendimiento.
+            } @else {
+              Aún hay poco para comparar. Cuando tengas al menos dos sesiones en días distintos, verás aquí cómo llegabas a cada una: sueño, agujetas y motivación.
+            }
           </div>
         } @else {
         <div class="space-y-1" role="group" [attr.aria-label]="context() === 'nutrition' ? 'Kcal y carbohidratos del día anterior y proteína de la semana de cada sesión' : 'Sueño, agujetas y motivación de cada sesión, de 1 a 10'">
@@ -105,12 +109,12 @@
         </div>
         }
       </div>
-      @if (context() === 'nutrition') {
-        @if (nutritionReady()) {
-        <p class="mt-3 text-xs text-subtle">De tu diario de FatSecret. La franja de proteína marca 1,6–2,2 g/kg. La relación se ve con semanas de datos, no con una sesión suelta.</p>
+      @if (rowsReady()) {
+        @if (context() === 'nutrition') {
+          <p class="mt-3 text-xs text-subtle">De tu diario de FatSecret. La franja de proteína marca 1,6–2,2 g/kg. La relación se ve con semanas de datos, no con una sesión suelta.</p>
+        } @else {
+          <p class="mt-3 text-xs text-subtle">La relación se ve con semanas de datos, no con una sesión suelta.</p>
         }
-      } @else {
-        <p class="mt-3 text-xs text-subtle">La relación se ve con semanas de datos, no con una sesión suelta.</p>
       }
       }
     </article>
