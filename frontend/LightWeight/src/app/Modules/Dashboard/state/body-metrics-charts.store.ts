@@ -1,6 +1,8 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { DashboardApiService, EvolutionPoint, WeightEvolution } from '../data/dashboard-api.service';
+import { DashboardApiService, EvolutionPoint, NutritionEvolution, WeightEvolution } from '../data/dashboard-api.service';
+
+const NO_NUTRITION: NutritionEvolution = { averageCalories: null, recentCalories: null, weeks: [] };
 
 @Injectable({ providedIn: 'root' })
 export class BodyMetricsChartsStore {
@@ -9,6 +11,7 @@ export class BodyMetricsChartsStore {
     private _weight = signal<WeightEvolution>({ points: [], weeklyAverages: [] });
     private _perimeters = signal<EvolutionPoint[]>([]);
     private _skinFolds = signal<EvolutionPoint[]>([]);
+    private _nutrition = signal<NutritionEvolution>(NO_NUTRITION);
     private _loading = signal(false);
     private _loaded = signal(false);
     private _rebuilding = signal(false);
@@ -17,6 +20,8 @@ export class BodyMetricsChartsStore {
     weight = this._weight.asReadonly();
     perimeters = this._perimeters.asReadonly();
     skinFolds = this._skinFolds.asReadonly();
+    /** Weeks of the FatSecret diary, drawn under the weight */
+    nutrition = this._nutrition.asReadonly();
     loading = this._loading.asReadonly();
     /** Whether the data has been loaded at least once (to tell "loading" from "empty") */
     loaded = this._loaded.asReadonly();
@@ -28,14 +33,17 @@ export class BodyMetricsChartsStore {
         this._error.set(null);
         this._loading.set(true);
         try {
-            const [weight, perimeters, skinFolds] = await Promise.all([
+            const [weight, perimeters, skinFolds, nutrition] = await Promise.all([
                 firstValueFrom(this.api.GetWeightEvolution()),
                 firstValueFrom(this.api.GetPerimetersEvolution()),
                 firstValueFrom(this.api.GetSkinFoldsEvolution()),
+                // Not critical: without it the weight is drawn alone
+                firstValueFrom(this.api.GetNutritionEvolution()).catch(() => NO_NUTRITION),
             ]);
             this._weight.set(weight);
             this._perimeters.set(perimeters);
             this._skinFolds.set(skinFolds);
+            this._nutrition.set(nutrition);
             this._loaded.set(true);
             return true;
         } catch {

@@ -28,17 +28,72 @@
     <!-- Weight -->
     <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
       <header class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 class="text-lg font-semibold text-fg">Peso</h2>
+        <h2 class="text-lg font-semibold text-fg">{{ hasNutrition() ? 'Peso y calorías' : 'Peso' }}</h2>
         @if (lastWeight(); as last) {
           <p class="text-sm text-muted">Último: <span class="font-medium text-fg">{{ last }}</span></p>
         }
       </header>
+      @if (hasNutrition()) {
+        <div class="mb-4 grid grid-cols-2 gap-2">
+          <div class="rounded-lg bg-raised px-3 py-2">
+            <p class="eyebrow">Kcal · 4 semanas</p>
+            <p class="font-display text-2xl font-bold text-fg">{{ recentCalories() ?? '—' }} <span class="text-sm font-medium text-muted">/día</span></p>
+          </div>
+          <div class="rounded-lg bg-raised px-3 py-2">
+            <p class="eyebrow">Peso · 4 semanas</p>
+            <p class="font-display text-2xl font-bold text-fg">{{ weightRate() ?? '—' }} <span class="text-sm font-medium text-muted">kg/sem</span></p>
+          </div>
+        </div>
+      }
       @if (store.weight().points.length > 0) {
-        <app-line-chart [series]="weightSeries()" unit="kg" ariaLabel="Evolución del peso: cada pesaje y la media de cada semana" />
+        <app-line-chart [series]="weightSeries()" unit="kg" [xDomain]="weightDomain()" ariaLabel="Evolución del peso: cada pesaje y la media de cada semana" />
       } @else {
         <ng-container *ngTemplateOutlet="empty; context: { $implicit: 'Aún no hay pesajes. Registra el primero en la pestaña Peso.' }" />
       }
+      @if (hasNutrition()) {
+        <!-- Same dates as the weight above: a week of eating less falls on the same vertical as its weight -->
+        <div class="mt-4 border-t border-line/60 pt-4">
+          <div class="flex items-baseline justify-between text-xs text-muted">
+            <span class="font-display text-sm font-semibold uppercase tracking-wide text-soft">Kcal por día</span>
+            <span>frente a tu media ({{ averageCalories() }})</span>
+          </div>
+          <app-deviation-bar-chart
+            label="Frente a tu media"
+            [points]="caloriesPoints()"
+            unit="kcal"
+            [color]="caloriesColor"
+            [xDomain]="weightDomain()"
+            ariaLabel="Kcal diarias de cada semana frente a tu media, más claras cuantos menos días con diario"
+          />
+          <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-muted" role="group" aria-label="Opacidad según los días con diario de la semana">
+            <span>Días con diario</span>
+            @for (item of daysStrength; track item.days) {
+              <span class="inline-flex items-center gap-1">
+                <span class="h-2.5 w-2.5 rounded-sm" [style.background-color]="withAlpha(caloriesColor, item.strength)"></span>{{ item.days }}
+              </span>
+            }
+          </div>
+          <p class="mt-2 text-xs text-subtle">De tu diario de FatSecret. La semana en curso se completa cada noche.</p>
+        </div>
+      }
     </article>
+
+    @if (hasProtein()) {
+      <!-- Protein per kg of the weekly weight -->
+      <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">
+        <header class="mb-4">
+          <h2 class="text-lg font-semibold text-fg">Proteína</h2>
+          <p class="mt-1 text-xs text-subtle">Gramos por kilo de peso al día, media semanal. La franja marca el rango orientativo de 1,6 a 2,2 g/kg.</p>
+        </header>
+        <app-line-chart
+          [series]="proteinSeries()"
+          unit="g/kg"
+          variant="compact"
+          [band]="{ min: 1.6, max: 2.2, color: withAlpha(proteinColor, 0.12) }"
+          ariaLabel="Proteína diaria por kilo de peso, media de cada semana"
+        />
+      </article>
+    }
 
     <!-- Perimeters -->
     <article class="rounded-xl border border-line bg-surface p-5 shadow-lg shadow-black/20">

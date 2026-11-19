@@ -34,6 +34,11 @@ Read model of the application. It receives the integration events of the other m
 - Queries: `GetTrainingVolume`, `GetSessionsPerformance`, `GetExercisesProgress` (optional `ExercisesMacrocycleId` and `MarksMacrocycleId`, independent), `GetExerciseProgress` (optional `MacrocycleId`; null → 404, performed but not in the macrocycle → empty lists). The filter is `ExerciseHistory.InMacrocycle`, applied in memory after building the whole history.
 - Calculations: `OneRepMax`, `RepZones`, `ExerciseHistory` (an exercise in a session: its sets, zone and estimates; plus `Trend`), `SetFatigue`, `SessionPerformance`, `WeeklyVolume`. Formulas and limits in `Dashboard.md` → Calculations.
 
+### Nutrition (`Projections/Nutrition`, `Projectors/Nutrition`, `Queries/Nutrition`, `Calculations/Nutrition`)
+- `NutritionDayProjection` (key `DiaryDayId`, `Date` as `DateOnly`) and `INutritionProjectionStore` (`UpsertDayAsync`, `DeleteDayAsync`, `ClearUserAsync`, `GetDaysAsync`).
+- `NutritionDayProjector`: `nutrition.day.recorded.v1` → upsert, `nutrition.day.deleted.v1` → delete.
+- `GetNutritionEvolution` (`GET /nutrition/weekly`) and the `Nutrition` field of `GetSessionsPerformance`, both calculated when reading in `NutritionCalculations` (rules in `Dashboard.md` → Calculations). The session's day is its `StartedAt` in Europe/Madrid (`shared/Types/UserCalendar`): do not cut it in UTC like the weight weeks.
+
 ### Calculations (`Application/Calculations`)
 - `WeeklyAverages`: pure and static. Groups by ISO week (Monday 00:00 UTC to Sunday), average rounded to 2 decimals, weeks without values do not appear.
 - Calculated **when reading**, not stored: a few hundred points per user, and nothing more to keep in sync or rebuild.
@@ -69,9 +74,10 @@ Read model of the application. It receives the integration events of the other m
 | `dashboard_TrainingSets` | `SetId` (uuid PK), `SessionId`, `UserId`, `Order`, `ExerciseId`, `ExerciseName`, `Repetitions`, `Weight` decimal(8,2), `Rpe` decimal(3,1), `IsBodyWeight`, `Technique?`, `IsPlanned`, `ExerciseMuscleGroups` text[], `PlannedMuscleGroups` text[]?, `PlannedMinReps?`, `PlannedMaxReps?` | `Ix_TrainingSets_UserId_ExerciseId`, `Ix_TrainingSets_SessionId` |
 | `dashboard_BodySkinFolds` | `MeasurementId` (PK), `UserId`, `MeasuredAt`, `Abdominal`, `Suprailiac`, `Tricipital`, `Subscapular`, `Thigh`, `Calf`, `Summatory` (decimal(5,2) null) | `Ix_BodySkinFolds_UserId_MeasuredAt` |
 | `dashboard_UserProfiles` | `UserId` (uuid PK), `Sex` varchar(20) | — |
+| `dashboard_NutritionDays` | `DiaryDayId` (uuid PK), `UserId`, `Date` date, `Calories` decimal(7,2), `Protein`/`Carbohydrate`/`Fat` decimal(6,2) | `Ix_NutritionDays_UserId_Date` |
 
 - Unlike bodymetrics, the skinfold **summatory is stored**: it is what the charts show.
-- **Migrations**: `Infrastructure/Migrations/2026101510xx_*` (bodymetrics), `2026102310xx_*` (training) and `2026111011xx_*` (userprofile). **Every module shares one FluentMigrator runner and the `VersionInfo` table**: keep using these ranges and following numbers for this module.
+- **Migrations**: `Infrastructure/Migrations/2026101510xx_*` (bodymetrics), `2026102310xx_*` (training), `2026111011xx_*` (userprofile) and `2026111911xx_*` (nutrition). **Every module shares one FluentMigrator runner and the `VersionInfo` table**: keep using these ranges and following numbers for this module.
 
 ## 5. Folder structure
 
@@ -105,12 +111,12 @@ Training: `UI/training-overview` (home: session performance as `UI/bar-chart` st
 
 - **Depends on**: `LightWeight.Shared` (mediator, messaging, `IClock`, contracts, migrations).
 - **Shared services**: `IMediator`, `IEventPublisher`, `IClock` and the validation pipeline are registered with `TryAdd`/existence checks, like in the other modules.
-- **Integration events consumed**: `bodymetrics.{weight,perimeters,skinfolds}.{recorded,deleted}.v1`, `training.session.finished.v1`, `userprofile.profile.recorded.v1`.
-- **Integration events published**: `dashboard.rebuild.requested.v1` (answered by BodyMetrics, Training and UserProfile).
+- **Integration events consumed**: `bodymetrics.{weight,perimeters,skinfolds}.{recorded,deleted}.v1`, `training.session.finished.v1`, `userprofile.profile.recorded.v1`, `nutrition.day.{recorded,deleted}.v1`.
+- **Integration events published**: `dashboard.rebuild.requested.v1` (answered by BodyMetrics, Training, UserProfile and Nutrition).
 
 ## 7. Current state
 
-**Done:** BodyMetrics, Training and UserProfile projections, rebuild (answered by every source), read queries and calculations (weekly averages; fat percentage; 1RM, zones, volume, fatigue, session performance, trend), host registration, unit tests, frontend charts (Evolución tab with the fat percentage card, home, Progreso).
+**Done:** BodyMetrics, Training, UserProfile and Nutrition projections, rebuild (answered by every source), read queries and calculations (weekly averages; fat percentage; 1RM, zones, volume, fatigue, session performance, trend), host registration, unit tests, frontend charts (Evolución tab with the fat percentage card, home, Progreso).
 
 **Pending:**
 - Progreso is filtered by the active macrocycle (done). Pending: a mesocycle filter (`MesocycleId` is already stored), cycle events from Training to choose any past cycle, and their date ranges for the body measurement charts.

@@ -27,6 +27,14 @@ All of them are keyed by the `MeasurementId` of bodymetrics and indexed by `(Use
 
 Keyed by the ids of training; sessions indexed by `(UserId, StartedAt)`, sets by `(UserId, ExerciseId)` and `SessionId`. Storing the cycle ids makes the future macrocycle/mesocycle filter a plain `WHERE`.
 
+### Nutrition (implemented 2026-11-19)
+
+| Projection | Table | Fed by | Content |
+|---|---|---|---|
+| `NutritionDayProjection` | `dashboard_NutritionDays` | `nutrition.day.{recorded,deleted}.v1` | `Date` (calendar day, Europe/Madrid), `Calories` (kcal), `Protein`, `Carbohydrate`, `Fat` (g) |
+
+Keyed by the `DiaryDayId` of nutrition, indexed by `(UserId, Date)`. The data comes from the user's FatSecret diary (DeviceIntegration → Nutrition → here), up to the previous night.
+
 ## Calculations
 
 | Calculation | Where | Rule |
@@ -38,6 +46,9 @@ Keyed by the ids of training; sessions indexed by `(UserId, StartedAt)`, sets by
 | Fatigue between sets | `Calculations/Training/SetFatigue.cs` | Per exercise and session, with the sets that can be estimated in their order: `(1RM₁ − 1RMₙ) / 1RM₁ × 100` from the first to the second and to the last set (negative if it improved). Needs two sets; labelled with its zone so efforts are never mixed |
 | Session performance | `Calculations/Training/SessionPerformance.cs` | For each exercise: estimated 1RM of its **first** set (the freshest: how the user arrived that day) against the first set of the **last time in the same zone**, in %. The session's performance is the **average**; exercises without a previous time don't count, and a change over **±50 %** is left out as implausible (almost always a registration error or a weighted/assisted exercise registered with the added load only) and **reported** in the response (`excluded`) so the user can check it. Comparing with the previous time keeps the normal progression from hiding a bad day |
 | Trend of an exercise | `ExerciseHistory.Trend` | Best estimated 1RM of the last session against the previous session in the same zone, in % |
+| Nutrition around a session | `Calculations/Nutrition/NutritionCalculations.AroundSession` | The day of the session is its `StartedAt` in **Europe/Madrid** (`shared/Types/UserCalendar`), like the diary days. **Previous day**: kcal and carbohydrate in g/kg; **same day**: kcal; **protein of the 7 days before** in g/kg, only with **4 or more** days of diary. Null when there is nothing around it |
+| Body weight for the g/kg | `NutritionCalculations.BodyWeightAt` | The weekly average of the week of the day, or the closest earlier one; before the first weigh-in, the first. No weigh-ins → the g/kg are null, the kcal are kept |
+| Weeks of the diary | `NutritionCalculations.Weeks` | Monday to Sunday (calendar days); average kcal of the days **with diary**, the number of those days (1-7) and protein per kg. The reference of the chart is the average kcal of **every** day with diary; "last 4 weeks" is the average of the last 28 days |
 
 The training calculations run **when reading** from the projections (pure functions with unit tests): changing a rule is a code change, no "Rebuild" needed.
 
@@ -54,6 +65,8 @@ Calculations are done **when reading**, not stored as projections: the volumes a
 | `bodymetrics.skinfolds.recorded.v1` | BodyMetrics | Upsert the skinfolds and their summatory |
 | `bodymetrics.skinfolds.deleted.v1` | BodyMetrics | Delete the skinfolds |
 | `training.session.finished.v1` | Training | Upsert the session and replace its sets (no duplicates if it arrives twice) |
+| `nutrition.day.recorded.v1` | Nutrition | Upsert the day by `DiaryDayId` |
+| `nutrition.day.deleted.v1` | Nutrition | Delete the day (nothing if it does not exist) |
 
 `…recorded` arrives when a measurement is registered, when it is corrected and when it is published again during a rebuild, so the projectors always **upsert**. Applying the same event twice leaves the same result.
 
@@ -72,7 +85,7 @@ Events live in memory during the request that raises them: they are **not stored
 1. `POST /api/dashboard/rebuild` → `RebuildProjectionsCommand(UserId)`.
 2. The dashboard **empties every projection of the user** (this also removes the measurements whose `…deleted` event it missed).
 3. It publishes `dashboard.rebuild.requested.v1`.
-4. Each subscribed source module (today, BodyMetrics) publishes a `…recorded` event for every row of that user.
+4. Each subscribed source module (BodyMetrics, Training, UserProfile, Nutrition) publishes a `…recorded` event for every row of that user.
 5. The same projectors fill the tables again.
 
 The dashboard does not know which modules answer: a new source only has to subscribe to the event. Rebuilding twice gives the same result, and other users are never touched.
@@ -88,7 +101,8 @@ All endpoints require authentication and work on the projections of the authenti
 | `GET` | `/bodymetrics/perimeters` | — | `[{ measuredAt, neck, …, leftCalf }]` — whole history, null if not measured |
 | `GET` | `/bodymetrics/skinfolds` | — | `[{ measuredAt, abdominal, …, calf, summatory, fatPercentage }]` — whole history, summatory only with the six; fatPercentage also needs the sex of the user |
 | `GET` | `/training/volume` | — | `[{ microcycleId, weekNumber, startedAt, setsByMuscle: { "Chest": 12, … } }]` |
-| `GET` | `/training/sessions` | — | `[{ sessionId, name, startedAt, performance (% or null), comparedExercises, motivation, sleep, doms }]` |
+| `GET` | `/training/sessions` | — | `[{ sessionId, name, startedAt, performance (% or null), comparedExercises, motivation, sleep, doms, excluded, nutrition }]`; `nutrition` = `{ previousDayCalories, previousDayCarbohydratePerKg, sameDayCalories, proteinPerKgLast7Days }` (each null without diary or weight) or null |
+| `GET` | `/nutrition/weekly` | — | `{ averageCalories, recentCalories, weeks: [{ weekStart, calories, daysLogged, proteinPerKg }] }` — whole history of the diary, from the oldest |
 | `GET` | `/training/exercises` | `?exercisesMacrocycleId=` (only the exercises performed in it), `?marksMacrocycleId=` (sessions, 1RM and trend with its sessions only; 0 / null when it has none). Independent, both optional | `[{ exerciseId, name, lastPerformedAt, sessions, lastEstimatedOneRepMax, trend }]`, from the most recently trained (`lastPerformedAt` always from the whole history) |
 | `GET` | `/training/exercises/{exerciseId}` | `?macrocycleId=` (only its sessions; empty lists when there are none) | `{ name, progression[…], fatigue[{ performedAt, zone, firstToSecond, firstToLast }], recentSessions[…] }`; **404** if the user never performed it (same answer for an id that does not exist, so other users' data cannot be probed) |
 
@@ -96,7 +110,8 @@ All endpoints require authentication and work on the projections of the authenti
 
 The charts are grouped by area: body measurements (and, in the future, nutrition) on one side, training on another. The body measurement charts are the **"Evolución" tab of `/bodymetrics`**, built with Chart.js through ng2-charts:
 
-* **Peso**: the weekly average as the main line, with a gradient area and its last value written at the end (drawn in the middle of its week); each weigh-in as a faint dot behind it.
+* **Peso**: the weekly average as the main line, with a gradient area and its last value written at the end (drawn in the middle of its week); each weigh-in as a faint dot behind it. With FatSecret diary it becomes **Peso y calorías** (the "hybrid" chosen on 2026-11-19 in https://claude.ai/artifact/8TDpDhJw6Pun4BxBQG6jtA): two tiles (kcal/day of the last 4 weeks, kg/week of the weight over the last 3+ weeks), the weight chart, and under it the **kcal of each week as bars above or below the user's average** (`UI/deviation-bar-chart`), lighter the fewer days with diary (7 / 6 / 5 / ≤4), on the same dates. One axis per chart on purpose: a double axis makes the relation depend on the chosen scales.
+* **Proteína** (only with diary and weigh-ins): weekly g/kg with the orientative band 1,6–2,2 (`referenceBand` plugin).
 * **Perímetros**: the perimeters chosen with a selector (waist by default, up to 4 at once). Below, "Cambio desde la primera medida": horizontal bars with the cm gained or lost by each selected perimeter (only with two or more measurements), in the color of its line.
 * **Sumatorio de pliegues**: only the measurements with the six skinfolds.
 * **Pliegues**: the skinfolds chosen with a selector (up to 4). Separate from the summatory because their scales are very different (one axis per chart).
@@ -108,6 +123,7 @@ Training charts:
 
 * **Home** (below the current week):
   * **Session performance**: bars around 0 (blue better, red worse, with the sign in the label) with the moving average of the last 4 sessions over them, the trend to read first; the axis covers at least ±5 % and is clipped at ±25 %, where a triangle marks a value out of scale with its real value in the tooltip; excluded exercises appear in the tooltip. Under it, **sleep, DOMS and motivation** as three thin rows (1-10) on the same date axis, so a bad session and a bad night fall on the same vertical (the Y axis has a fixed width in every time chart for that).
+  * Above the rows, when some session has FatSecret diary around it, two tabs: **Bienestar** (sleep, DOMS, motivation; the default) and **Nutrición**: kcal and carbohydrate (g/kg) of the **day before** and **protein of the 7 days before** (g/kg, with the 1,6–2,2 band). The performance tooltip also lists the nutrition of the session. The rows need **2 sessions with diary the day before, on 2 different days** (`MIN_SESSIONS_WITH_DIARY`, `MIN_DIARY_DAYS` in `training-overview.ts`); below that the tab shows a message instead of a single point. Chosen on 2026-11-19 (option C of https://claude.ai/artifact/8TDpDhJw6Pun4BxBQG6jtA).
   * **Weekly volume** per muscle group (chips, up to 4) as stacked bars: the height is the total of the selected groups, shown in the tooltip.
   * **Recalcular**: commented out in the template. Sessions finished before the event existed need one call to `POST /rebuild` to reach the charts.
 * **Progreso** (`/progress`, in the Entrenamiento menu):

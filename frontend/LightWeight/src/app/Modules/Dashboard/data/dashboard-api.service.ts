@@ -56,6 +56,40 @@ export interface SessionPerformance {
     doms: number;
     /** Exercises left out of the average because their change is not plausible (over ±50 %): worth checking */
     excluded: { exerciseName: string; change: number }[];
+    /** What the user ate around the session (FatSecret diary); null without diary around it */
+    nutrition: SessionNutrition | null;
+}
+
+/** Each value is null when that day has no diary (or there is no body weight for the g/kg) */
+export interface SessionNutrition {
+    previousDayCalories: number | null;
+    /** g of carbohydrate per kg of body weight, the day before */
+    previousDayCarbohydratePerKg: number | null;
+    sameDayCalories: number | null;
+    /** Average of the 7 days before, g/kg (needs 4 days with diary) */
+    proteinPerKgLast7Days: number | null;
+}
+
+// ---------------------------------------------------------------- Nutrition
+
+/** A week of the diary (Monday to Sunday, calendar days of the user) */
+export interface NutritionWeek {
+    /** Monday, YYYY-MM-DD */
+    weekStart: string;
+    /** Average kcal of the days with diary */
+    calories: number;
+    /** Days with diary (1-7): a week with few is less reliable */
+    daysLogged: number;
+    /** Average protein per kg of body weight; null without any weigh-in */
+    proteinPerKg: number | null;
+}
+
+export interface NutritionEvolution {
+    /** Average kcal of every day with diary: the reference of the weeks. Null without diary */
+    averageCalories: number | null;
+    /** Average kcal of the days with diary of the last 28 days */
+    recentCalories: number | null;
+    weeks: NutritionWeek[];
 }
 
 export type RepZone = 'Strength' | 'Hypertrophy' | 'Endurance';
@@ -146,6 +180,11 @@ export class DashboardApiService {
     GetExerciseProgress(exerciseId: string, macrocycleId: string | null): Observable<ExerciseProgress> {
         const params = macrocycleId ? new HttpParams().set('macrocycleId', macrocycleId) : undefined;
         return this.http.get<ExerciseProgress>(`${this.baseUrl}/training/exercises/${exerciseId}`, { params });
+    }
+
+    /** Week by week of the FatSecret diary */
+    GetNutritionEvolution(): Observable<NutritionEvolution> {
+        return this.http.get<NutritionEvolution>(`${this.baseUrl}/nutrition/weekly`);
     }
 
     /** Empties the projections of the user and fills them again from the source modules */

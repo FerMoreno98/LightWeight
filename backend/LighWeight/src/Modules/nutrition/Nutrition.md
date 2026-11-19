@@ -61,9 +61,11 @@ Consumers upsert by `DiaryDayId` (same pattern as BodyMetrics). Contracts: `shar
 | `deviceintegration.fatsecret.diary.synced.v1` (`UserId`, `From`, `To`, `Days[{ Date, Calories, Protein, Carbohydrate, Fat }]`) | DeviceIntegration | Load the recorded days of the period, `DiarySynchronization.Apply`, save |
 | `dashboard.rebuild.requested.v1` | Dashboard | Publish `nutrition.day.recorded.v1` for every day of the user (read-only) |
 
-## Use in the Dashboard (planned)
+## Use in the Dashboard (done 2026-11-19)
 
-A `dashboard_NutritionDays` projection. Calculated when reading: kcal and carbohydrate (g/kg) of the previous day and the same day of each session, 7-day average protein (g/kg) and kcal; the body weight for g/kg is the weekly average the Dashboard already has. Shown as extra rows under sleep/DOMS/motivation in the session performance chart.
+The `dashboard_NutritionDays` projection, calculated when reading (see `dashboard/Dashboard.md`):
+- **Home**, session performance: a **Nutrición** tab next to Bienestar under the bars, with kcal and carbohydrate (g/kg) of the day before and the protein of the 7 days before.
+- **Evolución**: the weight card becomes "Peso y calorías", with the kcal of each week above or below the user's average under the weekly weight, lighter with fewer days of diary, and a protein card (g/kg, band 1,6–2,2).
 
 ## Implementation notes
 
@@ -78,7 +80,7 @@ A `dashboard_NutritionDays` projection. Calculated when reading: kcal and carboh
 
 **Done (2026-11-19) in DeviceIntegration:** linking FatSecret, history import and nightly run.
 
-**Pending:** the Dashboard projection and charts.
+**Done (2026-11-19) in the Dashboard:** projection, the Nutrición tab of the session performance and the weight + kcal and protein charts of Evolución.
 
 ## Ideas for later
 

@@ -1,6 +1,9 @@
 using FluentValidation;
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Projectors.BodyMetrics;
+using LightWeight.Dashboard.Application.Projectors.Nutrition;
+using LightWeight.Dashboard.Application.Queries.Nutrition.GetNutritionEvolution;
+using LightWeight.shared.Contracts.Nutrition;
 using LightWeight.Dashboard.Application.Projectors.Training;
 using LightWeight.Dashboard.Application.Projectors.UserProfile;
 using LightWeight.Dashboard.Application.Calculations.Training;
@@ -59,6 +62,11 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetSessionsPerformanceQuery, List<SessionPerformanceResponse>>, GetSessionsPerformanceQueryHandler>();
         services.AddScoped<IQueryHandler<GetExercisesProgressQuery, List<ExerciseProgressSummary>>, GetExercisesProgressQueryHandler>();
         services.AddScoped<IQueryHandler<GetExerciseProgressQuery, ExerciseProgressResponse?>, GetExerciseProgressQueryHandler>();
+
+        // Nutrition: the daily totals of the FatSecret diary, read next to the sessions and the weight
+        services.AddScoped<IIntegrationEventHandler<DiaryDayRecordedIntegrationEvent>, NutritionDayProjector>();
+        services.AddScoped<IIntegrationEventHandler<DiaryDayDeletedIntegrationEvent>, NutritionDayProjector>();
+        services.AddScoped<IQueryHandler<GetNutritionEvolutionQuery, NutritionEvolutionResponse>, GetNutritionEvolutionQueryHandler>();
         return services;
     }
 }

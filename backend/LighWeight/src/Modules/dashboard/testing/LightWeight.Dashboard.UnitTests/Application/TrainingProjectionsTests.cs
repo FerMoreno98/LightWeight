@@ -90,7 +90,7 @@ public class TrainingProjectionsTests
         data.Set(data.Session(Monday, sleep: 8), data.Bench, 100, 10, 8);
         data.Set(data.Session(Monday.AddDays(7), sleep: 4, doms: 8, motivation: 5), data.Bench, 100, 8, 8);  // 133.3 → −4.8 %
         // Act
-        var sessions = await new GetSessionsPerformanceQueryHandler(data.Store()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId));
+        var sessions = await new GetSessionsPerformanceQueryHandler(data.Store(), new InMemoryNutritionProjectionStore(), new InMemoryBodyMetricsProjectionStore()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId));
         // Assert
         Assert.Equal(2, sessions.Count);
         Assert.Null(sessions[0].Performance);
@@ -107,8 +107,8 @@ public class TrainingProjectionsTests
         data.Set(data.Session(Monday.AddDays(7), macrocycleId: current), data.Bench, 100, 10, 7);      // 143.3
         data.Set(data.Session(Monday.AddDays(14), macrocycleId: current), data.Bench, 100, 8, 8);      // 133.3
         // Act
-        var all = await new GetSessionsPerformanceQueryHandler(data.Store()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId));
-        var inMacrocycle = await new GetSessionsPerformanceQueryHandler(data.Store()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId, current));
+        var all = await new GetSessionsPerformanceQueryHandler(data.Store(), new InMemoryNutritionProjectionStore(), new InMemoryBodyMetricsProjectionStore()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId));
+        var inMacrocycle = await new GetSessionsPerformanceQueryHandler(data.Store(), new InMemoryNutritionProjectionStore(), new InMemoryBodyMetricsProjectionStore()).HandleAsync(new GetSessionsPerformanceQuery(data.UserId, current));
         // Assert: in the history the first session of the macrocycle is compared with the previous one; within it, it has nothing to compare with
         Assert.Equal([null, 2.4m, -7m], all.Select(s => s.Performance));
         Assert.Equal([null, -7m], inMacrocycle.Select(s => s.Performance));

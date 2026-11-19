@@ -61,6 +61,8 @@ export class LineChart {
     /** Values shown with their sign ("+2,4 %") */
     signed = input(false);
     variant = input<LineChartVariant>('default');
+    /** Orientative range drawn as a band behind the lines (e.g. 1,6-2,2 g/kg of protein) */
+    band = input<{ min: number; max: number; color?: string } | undefined>(undefined);
 
     height = computed(() => HEIGHTS[this.variant()]);
 
@@ -79,6 +81,8 @@ export class LineChart {
             endLabels: series.flatMap((s, i) => (s.endLabel ? [i] : [])),
         }) as ChartOptions<'line'>;
         if (this.variant() === 'spark') this.toSpark(options);
+        const band = this.band();
+        if (band) options.plugins!.referenceBand = band;
         return options;
     });
 

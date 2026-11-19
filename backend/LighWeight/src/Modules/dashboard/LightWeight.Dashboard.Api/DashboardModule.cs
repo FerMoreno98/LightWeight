@@ -1,5 +1,6 @@
 namespace LightWeight.Dashboard.Api;
 
+using LightWeight.Dashboard.Application.Queries.Nutrition.GetNutritionEvolution;
 using System.Security.Claims;
 using LightWeight.Dashboard.Application.Commands.RebuildProjections;
 using LightWeight.Dashboard.Application.Queries.BodyMetrics.GetPerimetersEvolution;
@@ -35,6 +36,9 @@ public static class DashboardModule
         group.MapGet("/training/exercises", GetExercisesProgress);
         group.MapGet("/training/exercises/{exerciseId:guid}", GetExerciseProgress);
 
+        // Nutrition: week by week of the FatSecret diary (Evolución). Per session it comes inside /training/sessions
+        group.MapGet("/nutrition/weekly", GetNutritionEvolution);
+
         return app;
     }
 
@@ -49,6 +53,15 @@ public static class DashboardModule
     {
         await mediator.SendAsync(new RebuildProjectionsCommand(UserId(httpContext)), ct);
         return TypedResults.NoContent();
+    }
+
+    // ---------------------------------------------------------------- Nutrition
+
+    private static async Task<IResult> GetNutritionEvolution(IMediator mediator, HttpContext httpContext, CancellationToken ct)
+    {
+        var evolution = await mediator.QueryAsync<GetNutritionEvolutionQuery, NutritionEvolutionResponse>(
+            new GetNutritionEvolutionQuery(UserId(httpContext)), ct);
+        return TypedResults.Ok(evolution);
     }
 
     // ---------------------------------------------------------------- BodyMetrics

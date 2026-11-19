@@ -18,6 +18,8 @@ export interface ChartPoint {
     hollow?: boolean;
     /** Real value when y has been clipped to the edge of the chart; the tooltip shows this one */
     value?: number;
+    /** 0-1: how much to trust the value, drawn as the opacity of its bar (e.g. a week with few days of diary) */
+    strength?: number;
 }
 
 const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });

@@ -12,6 +12,7 @@ declare module 'chart.js' {
     interface PluginOptionsByType<TType extends ChartType> {
         crosshair?: { enabled?: boolean };
         endLabel?: EndLabelOptions;
+        referenceBand?: ReferenceBandOptions;
     }
 }
 
@@ -74,5 +75,30 @@ export const EndLabelPlugin: Plugin = {
     },
 };
 
-/** Common to every chart: the areas under the lines, the vertical line on hover and the end labels */
-export const CHART_PLUGINS = [Filler, CrosshairPlugin, EndLabelPlugin];
+export interface ReferenceBandOptions {
+    /** Y values of the band; without them nothing is drawn */
+    min?: number;
+    max?: number;
+    color?: string;
+}
+
+/** A horizontal band behind the lines: an orientative range (e.g. 1,6-2,2 g/kg of protein) */
+export const ReferenceBandPlugin: Plugin = {
+    id: 'referenceBand',
+    beforeDatasetsDraw(chart: Chart, _args, options: ReferenceBandOptions) {
+        if (options.min === undefined || options.max === undefined) return;
+        const y = chart.scales['y'];
+        if (!y) return;
+        const { ctx, chartArea } = chart;
+        const top = Math.max(chartArea.top, y.getPixelForValue(options.max));
+        const bottom = Math.min(chartArea.bottom, y.getPixelForValue(options.min));
+        if (bottom <= top) return;
+        ctx.save();
+        ctx.fillStyle = options.color ?? 'rgba(163, 177, 171, 0.1)';
+        ctx.fillRect(chartArea.left, top, chartArea.right - chartArea.left, bottom - top);
+        ctx.restore();
+    },
+};
+
+/** Common to every chart: the areas under the lines, the vertical line on hover, the end labels and the bands */
+export const CHART_PLUGINS = [Filler, CrosshairPlugin, EndLabelPlugin, ReferenceBandPlugin];

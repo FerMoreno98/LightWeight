@@ -1,4 +1,5 @@
 using LightWeight.Dashboard.Application.Projections.BodyMetrics;
+using LightWeight.Dashboard.Application.Projections.Nutrition;
 using LightWeight.Dashboard.Application.Projections.Training;
 using LightWeight.shared.Contracts.Dashboard;
 using LightWeight.shared.Mediator;
@@ -11,13 +12,16 @@ public sealed class RebuildProjectionsCommandHandler : ICommandHandler<RebuildPr
 {
     private readonly IBodyMetricsProjectionStore _bodyMetrics;
     private readonly ITrainingProjectionStore _training;
+    private readonly INutritionProjectionStore _nutrition;
     private readonly IEventPublisher _publisher;
     private readonly IClock _clock;
 
-    public RebuildProjectionsCommandHandler(IBodyMetricsProjectionStore bodyMetrics, ITrainingProjectionStore training, IEventPublisher publisher, IClock clock)
+    public RebuildProjectionsCommandHandler(IBodyMetricsProjectionStore bodyMetrics, ITrainingProjectionStore training, INutritionProjectionStore nutrition,
+        IEventPublisher publisher, IClock clock)
     {
         _bodyMetrics = bodyMetrics;
         _training = training;
+        _nutrition = nutrition;
         _publisher = publisher;
         _clock = clock;
     }
@@ -26,10 +30,11 @@ public sealed class RebuildProjectionsCommandHandler : ICommandHandler<RebuildPr
     {
         // Emptying first also removes the measurements whose "Deleted" event the dashboard missed.
         // The dashboard does not know which modules answer: each source subscribed to the event publishes
-        // its events again for every row of the user (bodymetrics: "Recorded"; training: "session finished"),
+        // its events again for every row of the user (bodymetrics and nutrition: "Recorded"; training: "session finished"),
         // and the projectors fill the tables again
         await _bodyMetrics.ClearUserAsync(command.UserId, ct);
         await _training.ClearUserAsync(command.UserId, ct);
+        await _nutrition.ClearUserAsync(command.UserId, ct);
         await _publisher.PublishAsync(new RebuildRequestedIntegrationEvent(command.UserId, _clock.UtcNow), ct);
     }
 }

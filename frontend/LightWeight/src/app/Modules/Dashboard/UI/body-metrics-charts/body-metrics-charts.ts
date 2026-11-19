@@ -6,7 +6,9 @@ import { BarController, BarElement, CategoryScale, Legend, LinearScale, LineCont
 import { BodyMetricsChartsStore } from '../../state/body-metrics-charts.store';
 import { EvolutionPoint } from '../../data/dashboard-api.service';
 import { ChartSeries, LineChart } from '../line-chart/line-chart';
-import { CHART_CHROME, CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS } from '../chart-theme';
+import { DeviationBarChart } from '../deviation-bar-chart/deviation-bar-chart';
+import { ChartPoint } from '../time-chart-options';
+import { CHART_CHROME, CHART_DEFAULTS, MAX_SERIES, SERIES_COLORS, withAlpha } from '../chart-theme';
 import { CHART_PLUGINS } from '../chart-plugins';
 import { ChangeBars, ChangeItem } from '../change-bars/change-bars';
 import { SelectedField, SeriesSelection } from '../series-selection';
@@ -15,6 +17,24 @@ import { MeasureField, PERIMETERS_CONFIG, SKINFOLDS_CONFIG } from '../../../Body
 const HALF_WEEK_MS = 3.5 * 24 * 60 * 60 * 1000;
 const dayMonth = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
 const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
+const kcal = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 });
+const rate = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2, signDisplay: 'exceptZero' });
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Color of the kcal: the fourth slot of the palette, free in the weight card */
+export const CALORIES_COLOR = SERIES_COLORS[3];
+/** Protein: a fixed color of its own card */
+export const PROTEIN_COLOR = SERIES_COLORS[0];
+/** Opacity of a week's bar by its days with diary: a week with few days is read with care */
+export const DAYS_STRENGTH: { days: string; strength: number }[] = [
+    { days: '7', strength: 1 },
+    { days: '6', strength: 0.72 },
+    { days: '5', strength: 0.48 },
+    { days: '≤ 4', strength: 0.26 },
+];
+function strengthOf(daysLogged: number): number {
+    return daysLogged >= 7 ? 1 : daysLogged === 6 ? 0.72 : daysLogged === 5 ? 0.48 : 0.26;
+}
 
 /**
  * Evolution of the body measurements, read from the dashboard: weight with its weekly average,
@@ -23,7 +43,7 @@ const number = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 2 });
 @Component({
     selector: 'app-body-metrics-charts',
     standalone: true,
-    imports: [LineChart, ChangeBars, NgTemplateOutlet, RouterLink],
+    imports: [LineChart, DeviationBarChart, ChangeBars, NgTemplateOutlet, RouterLink],
     templateUrl: './body-metrics-charts.html',
     // Registered here and not in app.config: Chart.js is only downloaded when the charts are opened.
     // Only the pieces the charts use, to keep the chunk small
@@ -40,6 +60,10 @@ export class BodyMetricsCharts implements OnInit {
     readonly perimeterUnit = PERIMETERS_CONFIG.unit;
     readonly skinFoldUnit = SKINFOLDS_CONFIG.unit;
     readonly maxSeries = MAX_SERIES;
+    readonly caloriesColor = CALORIES_COLOR;
+    readonly proteinColor = PROTEIN_COLOR;
+    readonly daysStrength = DAYS_STRENGTH;
+    readonly withAlpha = withAlpha;
 
     // ---------------------------------------------------------------- Weight
 
@@ -77,6 +101,74 @@ export class BodyMetricsCharts implements OnInit {
         const last = points[points.length - 1];
         return `${number.format(last.weight)} kg el ${dayMonth.format(new Date(last.measuredAt))}`;
     });
+
+    // ---------------------------------------------------------------- Nutrition, under the weight
+
+    /** The FatSecret diary has weeks: the weight card also shows the kcal */
+    hasNutrition = computed(() => this.store.nutrition().averageCalories !== null && this.store.nutrition().weeks.length > 0);
+
+    /** Middle of each week, like the weekly weight */
+    private weekX(weekStart: string): number {
+        return Date.parse(`${weekStart}T00:00:00Z`) + HALF_WEEK_MS;
+    }
+
+    /** Dates of the weight chart and of the kcal under it: both cover the same ones, so each week is on the same vertical */
+    weightDomain = computed<number[] | undefined>(() => {
+        if (!this.hasNutrition()) return undefined;
+        return [
+            ...this.weightSeries().flatMap(s => s.points.map(p => p.x)),
+            ...this.store.nutrition().weeks.map(w => this.weekX(w.weekStart)),
+        ];
+    });
+
+    averageCalories = computed(() => kcal.format(this.store.nutrition().averageCalories ?? 0));
+
+    /** Each week above or below the user's average, lighter with fewer days of diary */
+    caloriesPoints = computed<ChartPoint[]>(() => {
+        const { averageCalories, weeks } = this.store.nutrition();
+        if (averageCalories === null) return [];
+        return weeks.map(w => ({
+            x: this.weekX(w.weekStart),
+            y: w.calories - averageCalories,
+            title: `Semana del ${dayMonth.format(new Date(`${w.weekStart}T00:00:00Z`))}`,
+            strength: strengthOf(w.daysLogged),
+            details: [`${kcal.format(w.calories)} kcal/día`, `${w.daysLogged} de 7 días con diario`],
+        }));
+    });
+
+    recentCalories = computed(() => {
+        const recent = this.store.nutrition().recentCalories;
+        return recent === null ? null : kcal.format(recent);
+    });
+
+    /** kg per week between the last weekly average and the one at least 3 weeks before; null without both */
+    weightRate = computed(() => {
+        const weeks = this.store.weight().weeklyAverages;
+        if (weeks.length < 2) return null;
+        const last = weeks[weeks.length - 1];
+        const lastAt = Date.parse(last.weekStart);
+        const earlier = [...weeks].reverse().find(w => lastAt - Date.parse(w.weekStart) >= 3 * WEEK_MS);
+        if (!earlier) return null;
+        const weeksBetween = (lastAt - Date.parse(earlier.weekStart)) / WEEK_MS;
+        return rate.format((last.average - earlier.average) / weeksBetween);
+    });
+
+    proteinSeries = computed<ChartSeries[]>(() => [
+        {
+            label: 'Proteína',
+            color: PROTEIN_COLOR,
+            endLabel: true,
+            points: this.store.nutrition().weeks
+                .filter(w => w.proteinPerKg !== null)
+                .map(w => ({
+                    x: this.weekX(w.weekStart),
+                    y: w.proteinPerKg,
+                    title: `Semana del ${dayMonth.format(new Date(`${w.weekStart}T00:00:00Z`))}`,
+                    note: `${w.daysLogged} de 7 días con diario`,
+                })),
+        },
+    ]);
+    hasProtein = computed(() => this.proteinSeries()[0].points.length > 0);
 
     // ---------------------------------------------------------------- Perimeters
 
