@@ -1,8 +1,6 @@
 import {
   HttpErrorResponse,
-  HttpHandlerFn,
   HttpInterceptorFn,
-  HttpRequest,
 } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { catchError, firstValueFrom, from, switchMap, throwError } from 'rxjs';
@@ -12,16 +10,17 @@ import { AuthApiService } from '../../Modules/Auth/data/auth-api.service';
 let isRefreshing = false;
 let pendingRetries: Array<(token: string | null) => void> = [];
 
-async function refreshAccessToken(): Promise<string | null> {
+/**
+ * Pide un access token nuevo con la cookie de refresco. Recibe los servicios en vez de inyectarlos:
+ * se llama desde un catchError, cuando ya no hay contexto de inyección y inject() lanzaría NG0203
+ */
+async function refreshAccessToken(api: AuthApiService, tokenStorage: TokenStorageService): Promise<string | null> {
   // Si ya hay un refresh en curso, esperamos a que termine en vez de lanzar otro
   if (isRefreshing) {
     return new Promise((resolve) => pendingRetries.push(resolve));
   }
 
   isRefreshing = true;
-  const api = inject(AuthApiService);
-  const tokenStorage = inject(TokenStorageService);
-
   try {
     const newToken = await firstValueFrom(api.refreshToken());
     tokenStorage.setAccessToken(newToken);
@@ -38,7 +37,9 @@ async function refreshAccessToken(): Promise<string | null> {
 }
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
+  // Todos los inject() aquí arriba: solo funcionan mientras se ejecuta el interceptor, no en los callbacks del pipe
   const tokenStorage = inject(TokenStorageService);
+  const api = inject(AuthApiService);
 
   const token = tokenStorage.getAccessToken();
   const authReq = token
@@ -56,7 +57,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      return from(refreshAccessToken()).pipe(
+      return from(refreshAccessToken(api, tokenStorage)).pipe(
         switchMap((newToken) => {
           if (!newToken) {
             return throwError(() => error);

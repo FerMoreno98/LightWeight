@@ -2,7 +2,7 @@
 .env
 
 # Apuntes personales
-APUNTES-eventos.md
+APUNTES-*.md
 
 # Bitácora y guía del servidor, locales (no se suben)
 Doc/Deployment.md
