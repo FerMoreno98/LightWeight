@@ -13,10 +13,17 @@ public sealed record SessionPerformancePoint(TrainingSessionProjection Session, 
 
 /// <summary>
 /// How a session went compared to the previous time: for each exercise, the estimated 1RM of its first set (the freshest
-/// one, it shows how the user arrived that day) against the first set of the last time the exercise was done in the same
-/// zone. The session's performance is the average of those changes. Comparing with the previous time, and not with an
+/// one, it shows how the user arrived that day) against the first set of the same time of the exercise in the previous
+/// week, in the same zone: the 1st time of the week against the 1st time of the previous week, the 2nd against the 2nd.
+/// The session's performance is the average of those changes. Comparing with the previous time, and not with an
 /// absolute value, keeps the normal progression (more load every week) from hiding a bad day
 /// </summary>
+/// <remarks>
+/// An exercise done twice in a week (Monday and Thursday) is never compared with the other day of the same week: the
+/// recovery, its position in the session and the volume before it differ, and that difference would show up as a change
+/// of performance every week. The time of the week is counted per microcycle and not per session of the template,
+/// because changing the template of the next microcycle (base → accumulation) gives its sessions new ids
+/// </remarks>
 public static class SessionPerformance
 {
     /// <summary>
@@ -33,13 +40,22 @@ public static class SessionPerformance
     {
         var changesBySession = new Dictionary<Guid, List<decimal>>();
         var excludedBySession = new Dictionary<Guid, List<ExcludedComparison>>();
-        // Last first-set estimate of each exercise and zone seen so far, walking the history from the oldest
-        var previous = new Dictionary<(Guid ExerciseId, RepZone Zone), decimal>();
+        // Times each exercise and zone has been done in each week so far
+        var timesInWeek = new Dictionary<(Guid MicrocycleId, Guid ExerciseId, RepZone Zone), int>();
+        // Last first-set estimate of each exercise, zone and time of the week seen so far, walking the history from the
+        // oldest. A time of the week cannot repeat inside its week, so the reference is always of a previous week: the
+        // last one that had that time (a deload or a week with less frequency is skipped)
+        var previous = new Dictionary<(Guid ExerciseId, RepZone Zone, int Time), decimal>();
 
         foreach (ExerciseInSession exercise in history)
         {
+            // Every time counts, also the ones that cannot be estimated: Thursday is still the 2nd time of the week
+            // when Monday's first set was a drop set
+            var week = (exercise.Session.MicrocycleId, exercise.ExerciseId, exercise.Zone);
+            int time = timesInWeek[week] = timesInWeek.GetValueOrDefault(week) + 1;
+
             if (exercise.First is not EstimatedOneRepMax first) continue;
-            var key = (exercise.ExerciseId, exercise.Zone);
+            var key = (exercise.ExerciseId, exercise.Zone, time);
             if (previous.TryGetValue(key, out decimal before))
             {
                 decimal change = ExerciseHistory.PercentChange(before, first.Value);

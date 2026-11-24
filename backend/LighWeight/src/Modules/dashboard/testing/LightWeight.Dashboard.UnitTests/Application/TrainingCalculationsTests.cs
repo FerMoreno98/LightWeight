@@ -215,6 +215,71 @@ public class TrainingCalculationsTests
         Assert.Equal(counted ? 0 : 1, second.Excluded.Count);
     }
 
+    [Fact]
+    public void SessionPerformance_TwiceAWeek_ComparesEachDayWithTheSameDayOfThePreviousWeek()
+    {
+        // Arrange: bench on Monday and Thursday, Thursday always weaker than Monday
+        var data = new TrainingData();
+        Guid previousWeek = Guid.CreateVersion7(), thisWeek = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, previousWeek), data.Bench, 100, 10, 8);                     // 140
+        data.Set(data.Session(Monday.AddDays(3), previousWeek), data.Bench, 90, 10, 8);           // 126
+        data.Set(data.Session(Monday.AddDays(7), thisWeek), data.Bench, 100, 10, 7);              // 143.3 against 140 → +2.4 %
+        data.Set(data.Session(Monday.AddDays(10), thisWeek), data.Bench, 90, 10, 7);              // 129 against 126 → +2.4 %
+        // Act
+        var points = SessionPerformance.Calculate(data.Sessions, ExerciseHistory.Build(data.Sessions, data.Sets));
+        // Assert: Thursday is never compared with Monday (that would be −10 % and +2.4 % → −10 %)
+        Assert.Equal([null, null, 2.4m, 2.4m], points.Select(p => p.Performance));
+    }
+
+    [Fact]
+    public void SessionPerformance_AWeekWithoutThatTime_ComparesWithTheLastWeekThatHadIt()
+    {
+        // Arrange: twice, once (deload), twice
+        var data = new TrainingData();
+        Guid first = Guid.CreateVersion7(), deload = Guid.CreateVersion7(), third = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, first), data.Bench, 100, 10, 8);                             // 140
+        data.Set(data.Session(Monday.AddDays(3), first), data.Bench, 90, 10, 8);                   // 126
+        data.Set(data.Session(Monday.AddDays(7), deload), data.Bench, 70, 10, 8);                  // 98 against 140 → −30 %
+        data.Set(data.Session(Monday.AddDays(14), third), data.Bench, 100, 10, 7);                 // 143.3 against 98 → +46.2 %
+        data.Set(data.Session(Monday.AddDays(17), third), data.Bench, 90, 10, 7);                  // 129 against 126 (2 weeks ago) → +2.4 %
+        // Act
+        var points = SessionPerformance.Calculate(data.Sessions, ExerciseHistory.Build(data.Sessions, data.Sets));
+        // Assert
+        Assert.Equal([null, null, -30m, 46.2m, 2.4m], points.Select(p => p.Performance));
+    }
+
+    [Fact]
+    public void SessionPerformance_ATimeThatCannotBeEstimated_StillCounts()
+    {
+        // Arrange: Monday's bench of this week is a drop set, so Thursday is still the 2nd time of the week
+        var data = new TrainingData();
+        Guid previousWeek = Guid.CreateVersion7(), thisWeek = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, previousWeek), data.Bench, 100, 10, 8);                      // 140
+        data.Set(data.Session(Monday.AddDays(3), previousWeek), data.Bench, 90, 10, 8);            // 126
+        data.Set(data.Session(Monday.AddDays(7), thisWeek), data.Bench, 100, 10, 8, technique: "DropSet");
+        data.Set(data.Session(Monday.AddDays(10), thisWeek), data.Bench, 90, 10, 7);               // 129 against 126 → +2.4 %
+        // Act
+        var points = SessionPerformance.Calculate(data.Sessions, ExerciseHistory.Build(data.Sessions, data.Sets));
+        // Assert
+        Assert.Equal([null, null, null, 2.4m], points.Select(p => p.Performance));
+    }
+
+    [Fact]
+    public void SessionPerformance_TheTimesOfTheWeekAreCountedPerZone()
+    {
+        // Arrange: Monday heavy (strength) and Thursday in hypertrophy: each one is the 1st time of its zone
+        var data = new TrainingData();
+        Guid previousWeek = Guid.CreateVersion7(), thisWeek = Guid.CreateVersion7();
+        data.Set(data.Session(Monday, previousWeek), data.Bench, 120, 5, 8, planned: (3, 5));      // 148
+        data.Set(data.Session(Monday.AddDays(3), previousWeek), data.Bench, 100, 10, 8);           // 140
+        data.Set(data.Session(Monday.AddDays(7), thisWeek), data.Bench, 120, 5, 7, planned: (3, 5)); // 152 against 148 → +2.7 %
+        data.Set(data.Session(Monday.AddDays(10), thisWeek), data.Bench, 100, 10, 7);              // 143.3 against 140 → +2.4 %
+        // Act
+        var points = SessionPerformance.Calculate(data.Sessions, ExerciseHistory.Build(data.Sessions, data.Sets));
+        // Assert
+        Assert.Equal([null, null, 2.7m, 2.4m], points.Select(p => p.Performance));
+    }
+
     // ---------------------------------------------------------------- Trend
 
     [Fact]
