@@ -10,7 +10,7 @@
 #   1. Copy of the database (migrations are the only thing hard to undo)
 #   2. The repo goes to that commit: docker-compose.prod.yaml and the Caddyfile match the images
 #   3. IMAGE_TAG=<sha> in .env, so a later "docker compose up" by hand keeps this version
-#   4. Restart what changed
+#   4. Restart what changed, and reload Caddy if the Caddyfile changed
 #   5. Check that the API and the web stay up; if not, show the logs and fail (CD goes red)
 #
 # Everything is inside main(): bash reads a script as it runs it, and step 2 can change this very
@@ -63,7 +63,10 @@ main() {
   # 2. The code of that commit. Fails if someone edited tracked files on the server
   #    (.env and backups/ are not tracked, they are not touched)
   echo "==> Código del commit"
+  local caddyfile=deploy/caddy/Caddyfile old_caddyfile new_caddyfile
+  old_caddyfile="$(git rev-parse --verify --quiet "HEAD:$caddyfile" || echo none)"
   git checkout --quiet --detach "$sha"
+  new_caddyfile="$(git rev-parse --verify --quiet "HEAD:$caddyfile" || echo none)"
 
   # 3. The version, in .env
   sed -i '/^#\?[[:space:]]*IMAGE_TAG=/d' .env
@@ -73,6 +76,12 @@ main() {
   #    caddy and db only when their image line in docker-compose.prod.yaml changes
   echo "==> Arrancando"
   "${compose[@]}" up -d --remove-orphans
+  # Caddy is only recreated when its lines in the compose change: a new Caddyfile needs a reload.
+  # The reload checks the file first and keeps the old configuration if it is wrong
+  if [ "$old_caddyfile" != "$new_caddyfile" ]; then
+    echo "==> Recargando Caddy (el Caddyfile ha cambiado)"
+    "${compose[@]}" exec -T caddy caddy reload --config /etc/caddy/Caddyfile
+  fi
 
   # 5. A broken API (migration that fails, missing variable) dies at startup and Docker keeps
   #    restarting it. If after 30 s it is still running with no restarts, it is fine

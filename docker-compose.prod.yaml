@@ -1,4 +1,4 @@
-# Production. On the server, next to this file: deploy/Caddyfile and .env (see .env.example)
+# Production. On the server, next to this file: deploy/caddy/Caddyfile and .env (see .env.example)
 #   docker compose -f docker-compose.prod.yaml up -d
 # Only Caddy is reachable from the internet (80/443). The API, the web and Postgres stay inside
 # the compose network.
@@ -17,7 +17,9 @@ services:
     environment:
       - DOMAIN=${DOMAIN:?Define DOMAIN en el archivo .env}
     volumes:
-      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The folder, not the file: git checkout replaces the Caddyfile with a new file, and a file
+      # mount keeps showing the old one. deploy.sh reloads Caddy when the Caddyfile changes
+      - ./deploy/caddy:/etc/caddy:ro
       # The certificates: without the volume Let's Encrypt would be asked again on every restart
       - caddy-data:/data
       - caddy-config:/config
