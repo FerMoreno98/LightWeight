@@ -8,6 +8,10 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# Report-Only: the browser only warns in the console. Switch to Content-Security-Policy once
+		# production shows no warnings (Doc/Deployment.md). Needs inlineCritical off in angular.json,
+		# or the onload of the deferred CSS link is blocked and the web loads without styles
+		Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 		-Server
 	}
 
